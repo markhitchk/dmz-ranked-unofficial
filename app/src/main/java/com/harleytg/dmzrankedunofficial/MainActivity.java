@@ -579,7 +579,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        String appIdentity = "DMZRankedApp/1.0.21 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
+        String appIdentity = "DMZRankedApp/1.0.22 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
         webView.getSettings().setUserAgentString(ua + " " + appIdentity);
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
