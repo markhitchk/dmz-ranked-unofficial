@@ -34,7 +34,6 @@ import android.widget.Toast;
 
 import java.util.Locale;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -52,11 +51,11 @@ public class MainActivity extends Activity {
     private static final String PREF_DESKTOP = "desktop_site";
     private static final String PREF_KEEP_AWAKE = "keep_awake";
     private static final String PREF_VERBOSE_LOADING = "verbose_loading";
-    private static final String PREF_OPERATOR_DIRECTORY = "website_operator_directory";
-    private static final String PREF_OPERATOR_COUNT = "website_operator_count";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
+    private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
+    private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
+    private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
-    private static final String PREF_USER_AGENT = "last_webview_user_agent";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -82,21 +81,25 @@ public class MainActivity extends Activity {
             "return [live?'LIVE':'',sync,players].join('|||');" +
             "}catch(e){return '||||||';}})()";
 
-    private static final String READ_OPERATOR_DIRECTORY_SCRIPT =
+    private static final String READ_CURRENT_OPERATOR_SCRIPT =
             "(function(){try{" +
-            "var all=[].slice.call(document.querySelectorAll('select'));if(!all.length){return JSON.stringify({operators:[],selected:''});}" +
-            "var best=null,bestScore=-1;" +
-            "all.forEach(function(sel){var ctx='';try{ctx=((sel.getAttribute('aria-label')||'')+' '+(sel.name||'')+' '+(sel.id||'')+' '+((sel.parentElement&&sel.parentElement.innerText)||''));}catch(e){}" +
-            "var opts=[].slice.call(sel.options||[]);var score=opts.length;" +
-            "if(/RETURNING OPERATOR|PICK YOUR NAME|SELECT EXISTING OPERATOR/i.test(ctx)){score+=10000;}" +
-            "if(score>bestScore){bestScore=score;best=sel;}});" +
-            "if(!best){return JSON.stringify({operators:[],selected:''});}" +
-            "var seen={},out=[];[].slice.call(best.options||[]).forEach(function(o){var t=String(o.textContent||o.innerText||o.value||'').replace(/\\s+/g,' ').trim();" +
-            "if(!t||/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR/i.test(t)){return;}if(!seen[t]){seen[t]=1;out.push(t);}});" +
-            "var selected='';try{if(best.selectedIndex>=0){selected=String(best.options[best.selectedIndex].textContent||best.options[best.selectedIndex].value||'').replace(/\\s+/g,' ').trim();" +
-            "if(/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR/i.test(selected)){selected='';}}}catch(e){}" +
-            "return JSON.stringify({operators:out,selected:selected});" +
-            "}catch(e){return JSON.stringify({operators:[],selected:''});}})()";
+            "function clean(v){return String(v||'').replace(/\\s+/g,' ').trim();}" +
+            "function placeholder(v){return !v||/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR|YOUR OPERATOR NAME/i.test(v);}" +
+            "var name='',source='';" +
+            "var selects=[].slice.call(document.querySelectorAll('select'));" +
+            "for(var i=0;i<selects.length&&!name;i++){var sel=selects[i],ctx='';try{ctx=clean((sel.getAttribute('aria-label')||'')+' '+(sel.name||'')+' '+(sel.id||'')+' '+((sel.parentElement&&sel.parentElement.innerText)||''));}catch(e){}" +
+            "if(!/RETURNING OPERATOR|PICK YOUR NAME|SELECT EXISTING OPERATOR/i.test(ctx)){continue;}" +
+            "try{if(sel.selectedIndex>=0){var v=clean(sel.options[sel.selectedIndex].textContent||sel.options[sel.selectedIndex].value||'');if(!placeholder(v)){name=v;source='Returning operator';}}}catch(e){}" +
+            "}" +
+            "if(!name){var inputs=[].slice.call(document.querySelectorAll('input:not([type=hidden]),textarea'));" +
+            "for(var j=0;j<inputs.length&&!name;j++){var el=inputs[j],ictx='';try{ictx=clean((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('placeholder')||'')+' '+(el.name||'')+' '+(el.id||'')+' '+((el.parentElement&&el.parentElement.innerText)||''));}catch(e){}" +
+            "if(!/OPERATOR NAME|YOUR OPERATOR|RETURNING OPERATOR/i.test(ictx)){continue;}var iv=clean(el.value||'');if(iv&&!placeholder(iv)){name=iv;source='Operator name';}}" +
+            "}" +
+            "var body=clean((document.body&&document.body.innerText)||'');" +
+            "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
+            "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
+            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,source:source});" +
+            "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,source:''});}})()";
 
     private SharedPreferences preferences;
     private WebView webView;
@@ -234,7 +237,7 @@ public class MainActivity extends Activity {
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
-                        readOperatorDirectory(0);
+                        readCurrentOperator(0);
                         return;
                     }
                 } catch (Throwable ignored) {
@@ -352,24 +355,26 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void readOperatorDirectory(int attempt) {
+    private void readCurrentOperator(int attempt) {
         if (webView == null || isFinishing()) return;
 
-        webView.evaluateJavascript(READ_OPERATOR_DIRECTORY_SCRIPT, result -> {
+        webView.evaluateJavascript(READ_CURRENT_OPERATOR_SCRIPT, result -> {
             if (isFinishing() || preferences == null) return;
 
             String decoded = decodeJavascriptString(result);
             try {
                 JSONObject payload = new JSONObject(decoded);
-                JSONArray operators = payload.optJSONArray("operators");
-                String selected = payload.optString("selected", "").trim();
-                int count = operators == null ? 0 : operators.length();
+                String name = payload.optString("name", "").trim();
+                boolean verified = payload.optBoolean("verified", false);
+                boolean protectedFlag = payload.optBoolean("protected", false);
+                String source = payload.optString("source", "").trim();
 
-                if (count > 0) {
+                if (!name.isEmpty()) {
                     preferences.edit()
-                            .putString(PREF_OPERATOR_DIRECTORY, operators.toString())
-                            .putInt(PREF_OPERATOR_COUNT, count)
-                            .putString(PREF_SELECTED_OPERATOR, selected)
+                            .putString(PREF_SELECTED_OPERATOR, name)
+                            .putBoolean(PREF_OPERATOR_VERIFIED, verified)
+                            .putBoolean(PREF_OPERATOR_PROTECTED, protectedFlag)
+                            .putString(PREF_OPERATOR_SOURCE, source)
                             .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                             .apply();
                     return;
@@ -378,7 +383,7 @@ public class MainActivity extends Activity {
             }
 
             if (attempt < 12 && webView != null) {
-                webView.postDelayed(() -> readOperatorDirectory(attempt + 1), 500);
+                webView.postDelayed(() -> readCurrentOperator(attempt + 1), 500);
             }
         });
     }
@@ -526,11 +531,8 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        String finalUserAgent = ua + " DMZRankedUnofficial/1.0.19";
-        webView.getSettings().setUserAgentString(finalUserAgent);
-        if (preferences != null) {
-            preferences.edit().putString(PREF_USER_AGENT, finalUserAgent).apply();
-        }
+        String appIdentity = "DMZRankedApp/1.0.20 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
+        webView.getSettings().setUserAgentString(ua + " " + appIdentity);
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
