@@ -7,12 +7,16 @@
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="false"
         android:hardwareAccelerated="true"
-        android:icon="@drawable/dmz_ranked_logo"
+        android:icon="@mipmap/ic_launcher"
         android:label="DMZ Ranked"
-        android:roundIcon="@drawable/dmz_ranked_logo"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DMZRanked"
         android:usesCleartextTraffic="false">
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"
