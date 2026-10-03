@@ -265,9 +265,9 @@ public class SettingsActivity extends Activity {
                     .remove(PREF_OPERATOR_SYNC_MS)
                     .apply();
             renderWebsiteOperatorInfo();
-            renderWebsiteDataInfo();
             CookieManager.getInstance().removeAllCookies(value -> runOnUiThread(() -> {
                 CookieManager.getInstance().flush();
+                renderWebsiteDataInfo();
                 Toast.makeText(SettingsActivity.this,
                         "Web cache, cookies, and site storage cleared.",
                         Toast.LENGTH_SHORT).show();
