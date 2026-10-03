@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="dmz_black">#090909</color>
-    <color name="dmz_toolbar">#111111</color>
-    <color name="dmz_red">#FF1F2A</color>
-    <color name="dmz_green">#67FF18</color>
-    <color name="dmz_white">#F5F5F5</color>
-    <color name="dmz_muted">#B5B5B5</color>
-    <color name="dmz_panel">#1A1A1A</color>
-    <color name="dmz_card">#141414</color>
-    <color name="dmz_card_border">#343434</color>
+    <color name="dmz_black">#080A09</color>
+    <color name="dmz_toolbar">#101211</color>
+    <color name="dmz_red">#E7352F</color>
+    <color name="dmz_green">#66F219</color>
+    <color name="dmz_gold">#F2B632</color>
+    <color name="dmz_gold_dark">#B97810</color>
+    <color name="dmz_gold_soft">#D7A42E</color>
+    <color name="dmz_white">#F1F3EF</color>
+    <color name="dmz_muted">#9DA39D</color>
+    <color name="dmz_panel">#131715</color>
+    <color name="dmz_panel_deep">#0C100E</color>
+    <color name="dmz_card">#121614</color>
+    <color name="dmz_card_border">#303732</color>
+    <color name="dmz_card_border_gold">#7A5B18</color>
+    <color name="dmz_chip">#101512</color>
 </resources>
