@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dmz_black">#090909</color>
+    <color name="dmz_toolbar">#111111</color>
+    <color name="dmz_red">#FF1F2A</color>
+    <color name="dmz_green">#67FF18</color>
+    <color name="dmz_white">#F5F5F5</color>
+    <color name="dmz_muted">#B5B5B5</color>
+    <color name="dmz_panel">#1A1A1A</color>
+</resources>
