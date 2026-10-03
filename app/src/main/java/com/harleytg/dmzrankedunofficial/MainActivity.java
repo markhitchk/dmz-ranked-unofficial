@@ -40,6 +40,7 @@ public class MainActivity extends Activity {
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
     private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
+    private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
     private static final int FILE_REQUEST = 2001;
     private static final int SETTINGS_REQUEST = 2002;
 
@@ -309,7 +310,7 @@ public class MainActivity extends Activity {
             if (isAllowedExternalLink(uri)) {
                 openExternal(uri);
             } else {
-                Toast.makeText(this, "External link blocked. Allowed links are the approved PayPal and DMZ Ranked Discord invites.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "External link blocked. Allowed links are the approved PayPal, DMZ Ranked Discord invites, and app beta group.", Toast.LENGTH_SHORT).show();
             }
             return true;
         }
@@ -329,20 +330,26 @@ public class MainActivity extends Activity {
         String value = uri.toString();
         if (value.startsWith(PAYPAL_SHARE_URL)
                 || value.startsWith(APP_SUPPORT_DISCORD_URL)
-                || value.startsWith(MAIN_DISCORD_URL)) {
+                || value.startsWith(MAIN_DISCORD_URL)
+                || value.startsWith(BETA_GROUP_URL)) {
             return true;
         }
 
         String host = uri.getHost();
         if (host == null) return false;
         host = host.toLowerCase(Locale.US);
-        if (!host.equals("discord.gg") && !host.equals("www.discord.gg") && !host.equals("discord.com")) {
-            return false;
-        }
-
         String path = uri.getPath();
         if (path == null) return false;
-        return path.contains("kdHneTZkyd") || path.contains("jTaTHqw45F");
+
+        if (host.equals("discord.gg") || host.equals("www.discord.gg") || host.equals("discord.com")) {
+            return path.contains("kdHneTZkyd") || path.contains("jTaTHqw45F");
+        }
+
+        if (host.equals("groups.google.com") || host.equals("www.groups.google.com")) {
+            return path.equals("/g/dmz-ranked") || path.startsWith("/g/dmz-ranked/");
+        }
+
+        return false;
     }
 
     private void openExternal(Uri uri) {
@@ -372,7 +379,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.15");
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.16");
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
