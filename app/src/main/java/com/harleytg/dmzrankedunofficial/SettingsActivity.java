@@ -30,8 +30,6 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.util.Date;
 
-import org.json.JSONArray;
-
 public class SettingsActivity extends Activity {
     private static final String TAG = "DMZRankedSettings";
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
@@ -45,11 +43,11 @@ public class SettingsActivity extends Activity {
     private static final String PREF_DESKTOP = "desktop_site";
     private static final String PREF_KEEP_AWAKE = "keep_awake";
     private static final String PREF_VERBOSE_LOADING = "verbose_loading";
-    private static final String PREF_OPERATOR_DIRECTORY = "website_operator_directory";
-    private static final String PREF_OPERATOR_COUNT = "website_operator_count";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
+    private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
+    private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
+    private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
-    private static final String PREF_USER_AGENT = "last_webview_user_agent";
 
     public static final String EXTRA_ACTION = "settings_action";
     public static final String ACTION_RELOAD = "reload";
@@ -107,7 +105,6 @@ public class SettingsActivity extends Activity {
         setupCollapsible(R.id.pageControlsHeader, R.id.pageControlsContent, R.id.pageControlsArrow, false);
         setupCollapsible(R.id.helpFeedbackHeader, R.id.helpFeedbackContent, R.id.helpFeedbackArrow, false);
         setupCollapsible(R.id.creditsHeader, R.id.creditsContent, R.id.creditsArrow, false);
-        setupCollapsible(R.id.operatorsHeader, R.id.operatorsContent, R.id.operatorsArrow, false);
 
         renderWebsiteOperatorInfo();
 
@@ -124,69 +121,46 @@ public class SettingsActivity extends Activity {
     private void renderWebsiteOperatorInfo() {
         if (preferences == null) return;
 
-        TextView countText = findViewById(R.id.operatorCountText);
-        TextView selectedText = findViewById(R.id.operatorSelectedText);
-        TextView syncText = findViewById(R.id.operatorSyncText);
-        TextView listText = findViewById(R.id.operatorListText);
-        TextView userAgentText = findViewById(R.id.userAgentText);
-        TextView packageText = findViewById(R.id.packageNameText);
+        TextView nameText = findViewById(R.id.signedInOperatorNameText);
+        TextView statusText = findViewById(R.id.signedInOperatorStatusText);
+        TextView sourceText = findViewById(R.id.signedInOperatorSourceText);
+        TextView syncText = findViewById(R.id.signedInOperatorSyncText);
 
-        String raw = preferences.getString(PREF_OPERATOR_DIRECTORY, "[]");
-        int storedCount = preferences.getInt(PREF_OPERATOR_COUNT, 0);
         String selected = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        boolean verified = preferences.getBoolean(PREF_OPERATOR_VERIFIED, false);
+        boolean protectedFlag = preferences.getBoolean(PREF_OPERATOR_PROTECTED, false);
+        String source = preferences.getString(PREF_OPERATOR_SOURCE, "");
         long syncMs = preferences.getLong(PREF_OPERATOR_SYNC_MS, 0L);
-        String userAgent = preferences.getString(PREF_USER_AGENT, "");
 
-        StringBuilder names = new StringBuilder();
-        int parsedCount = 0;
-        try {
-            JSONArray array = new JSONArray(raw == null ? "[]" : raw);
-            parsedCount = array.length();
-            int limit = Math.min(parsedCount, 500);
-            for (int i = 0; i < limit; i++) {
-                String name = array.optString(i, "").trim();
-                if (name.isEmpty()) continue;
-                if (names.length() > 0) names.append("\n");
-                names.append(name);
-            }
-            if (parsedCount > limit) {
-                names.append("\n\n…showing first ").append(limit)
-                        .append(" of ").append(parsedCount).append(" operators.");
-            }
-        } catch (Throwable ignored) {
+        boolean hasOperator = selected != null && !selected.trim().isEmpty();
+        if (nameText != null) {
+            nameText.setText(hasOperator ? selected.trim() : "No operator selected");
         }
 
-        int count = storedCount > 0 ? storedCount : parsedCount;
-        if (countText != null) {
-            countText.setText(count > 0
-                    ? count + " operators found in the website's Returning operator selector."
-                    : "No operator directory cached yet. Open DMZ Ranked and let the page finish loading.");
+        if (statusText != null) {
+            if (!hasOperator) {
+                statusText.setText("Open DMZ Ranked and select or enter your operator name.");
+            } else if (verified && protectedFlag) {
+                statusText.setText("✓ Verified on this device • PIN protected");
+            } else if (verified) {
+                statusText.setText("✓ Verified on this device");
+            } else if (protectedFlag) {
+                statusText.setText("PIN protected on this device");
+            } else {
+                statusText.setText("Selected on this device");
+            }
         }
 
-        if (selectedText != null) {
-            selectedText.setText(selected == null || selected.trim().isEmpty()
-                    ? "This device: no operator selected"
-                    : "This device: " + selected.trim());
+        if (sourceText != null) {
+            sourceText.setText(hasOperator
+                    ? "Website account view" + (source == null || source.trim().isEmpty() ? "" : " • " + source.trim())
+                    : "Website account view");
         }
 
         if (syncText != null) {
             syncText.setText(syncMs > 0
-                    ? "Last pulled: " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(new Date(syncMs))
-                    : "Last pulled: not yet");
-        }
-
-        if (listText != null) {
-            listText.setText(names.length() > 0 ? names.toString() : "Operator names will appear here after the website loads.");
-        }
-
-        if (userAgentText != null) {
-            userAgentText.setText(userAgent == null || userAgent.trim().isEmpty()
-                    ? "User-Agent will appear after the WebView initializes."
-                    : userAgent);
-        }
-
-        if (packageText != null) {
-            packageText.setText(getPackageName());
+                    ? "Last checked: " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(new Date(syncMs))
+                    : "Last checked: not yet");
         }
     }
 
@@ -253,6 +227,14 @@ public class SettingsActivity extends Activity {
             tempWebView.destroy();
 
             WebStorage.getInstance().deleteAllData();
+            preferences.edit()
+                    .remove(PREF_SELECTED_OPERATOR)
+                    .remove(PREF_OPERATOR_VERIFIED)
+                    .remove(PREF_OPERATOR_PROTECTED)
+                    .remove(PREF_OPERATOR_SOURCE)
+                    .remove(PREF_OPERATOR_SYNC_MS)
+                    .apply();
+            renderWebsiteOperatorInfo();
             CookieManager.getInstance().removeAllCookies(value -> runOnUiThread(() -> {
                 CookieManager.getInstance().flush();
                 Toast.makeText(SettingsActivity.this,
@@ -299,7 +281,8 @@ public class SettingsActivity extends Activity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.19");
+                connection.setRequestProperty("User-Agent",
+                        "DMZRankedApp/1.0.20 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
