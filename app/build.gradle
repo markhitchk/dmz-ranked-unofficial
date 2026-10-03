@@ -91,8 +91,8 @@ tasks.register("generateDmzLogo") {
         )
         int logoWidth = Math.max(1, (int) Math.round(transparentImage.getWidth() * logoScale))
         int logoHeight = Math.max(1, (int) Math.round(transparentImage.getHeight() * logoScale))
-        int logoX = (launcherSize - logoWidth) / 2
-        int logoY = (launcherSize - logoHeight) / 2
+        int logoX = (launcherSize - logoWidth).intdiv(2)
+        int logoY = (launcherSize - logoHeight).intdiv(2)
         foregroundGraphics.drawImage(transparentImage, logoX, logoY, logoWidth, logoHeight, null)
         foregroundGraphics.dispose()
 
@@ -124,10 +124,12 @@ tasks.register("generateDmzLogo") {
         )
         int legacyWidth = Math.max(1, (int) Math.round(transparentImage.getWidth() * legacyScale))
         int legacyHeight = Math.max(1, (int) Math.round(transparentImage.getHeight() * legacyScale))
+        int legacyX = (launcherSize - legacyWidth).intdiv(2)
+        int legacyY = (launcherSize - legacyHeight).intdiv(2)
         legacyGraphics.drawImage(
                 transparentImage,
-                (launcherSize - legacyWidth) / 2,
-                (launcherSize - legacyHeight) / 2,
+                legacyX,
+                legacyY,
                 legacyWidth,
                 legacyHeight,
                 null
