@@ -95,8 +95,31 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.mainDiscordCard).setOnClickListener(v -> openExternal(MAIN_DISCORD_URL));
         findViewById(R.id.betaGroupCard).setOnClickListener(v -> openExternal(BETA_GROUP_URL));
 
+        setupCollapsible(R.id.pageControlsHeader, R.id.pageControlsContent, R.id.pageControlsArrow, false);
+        setupCollapsible(R.id.helpFeedbackHeader, R.id.helpFeedbackContent, R.id.helpFeedbackArrow, false);
+        setupCollapsible(R.id.creditsHeader, R.id.creditsContent, R.id.creditsArrow, false);
+
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
+    }
+
+    private void setupCollapsible(int headerId, int contentId, int arrowId, boolean expandedByDefault) {
+        View header = findViewById(headerId);
+        View content = findViewById(contentId);
+        TextView arrow = findViewById(arrowId);
+        if (header == null || content == null || arrow == null) return;
+
+        setCollapsedState(content, arrow, expandedByDefault);
+        header.setOnClickListener(v -> {
+            boolean expand = content.getVisibility() != View.VISIBLE;
+            setCollapsedState(content, arrow, expand);
+        });
+    }
+
+    private void setCollapsedState(View content, TextView arrow, boolean expanded) {
+        content.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        arrow.setText(expanded ? "▴" : "▾");
+        arrow.setContentDescription(expanded ? "Collapse section" : "Expand section");
     }
 
     private void configureSystemBars() {
@@ -189,7 +212,7 @@ public class SettingsActivity extends Activity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.16");
+                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.17");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
