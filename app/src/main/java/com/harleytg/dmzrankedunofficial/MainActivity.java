@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,13 +32,17 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayDeque;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
     private static final String TAG = "DMZRanked";
     private static final String HOME_URL = "https://dmzranked.com/";
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
+    private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
+    private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
     private static final int FILE_REQUEST = 2001;
 
     private static final String PREFS = "dmz_ranked_settings";
@@ -67,7 +72,6 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCallback;
     private String mobileUserAgent;
     private boolean handlingBack;
-    private Bitmap brandLogo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +87,6 @@ public class MainActivity extends Activity {
             loadingProgressBar = findViewById(R.id.loadingProgressBar);
             loadingVerboseText = findViewById(R.id.loadingVerboseText);
 
-            brandLogo = makeTransparentLogo(LogoData.decode());
             applyBrandLogo(findViewById(R.id.titleLogo));
             applyBrandLogo(findViewById(R.id.loadingLogo));
 
@@ -291,11 +294,15 @@ public class MainActivity extends Activity {
             Switch keepAwake = content.findViewById(R.id.keepAwakeSwitch);
             Switch verboseLoading = content.findViewById(R.id.verboseLoadingSwitch);
             TextView versionText = content.findViewById(R.id.versionText);
+            ImageView yolandoAvatar = content.findViewById(R.id.yolandoAvatar);
+            ImageView dchinzAvatar = content.findViewById(R.id.dchinzAvatar);
             Button paypalButton = content.findViewById(R.id.paypalButton);
             Button reloadButton = content.findViewById(R.id.reloadButton);
             Button clearButton = content.findViewById(R.id.clearDataButton);
 
             applyBrandLogo(content.findViewById(R.id.settingsLogo));
+            loadRemoteAvatar(YOLANDO_AVATAR_URL, yolandoAvatar);
+            loadRemoteAvatar(DCHINZ_AVATAR_URL, dchinzAvatar);
 
             desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
             keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
@@ -375,63 +382,38 @@ public class MainActivity extends Activity {
         if (imageView == null) return;
         imageView.setBackgroundColor(Color.TRANSPARENT);
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        if (brandLogo != null) {
-            imageView.setImageBitmap(brandLogo);
-        }
+        imageView.setImageResource(R.drawable.dmz_ranked_logo);
     }
 
-    private Bitmap makeTransparentLogo(Bitmap source) {
-        if (source == null) return null;
+    private void loadRemoteAvatar(String url, ImageView target) {
+        if (target == null) return;
 
-        Bitmap bitmap = source.copy(Bitmap.Config.ARGB_8888, true);
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        int[] pixels = new int[width * height];
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-
-        boolean[] visited = new boolean[pixels.length];
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-
-        for (int x = 0; x < width; x++) {
-            enqueueDarkEdgePixel(pixels, visited, queue, x, width);
-            enqueueDarkEdgePixel(pixels, visited, queue, (height - 1) * width + x, width);
-        }
-        for (int y = 0; y < height; y++) {
-            enqueueDarkEdgePixel(pixels, visited, queue, y * width, width);
-            enqueueDarkEdgePixel(pixels, visited, queue, y * width + width - 1, width);
-        }
-
-        while (!queue.isEmpty()) {
-            int index = queue.removeFirst();
-            pixels[index] = pixels[index] & 0x00FFFFFF;
-
-            int x = index % width;
-            int y = index / width;
-            if (x > 0) enqueueDarkPixel(pixels, visited, queue, index - 1);
-            if (x + 1 < width) enqueueDarkPixel(pixels, visited, queue, index + 1);
-            if (y > 0) enqueueDarkPixel(pixels, visited, queue, index - width);
-            if (y + 1 < height) enqueueDarkPixel(pixels, visited, queue, index + width);
-        }
-
-        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-        return bitmap;
-    }
-
-    private void enqueueDarkEdgePixel(int[] pixels, boolean[] visited, ArrayDeque<Integer> queue, int index, int width) {
-        if (index < 0 || index >= pixels.length) return;
-        enqueueDarkPixel(pixels, visited, queue, index);
-    }
-
-    private void enqueueDarkPixel(int[] pixels, boolean[] visited, ArrayDeque<Integer> queue, int index) {
-        if (visited[index]) return;
-        int color = pixels[index];
-        int red = Color.red(color);
-        int green = Color.green(color);
-        int blue = Color.blue(color);
-        if (Math.max(red, Math.max(green, blue)) <= 42) {
-            visited[index] = true;
-            queue.add(index);
-        }
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            InputStream input = null;
+            try {
+                connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                connection.setInstanceFollowRedirects(true);
+                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.11");
+                input = connection.getInputStream();
+                Bitmap avatar = BitmapFactory.decodeStream(input);
+                if (avatar != null && !isFinishing()) {
+                    runOnUiThread(() -> {
+                        if (!isFinishing()) target.setImageBitmap(avatar);
+                    });
+                }
+            } catch (Throwable error) {
+                Log.w(TAG, "Could not load creator avatar", error);
+            } finally {
+                try {
+                    if (input != null) input.close();
+                } catch (Exception ignored) {
+                }
+                if (connection != null) connection.disconnect();
+            }
+        }, "DMZAvatarLoader").start();
     }
 
     private String getVersionName() {
