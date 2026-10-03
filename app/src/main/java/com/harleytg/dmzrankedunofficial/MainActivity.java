@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -28,15 +30,22 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
     private static final String HOME_URL = "https://dmzranked.com/";
+    private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
+    private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
+    private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
     private static final int FILE_REQUEST = 2001;
+
     private static final String PREFS = "dmz_ranked_settings";
-    private static final String PREF_EXTERNAL = "external_links";
     private static final String PREF_DESKTOP = "desktop_site";
     private static final String PREF_KEEP_AWAKE = "keep_awake";
+    private static final String PREF_VERBOSE_LOADING = "verbose_loading";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -52,7 +61,10 @@ public class MainActivity extends Activity {
             "window.__dmzAndroidSectionBack=function(){try{if(state.stack.length<=1){return 'empty';}state.stack.pop();var prev=state.stack[state.stack.length-1];var control=findControl(prev);if(!control){return 'missing';}state.current=prev;state.suppress=true;try{control.click();}catch(e){}setTimeout(function(){state.suppress=false;},120);return 'handled';}catch(e){return 'error';}};return 'installed';})()";
 
     private WebView webView;
-    private ProgressBar progressBar;
+    private ProgressBar topProgressBar;
+    private View loadingOverlay;
+    private ProgressBar loadingProgressBar;
+    private TextView loadingVerboseText;
     private ValueCallback<Uri[]> fileCallback;
     private SharedPreferences preferences;
     private String mobileUserAgent;
@@ -65,12 +77,20 @@ public class MainActivity extends Activity {
 
         preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         webView = findViewById(R.id.webView);
-        progressBar = findViewById(R.id.progressBar);
+        topProgressBar = findViewById(R.id.progressBar);
+        loadingOverlay = findViewById(R.id.loadingOverlay);
+        loadingProgressBar = findViewById(R.id.loadingProgressBar);
+        loadingVerboseText = findViewById(R.id.loadingVerboseText);
+
         findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
-        ((ImageView) findViewById(R.id.titleLogo)).setImageBitmap(LogoData.decode());
+
+        Bitmap logo = LogoData.decode();
+        ((ImageView) findViewById(R.id.titleLogo)).setImageBitmap(logo);
+        ((ImageView) findViewById(R.id.loadingLogo)).setImageBitmap(logo);
 
         configureWebView();
         applyKeepAwakePreference();
+        showLoadingScreen("Starting DMZ Ranked…", 0);
 
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
@@ -113,17 +133,27 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                if (isDmzUrl(Uri.parse(url))) {
+                    showLoadingScreen("Connecting to dmzranked.com…", 5);
+                }
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 if (isDmzUrl(Uri.parse(url))) {
                     view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                 }
+                hideLoadingScreen();
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
                 if (request.isForMainFrame()) {
+                    updateLoadingVerbose("Connection failed — showing offline message.");
                     String html = "<html><meta name='viewport' content='width=device-width,initial-scale=1'>" +
                             "<body style='margin:0;background:#101010;color:#eee;font-family:sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center'>" +
                             "<div><h2>DMZ Ranked could not load</h2><p>Check your connection and try again.</p>" +
@@ -152,13 +182,42 @@ public class MainActivity extends Activity {
 
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
-                progressBar.setProgress(newProgress);
-                progressBar.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
+                topProgressBar.setProgress(newProgress);
+                topProgressBar.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
+
+                loadingProgressBar.setProgress(newProgress);
+                if (newProgress < 20) {
+                    updateLoadingVerbose("Connecting… " + newProgress + "%");
+                } else if (newProgress < 65) {
+                    updateLoadingVerbose("Loading DMZ Ranked… " + newProgress + "%");
+                } else if (newProgress < 95) {
+                    updateLoadingVerbose("Loading page assets… " + newProgress + "%");
+                } else {
+                    updateLoadingVerbose("Finishing up… " + newProgress + "%");
+                }
             }
         });
 
         webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) ->
-                openExternal(Uri.parse(url)));
+                Toast.makeText(MainActivity.this, "External downloads are disabled in this client.", Toast.LENGTH_SHORT).show());
+    }
+
+    private void showLoadingScreen(String status, int progress) {
+        loadingProgressBar.setProgress(progress);
+        loadingOverlay.setVisibility(View.VISIBLE);
+        updateLoadingVerbose(status);
+    }
+
+    private void hideLoadingScreen() {
+        loadingProgressBar.setProgress(100);
+        updateLoadingVerbose("Ready.");
+        loadingOverlay.postDelayed(() -> loadingOverlay.setVisibility(View.GONE), 180);
+    }
+
+    private void updateLoadingVerbose(String status) {
+        boolean verbose = preferences.getBoolean(PREF_VERBOSE_LOADING, false);
+        loadingVerboseText.setText(status);
+        loadingVerboseText.setVisibility(verbose ? View.VISIBLE : View.GONE);
     }
 
     private boolean route(Uri uri) {
@@ -167,14 +226,19 @@ public class MainActivity extends Activity {
         if (scheme == null) return false;
 
         if (scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https")) {
-            if (isDmzUrl(uri) || !preferences.getBoolean(PREF_EXTERNAL, true)) {
+            if (isDmzUrl(uri)) {
                 return false;
             }
-            openExternal(uri);
+
+            if (isAllowedPayPalLink(uri)) {
+                openExternal(uri);
+            } else {
+                Toast.makeText(this, "Only the approved PayPal link can open outside DMZ Ranked.", Toast.LENGTH_SHORT).show();
+            }
             return true;
         }
 
-        openExternal(uri);
+        Toast.makeText(this, "External link blocked.", Toast.LENGTH_SHORT).show();
         return true;
     }
 
@@ -182,6 +246,10 @@ public class MainActivity extends Activity {
         if (uri == null || uri.getHost() == null) return false;
         String host = uri.getHost().toLowerCase(Locale.US);
         return host.equals("dmzranked.com") || host.endsWith(".dmzranked.com");
+    }
+
+    private boolean isAllowedPayPalLink(Uri uri) {
+        return uri != null && uri.toString().startsWith(PAYPAL_SHARE_URL);
     }
 
     private void openExternal(Uri uri) {
@@ -194,28 +262,31 @@ public class MainActivity extends Activity {
 
     private void showSettings() {
         View content = getLayoutInflater().inflate(R.layout.dialog_settings, null, false);
-        Switch externalLinks = content.findViewById(R.id.externalLinksSwitch);
         Switch desktopSite = content.findViewById(R.id.desktopSiteSwitch);
         Switch keepAwake = content.findViewById(R.id.keepAwakeSwitch);
+        Switch verboseLoading = content.findViewById(R.id.verboseLoadingSwitch);
         TextView versionText = content.findViewById(R.id.versionText);
         ImageView settingsLogo = content.findViewById(R.id.settingsLogo);
+        ImageView yolandoAvatar = content.findViewById(R.id.yolandoAvatar);
+        ImageView dchinzAvatar = content.findViewById(R.id.dchinzAvatar);
+        Button paypalButton = content.findViewById(R.id.paypalButton);
         Button reloadButton = content.findViewById(R.id.reloadButton);
         Button clearButton = content.findViewById(R.id.clearDataButton);
 
-        externalLinks.setChecked(preferences.getBoolean(PREF_EXTERNAL, true));
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
         keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
+        verboseLoading.setChecked(preferences.getBoolean(PREF_VERBOSE_LOADING, false));
         versionText.setText("Version " + getVersionName());
         settingsLogo.setImageBitmap(LogoData.decode());
+
+        loadRemoteAvatar(YOLANDO_AVATAR_URL, yolandoAvatar);
+        loadRemoteAvatar(DCHINZ_AVATAR_URL, dchinzAvatar);
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Settings")
                 .setView(content)
                 .setPositiveButton("Done", null)
                 .create();
-
-        externalLinks.setOnCheckedChangeListener((buttonView, isChecked) ->
-                preferences.edit().putBoolean(PREF_EXTERNAL, isChecked).apply());
 
         desktopSite.setOnCheckedChangeListener((buttonView, isChecked) -> {
             preferences.edit().putBoolean(PREF_DESKTOP, isChecked).apply();
@@ -227,7 +298,15 @@ public class MainActivity extends Activity {
             applyKeepAwakePreference();
         });
 
+        verboseLoading.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            preferences.edit().putBoolean(PREF_VERBOSE_LOADING, isChecked).apply();
+            updateLoadingVerbose(loadingVerboseText.getText().toString());
+        });
+
+        paypalButton.setOnClickListener(v -> openExternal(Uri.parse(PAYPAL_SHARE_URL)));
+
         reloadButton.setOnClickListener(v -> {
+            showLoadingScreen("Reloading DMZ Ranked…", 0);
             webView.reload();
             dialog.dismiss();
         });
@@ -243,6 +322,32 @@ public class MainActivity extends Activity {
         dialog.show();
     }
 
+    private void loadRemoteAvatar(String url, ImageView target) {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            InputStream input = null;
+            try {
+                connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                connection.setInstanceFollowRedirects(true);
+                input = connection.getInputStream();
+                Bitmap bitmap = BitmapFactory.decodeStream(input);
+                if (bitmap != null && !isFinishing()) {
+                    runOnUiThread(() -> target.setImageBitmap(bitmap));
+                }
+            } catch (Exception ignored) {
+                // Keep the bundled DMZ Ranked fallback icon if an avatar cannot be fetched.
+            } finally {
+                try {
+                    if (input != null) input.close();
+                } catch (Exception ignored) {
+                }
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
     private void applyDesktopMode(boolean reload) {
         if (mobileUserAgent == null) return;
         boolean desktop = preferences.getBoolean(PREF_DESKTOP, false);
@@ -252,8 +357,11 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.9");
-        if (reload && webView.getUrl() != null) webView.reload();
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.10");
+        if (reload && webView.getUrl() != null) {
+            showLoadingScreen("Applying desktop mode…", 0);
+            webView.reload();
+        }
     }
 
     private void applyKeepAwakePreference() {
