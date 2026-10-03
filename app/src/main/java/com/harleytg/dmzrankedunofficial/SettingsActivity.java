@@ -173,7 +173,7 @@ public class SettingsActivity extends Activity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.13");
+                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.14");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
