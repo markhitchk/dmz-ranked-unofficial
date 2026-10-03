@@ -2,7 +2,10 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/dmz_toolbar" />
+            <gradient
+                android:angle="0"
+                android:startColor="#121513"
+                android:endColor="#0B0E0C" />
         </shape>
     </item>
     <item android:gravity="bottom" android:height="2dp">
@@ -10,8 +13,8 @@
             <gradient
                 android:angle="0"
                 android:startColor="@color/dmz_red"
-                android:centerColor="@color/dmz_green"
-                android:endColor="@color/dmz_red" />
+                android:centerColor="@color/dmz_gold"
+                android:endColor="@color/dmz_green" />
         </shape>
     </item>
 </layer-list>
