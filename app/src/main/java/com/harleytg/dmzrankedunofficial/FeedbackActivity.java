@@ -35,6 +35,7 @@ import java.util.UUID;
 public class FeedbackActivity extends Activity {
     private static final String SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
+    private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
     private static final String PREFS = "dmz_feedback";
     private static final String PREF_LAST_SEND = "last_send_ms";
     private static final long SEND_COOLDOWN_MS = 30_000L;
@@ -179,8 +180,12 @@ public class FeedbackActivity extends Activity {
         main.setOnClickListener(v -> openExternal(MAIN_DISCORD_URL));
         body.addView(main, topMargin(dp(10)));
 
+        Button beta = secondaryButton("Join App Beta Group");
+        beta.setOnClickListener(v -> openExternal(BETA_GROUP_URL));
+        body.addView(beta, topMargin(dp(10)));
+
         TextView note = text(
-                "Use App Support for help with this unofficial Android client. Use the Main Discord for the DMZ Ranked community.",
+                "Use App Support for help with this unofficial Android client, join the Google Group for beta access, or use the Main Discord for the DMZ Ranked community.",
                 12, R.color.dmz_muted, false);
         note.setPadding(dp(4), dp(10), dp(4), 0);
         body.addView(note);
@@ -289,7 +294,7 @@ public class FeedbackActivity extends Activity {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (ActivityNotFoundException error) {
-            Toast.makeText(this, "No app can open this Discord link.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No app can open this link.", Toast.LENGTH_SHORT).show();
         }
     }
 
