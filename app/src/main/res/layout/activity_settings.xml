@@ -186,7 +186,9 @@
                     android:id="@+id/desktopSiteSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:showText="false" />
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <LinearLayout
@@ -232,7 +234,9 @@
                     android:id="@+id/keepAwakeSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:showText="false" />
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <LinearLayout
@@ -278,7 +282,9 @@
                     android:id="@+id/verboseLoadingSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:showText="false" />
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <TextView
