@@ -2,6 +2,44 @@ plugins {
     id 'com.android.application'
 }
 
+def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
+
+tasks.register("generateDmzLogo") {
+    inputs.files(fileTree("src/main/logo/png") { include "part-*.txt" })
+    outputs.dir(generatedLogoResDir)
+
+    doLast {
+        def parts = fileTree("src/main/logo/png") {
+            include "part-*.txt"
+        }.files.sort { a, b -> a.name <=> b.name }
+
+        if (parts.size() != 12) {
+            throw new GradleException("Expected 12 transparent PNG logo parts, found " + parts.size())
+        }
+
+        def encoded = new StringBuilder()
+        parts.each { part ->
+            encoded.append(part.getText("UTF-8").replaceAll("\\s+", ""))
+        }
+
+        def pngBytes = java.util.Base64.decoder.decode(encoded.toString())
+        if (pngBytes.length < 8 ||
+                pngBytes[0] != (byte)0x89 ||
+                pngBytes[1] != (byte)0x50 ||
+                pngBytes[2] != (byte)0x4E ||
+                pngBytes[3] != (byte)0x47) {
+            throw new GradleException("Decoded DMZ logo is not a valid PNG")
+        }
+
+        def outputDir = new File(generatedLogoResDir, "drawable-nodpi")
+        outputDir.mkdirs()
+
+        def outputFile = new File(outputDir, "dmz_ranked_logo.png")
+        outputFile.bytes = pngBytes
+        println("Generated transparent PNG logo: " + outputFile + " (" + pngBytes.length + " bytes)")
+    }
+}
+
 android {
     namespace 'com.harleytg.dmzrankedunofficial'
     compileSdk 36
@@ -14,6 +52,12 @@ android {
         versionName '1.0.11'
     }
 
+    sourceSets {
+        main {
+            res.srcDir generatedLogoResDir
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -21,4 +65,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("generateDmzLogo")
 }
