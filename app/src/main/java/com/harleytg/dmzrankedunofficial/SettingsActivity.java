@@ -33,6 +33,7 @@ public class SettingsActivity extends Activity {
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
     private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
+    private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
     private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
     private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
 
@@ -92,6 +93,7 @@ public class SettingsActivity extends Activity {
                 startActivity(new Intent(this, FeedbackActivity.class)));
         findViewById(R.id.appSupportDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
         findViewById(R.id.mainDiscordCard).setOnClickListener(v -> openExternal(MAIN_DISCORD_URL));
+        findViewById(R.id.betaGroupCard).setOnClickListener(v -> openExternal(BETA_GROUP_URL));
 
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
@@ -187,7 +189,7 @@ public class SettingsActivity extends Activity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.15");
+                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.16");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
