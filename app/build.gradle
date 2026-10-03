@@ -22,21 +22,49 @@ tasks.register("generateDmzLogo") {
             encoded.append(part.getText("UTF-8").replaceAll("\\s+", ""))
         }
 
-        def pngBytes = java.util.Base64.decoder.decode(encoded.toString())
-        if (pngBytes.length < 8 ||
-                pngBytes[0] != (byte)0x89 ||
-                pngBytes[1] != (byte)0x50 ||
-                pngBytes[2] != (byte)0x4E ||
-                pngBytes[3] != (byte)0x47) {
+        def sourceBytes = java.util.Base64.decoder.decode(encoded.toString())
+        if (sourceBytes.length < 8 ||
+                sourceBytes[0] != (byte)0x89 ||
+                sourceBytes[1] != (byte)0x50 ||
+                sourceBytes[2] != (byte)0x4E ||
+                sourceBytes[3] != (byte)0x47) {
             throw new GradleException("Decoded DMZ logo is not a valid PNG")
+        }
+
+        // Normalize the logo to a real PNG with an alpha channel. The source is
+        // intentionally compact/paletted; ImageIO expands it and we snap the
+        // near-transparent background to fully transparent so Android never
+        // renders a black square around the logo.
+        System.setProperty("java.awt.headless", "true")
+        def sourceImage = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(sourceBytes))
+        if (sourceImage == null) {
+            throw new GradleException("Could not decode DMZ logo PNG")
+        }
+
+        def transparentImage = new java.awt.image.BufferedImage(
+                sourceImage.getWidth(),
+                sourceImage.getHeight(),
+                java.awt.image.BufferedImage.TYPE_INT_ARGB
+        )
+
+        for (int y = 0; y < sourceImage.getHeight(); y++) {
+            for (int x = 0; x < sourceImage.getWidth(); x++) {
+                int argb = sourceImage.getRGB(x, y)
+                int alpha = (argb >>> 24) & 0xFF
+                int normalizedAlpha = alpha < 8 ? 0 : (alpha > 247 ? 255 : alpha)
+                transparentImage.setRGB(x, y, (normalizedAlpha << 24) | (argb & 0x00FFFFFF))
+            }
         }
 
         def outputDir = new File(generatedLogoResDir, "drawable-nodpi")
         outputDir.mkdirs()
 
         def outputFile = new File(outputDir, "dmz_ranked_logo.png")
-        outputFile.bytes = pngBytes
-        println("Generated transparent PNG logo: " + outputFile + " (" + pngBytes.length + " bytes)")
+        if (!javax.imageio.ImageIO.write(transparentImage, "png", outputFile)) {
+            throw new GradleException("Could not write transparent DMZ logo PNG")
+        }
+
+        println("Generated transparent PNG logo: " + outputFile + " (" + outputFile.length() + " bytes)")
     }
 }
 
