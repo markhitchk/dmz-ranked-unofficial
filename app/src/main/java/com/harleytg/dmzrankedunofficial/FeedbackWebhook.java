@@ -1,4 +1,4 @@
-package com.harleytg.dmzrankedunofficial;
+package com.harleytg.dmzranked;
 
 import android.util.Base64;
 
