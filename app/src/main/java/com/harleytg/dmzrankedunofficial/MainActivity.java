@@ -64,6 +64,7 @@ public class MainActivity extends Activity {
     private ProgressBar topProgressBar;
     private View loadingOverlay;
     private ProgressBar loadingProgressBar;
+    private TextView loadingStageText;
     private TextView loadingVerboseText;
     private ValueCallback<Uri[]> fileCallback;
     private String mobileUserAgent;
@@ -83,6 +84,7 @@ public class MainActivity extends Activity {
             topProgressBar = findViewById(R.id.progressBar);
             loadingOverlay = findViewById(R.id.loadingOverlay);
             loadingProgressBar = findViewById(R.id.loadingProgressBar);
+            loadingStageText = findViewById(R.id.loadingStageText);
             loadingVerboseText = findViewById(R.id.loadingVerboseText);
 
             applyBrandLogo(findViewById(R.id.titleLogo));
@@ -249,10 +251,16 @@ public class MainActivity extends Activity {
 
     private void showOfflinePage() {
         if (webView == null) return;
-        String html = "<html><meta name='viewport' content='width=device-width,initial-scale=1'>" +
-                "<body style='margin:0;background:#101010;color:#eee;font-family:sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center'>" +
-                "<div><h2>DMZ Ranked could not load</h2><p>Check your connection and try again.</p>" +
-                "<p><a style='color:#67ff18' href='" + HOME_URL + "'>Retry</a></p></div></body></html>";
+        String html = "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>" +
+                "<style>html,body{margin:0;background:#080a09;color:#f1f3ef;font-family:Arial,sans-serif;min-height:100%}" +
+                "body{display:grid;place-items:center;min-height:100vh;padding:24px;box-sizing:border-box}" +
+                ".card{width:min(460px,100%);background:linear-gradient(135deg,#171b18,#0b0f0d);border:1px solid #545a54;border-left:4px solid #f2b632;border-radius:16px;padding:28px;box-sizing:border-box}" +
+                ".eyebrow{color:#d7a42e;letter-spacing:.22em;font-size:12px;font-weight:800}.title{font-size:38px;line-height:.95;font-weight:900;letter-spacing:.06em;margin:10px 0 8px}.title span{color:#f2b632}.copy{color:#9da39d;line-height:1.5}" +
+                ".live{display:inline-block;margin:14px 0;color:#f1f3ef;background:#101512;border:1px solid #374039;border-radius:6px;padding:8px 12px;font-weight:800;font-size:13px}.dot{color:#66f219}" +
+                ".retry{display:block;margin-top:20px;text-align:center;background:linear-gradient(#f5c24b,#d99615);color:#080a09;text-decoration:none;font-weight:900;letter-spacing:.08em;padding:13px;border-radius:6px}" +
+                "</style></head><body><div class='card'><div class='eyebrow'>DMZ RANKED</div><div class='title'>RANKED <span>OFFLINE</span></div>" +
+                "<div class='live'><span class='dot'>●</span> CONNECTION LOST</div><div class='copy'>DMZ Ranked could not load. Check your connection, then reconnect to the leaderboard.</div>" +
+                "<a class='retry' href='" + HOME_URL + "'>RETRY DMZ RANKED</a></div></body></html>";
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", HOME_URL);
     }
 
@@ -275,9 +283,14 @@ public class MainActivity extends Activity {
     }
 
     private void updateLoadingVerbose(String status) {
+        String safeStatus = status == null ? "" : status;
+        if (loadingStageText != null) {
+            loadingStageText.setText(safeStatus.replaceFirst("\\s+\\d+%$", ""));
+        }
+
         if (loadingVerboseText == null || preferences == null) return;
         boolean verbose = preferences.getBoolean(PREF_VERBOSE_LOADING, false);
-        loadingVerboseText.setText(status);
+        loadingVerboseText.setText(safeStatus);
         loadingVerboseText.setVisibility(verbose ? View.VISIBLE : View.GONE);
     }
 
@@ -340,7 +353,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.12");
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.13");
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
@@ -410,20 +423,22 @@ public class MainActivity extends Activity {
             root.setBackgroundColor(Color.rgb(9, 9, 9));
 
             TextView title = new TextView(this);
-            title.setText("DMZ Ranked");
-            title.setTextColor(Color.WHITE);
-            title.setTextSize(24);
+            title.setText("RANKED CLIENT ERROR");
+            title.setTextColor(Color.rgb(242, 182, 50));
+            title.setTextSize(26);
             title.setGravity(Gravity.CENTER);
 
             TextView message = new TextView(this);
             message.setText("The app hit a startup error instead of closing.\n\n" + error.getClass().getSimpleName() + ": " + safeMessage(error));
-            message.setTextColor(Color.LTGRAY);
+            message.setTextColor(Color.rgb(157, 163, 157));
             message.setTextSize(14);
             message.setGravity(Gravity.CENTER);
             message.setPadding(0, 24, 0, 24);
 
             Button retry = new Button(this);
-            retry.setText("Retry");
+            retry.setText("RETRY DMZ RANKED");
+            retry.setTextColor(Color.rgb(8, 10, 9));
+            retry.setBackgroundColor(Color.rgb(242, 182, 50));
             retry.setOnClickListener(v -> recreate());
 
             root.addView(title);
