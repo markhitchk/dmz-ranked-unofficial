@@ -43,17 +43,21 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Settings"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.08"
+                android:text="SETTINGS"
                 android:textColor="@color/dmz_white"
-                android:textSize="22sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="DMZ Ranked"
-                android:textColor="@color/dmz_muted"
-                android:textSize="11sp"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.10"
+                android:text="DMZ RANKED • ANDROID"
+                android:textColor="@color/dmz_gold_soft"
+                android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
@@ -100,9 +104,11 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="DMZ Ranked"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.05"
+                        android:text="DMZ RANKED"
                         android:textColor="@color/dmz_white"
-                        android:textSize="22sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -119,7 +125,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:text="Unofficial Android client"
-                        android:textColor="@color/dmz_green"
+                        android:textColor="@color/dmz_gold"
                         android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -131,8 +137,10 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="10dp"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.14"
                 android:text="APP SETTINGS"
-                android:textColor="@color/dmz_green"
+                android:textColor="@color/dmz_gold"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -160,6 +168,8 @@
                         android:layout_height="wrap_content"
                         android:text="@string/desktop_site"
                         android:textColor="@color/dmz_white"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.03"
                         android:textSize="17sp"
                         android:textStyle="bold" />
 
@@ -176,7 +186,9 @@
                     android:id="@+id/desktopSiteSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:showText="false" />
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <LinearLayout
@@ -204,6 +216,8 @@
                         android:layout_height="wrap_content"
                         android:text="@string/keep_screen_awake"
                         android:textColor="@color/dmz_white"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.03"
                         android:textSize="17sp"
                         android:textStyle="bold" />
 
@@ -220,7 +234,9 @@
                     android:id="@+id/keepAwakeSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:showText="false" />
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <LinearLayout
@@ -248,6 +264,8 @@
                         android:layout_height="wrap_content"
                         android:text="@string/verbose_loading"
                         android:textColor="@color/dmz_white"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.03"
                         android:textSize="17sp"
                         android:textStyle="bold" />
 
@@ -264,7 +282,9 @@
                     android:id="@+id/verboseLoadingSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:showText="false" />
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <TextView
@@ -273,8 +293,10 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="10dp"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.14"
                 android:text="PAGE CONTROLS"
-                android:textColor="@color/dmz_green"
+                android:textColor="@color/dmz_gold"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -294,6 +316,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/reload"
                     android:textColor="@color/dmz_white"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.03"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -323,6 +347,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/clear_web_data"
                     android:textColor="@color/dmz_white"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.03"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -341,8 +367,10 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="10dp"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.14"
                 android:text="CREDITS"
-                android:textColor="@color/dmz_green"
+                android:textColor="@color/dmz_gold"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -473,6 +501,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/paypal_support"
                     android:textColor="@color/dmz_black"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.03"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
