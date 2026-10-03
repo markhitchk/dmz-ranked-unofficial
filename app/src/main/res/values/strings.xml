@@ -11,7 +11,7 @@
     <string name="keep_screen_awake">Keep screen awake</string>
     <string name="keep_screen_awake_summary">Prevent the screen from sleeping while this app is open.</string>
     <string name="about">About</string>
-    <string name="made_by">Unofficial Android app by Harley&apos;s Studios</string>
+    <string name="made_by">Unofficial Android app by Harley\'s Studios</string>
     <string name="website">Website: dmzranked.com</string>
     <string name="unofficial_notice">Unofficial client. DMZ Ranked website content and trademarks belong to their respective owners.</string>
 </resources>
