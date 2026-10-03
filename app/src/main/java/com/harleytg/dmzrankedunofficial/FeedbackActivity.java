@@ -109,10 +109,10 @@ public class FeedbackActivity extends Activity {
 
         LinearLayout intro = card();
         body.addView(intro, matchWrap());
-        TextView introTitle = text("SEND FEEDBACK OR REPORT A PROBLEM", 18, R.color.dmz_white, true);
+        TextView introTitle = text("APP FEEDBACK & SUPPORT", 18, R.color.dmz_white, true);
         intro.addView(introTitle);
         TextView introCopy = text(
-                "Bug reports, feature requests, support requests, performance issues, and general feedback are sent to the app team through Discord.",
+                "Send feedback only for this unofficial Android app: app bugs, WebView/loading problems, app features, compatibility, and app support. The app team cannot change or fix the dmzranked.com website itself.",
                 13, R.color.dmz_muted, false);
         introCopy.setPadding(0, dp(6), 0, 0);
         intro.addView(introCopy);
@@ -120,12 +120,12 @@ public class FeedbackActivity extends Activity {
         body.addView(section("REPORT TYPE"), topMargin(dp(22)));
         categorySpinner = new Spinner(this);
         String[] categories = {
-                "Bug report",
-                "Feature request",
+                "App bug report",
+                "App feature request",
                 "App support",
                 "Performance / loading",
-                "Website issue",
-                "Other"
+                "WebView / website loading in app",
+                "Other app feedback"
         };
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(
                 this, android.R.layout.simple_spinner_dropdown_item, categories) {
@@ -145,7 +145,7 @@ public class FeedbackActivity extends Activity {
         subjectInput = input("Short title / subject", false);
         body.addView(subjectInput, topMargin(dp(10)));
 
-        detailsInput = input("Describe what happened, what you expected, or what feature you want…", true);
+        detailsInput = input("Describe what happened in the Android app, what you expected, or what app feature you want…", true);
         detailsInput.setMinLines(6);
         detailsInput.setGravity(Gravity.TOP | Gravity.START);
         body.addView(detailsInput, topMargin(dp(10)));
@@ -153,8 +153,14 @@ public class FeedbackActivity extends Activity {
         contactInput = input("Discord username (optional)", false);
         body.addView(contactInput, topMargin(dp(10)));
 
+        TextView scopeNotice = text(
+                "APP ONLY • Website content, rankings, rules, operator data, or server-side problems are controlled by DMZ Ranked, not this Android client.",
+                12, R.color.dmz_gold_soft, true);
+        scopeNotice.setPadding(dp(4), dp(12), dp(4), 0);
+        body.addView(scopeNotice);
+
         TextView privacy = text(
-                "The report automatically includes app version, Android version, and device model so app issues can be diagnosed. Do not include passwords, account tokens, or other private credentials.",
+                "The report automatically includes app version, Android version, and device model so app issues can be diagnosed. Do not include passwords, PINs, account tokens, cookies, or other private credentials.",
                 12, R.color.dmz_muted, false);
         privacy.setPadding(dp(4), dp(12), dp(4), 0);
         body.addView(privacy);
@@ -185,7 +191,7 @@ public class FeedbackActivity extends Activity {
         body.addView(beta, topMargin(dp(10)));
 
         TextView note = text(
-                "Use App Support for help with this unofficial Android client, join the Google Group for beta access, or use the Main Discord for the DMZ Ranked community.",
+                "Use App Support for this unofficial Android client. For problems with the DMZ Ranked website itself, website data, rankings, rules, or server-side behavior, use the Main DMZ Ranked Discord instead.",
                 12, R.color.dmz_muted, false);
         note.setPadding(dp(4), dp(10), dp(4), 0);
         body.addView(note);
@@ -256,7 +262,7 @@ public class FeedbackActivity extends Activity {
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/" + getVersionName());
+            connection.setRequestProperty("User-Agent", "DMZRankedApp/" + getVersionName() + " (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
 
             String device = Build.MANUFACTURER + " " + Build.MODEL
                     + " • Android " + Build.VERSION.RELEASE
@@ -272,11 +278,11 @@ public class FeedbackActivity extends Activity {
                     + "\"color\":16172115,"
                     + "\"fields\":["
                     + "{\"name\":\"Report ID\",\"value\":\"" + escape(reportId) + "\",\"inline\":true},"
-                    + "{\"name\":\"App Version\",\"value\":\"" + escape(getVersionName()) + "\",\"inline\":true},"
+                    + "{\"name\":\"App Version\",\"value\":\"" + escape(getVersionName()) + "\",\"inline\":true},"\n                    + "{\"name\":\"Scope\",\"value\":\"Android app only\",\"inline\":true},"
                     + "{\"name\":\"Contact\",\"value\":\"" + escape(contactText) + "\",\"inline\":false},"
                     + "{\"name\":\"Device\",\"value\":\"" + escape(device) + "\",\"inline\":false}"
                     + "],"
-                    + "\"footer\":{\"text\":\"DMZ Ranked Unofficial Android Client\"}"
+                    + "\"footer\":{\"text\":\"App-only feedback • DMZ Ranked Unofficial Android Client\"}"
                     + "}]}";
 
             byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
