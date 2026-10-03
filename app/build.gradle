@@ -2,25 +2,6 @@ plugins {
     id 'com.android.application'
 }
 
-def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
-
-tasks.register("generateDmzLogo") {
-    inputs.file("src/main/logo/dmz_ranked_logo.webp.b64")
-    outputs.dir(generatedLogoResDir)
-
-    doLast {
-        def outputDir = new File(generatedLogoResDir, "drawable-nodpi")
-        outputDir.mkdirs()
-
-        def encoded = file("src/main/logo/dmz_ranked_logo.webp.b64")
-                .getText("UTF-8")
-                .replaceAll("\\s+", "")
-
-        def outputFile = new File(outputDir, "dmz_ranked_logo.webp")
-        outputFile.bytes = java.util.Base64.decoder.decode(encoded)
-    }
-}
-
 android {
     namespace 'com.harleytg.dmzrankedunofficial'
     compileSdk 36
@@ -33,12 +14,6 @@ android {
         versionName '1.0.11'
     }
 
-    sourceSets {
-        main {
-            res.srcDir generatedLogoResDir
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -46,8 +21,4 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-}
-
-tasks.named("preBuild").configure {
-    dependsOn("generateDmzLogo")
 }
