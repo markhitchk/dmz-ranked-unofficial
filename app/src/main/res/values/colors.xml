@@ -7,4 +7,6 @@
     <color name="dmz_white">#F5F5F5</color>
     <color name="dmz_muted">#B5B5B5</color>
     <color name="dmz_panel">#1A1A1A</color>
+    <color name="dmz_card">#141414</color>
+    <color name="dmz_card_border">#343434</color>
 </resources>
