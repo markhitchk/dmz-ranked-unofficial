@@ -83,23 +83,27 @@ public class MainActivity extends Activity {
 
     private static final String READ_CURRENT_OPERATOR_SCRIPT =
             "(function(){try{" +
-            "function clean(v){return String(v||'').replace(/\\s+/g,' ').trim();}" +
-            "function placeholder(v){return !v||/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR|YOUR OPERATOR NAME/i.test(v);}" +
+            "function clean(v){return String(v==null?'':v).replace(/\\s+/g,' ').trim();}" +
+            "function badLabel(v){return !v||/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR|YOUR OPERATOR NAME|CHANGE PIN|OPERATOR KILLS/i.test(v);}" +
+            "function valid(v){v=clean(v);return v.length>0&&v.length<=80&&!badLabel(v)&&!/[\\r\\n]/.test(v);}" +
+            "function ctx(el){var out='',n=el;for(var i=0;i<6&&n;i++,n=n.parentElement){try{out+=' '+clean((n.getAttribute&&((n.getAttribute('aria-label')||'')+' '+(n.getAttribute('placeholder')||'')+' '+(n.getAttribute('data-label')||'')+' '+(n.getAttribute('title')||'')))+' '+(n.id||'')+' '+(n.name||'')+' '+((n.tagName==='LABEL'||i>0)?(n.innerText||''):''));}catch(e){}}return out;}" +
             "var name='',source='';" +
+            "var inputs=[].slice.call(document.querySelectorAll('input:not([type=hidden]):not([type=password]),textarea'));" +
+            "for(var i=0;i<inputs.length&&!name;i++){var el=inputs[i],c=ctx(el);if(!/OPERATOR NAME|YOUR OPERATOR|RETURNING OPERATOR/i.test(c)){continue;}var v=clean(el.value||el.getAttribute('value')||'');if(valid(v)){name=v;source='Operator name field';}}" +
             "var selects=[].slice.call(document.querySelectorAll('select'));" +
-            "for(var i=0;i<selects.length&&!name;i++){var sel=selects[i],ctx='';try{ctx=clean((sel.getAttribute('aria-label')||'')+' '+(sel.name||'')+' '+(sel.id||'')+' '+((sel.parentElement&&sel.parentElement.innerText)||''));}catch(e){}" +
-            "if(!/RETURNING OPERATOR|PICK YOUR NAME|SELECT EXISTING OPERATOR/i.test(ctx)){continue;}" +
-            "try{if(sel.selectedIndex>=0){var v=clean(sel.options[sel.selectedIndex].textContent||sel.options[sel.selectedIndex].value||'');if(!placeholder(v)){name=v;source='Returning operator';}}}catch(e){}" +
-            "}" +
-            "if(!name){var inputs=[].slice.call(document.querySelectorAll('input:not([type=hidden]),textarea'));" +
-            "for(var j=0;j<inputs.length&&!name;j++){var el=inputs[j],ictx='';try{ictx=clean((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('placeholder')||'')+' '+(el.name||'')+' '+(el.id||'')+' '+((el.parentElement&&el.parentElement.innerText)||''));}catch(e){}" +
-            "if(!/OPERATOR NAME|YOUR OPERATOR|RETURNING OPERATOR/i.test(ictx)){continue;}var iv=clean(el.value||'');if(iv&&!placeholder(iv)){name=iv;source='Operator name';}}" +
-            "}" +
+            "for(var j=0;j<selects.length&&!name;j++){var sel=selects[j],sc=ctx(sel);if(!/RETURNING OPERATOR|PICK YOUR NAME|SELECT EXISTING OPERATOR/i.test(sc)){continue;}try{if(sel.selectedIndex>=0){var sv=clean(sel.options[sel.selectedIndex].textContent||sel.options[sel.selectedIndex].value||'');if(valid(sv)){name=sv;source='Returning operator';}}}catch(e){}}" +
+            "function safeKey(k){return /operator|player.?name|user.?name|callsign|display.?name/i.test(k)&&!/pin|pass|token|auth|session|secret|key/i.test(k);}" +
+            "function fromObject(obj,depth){if(!obj||depth>4)return '';if(typeof obj==='string'){return valid(obj)?clean(obj):'';}if(typeof obj!=='object')return '';for(var k in obj){if(!Object.prototype.hasOwnProperty.call(obj,k)||!safeKey(k))continue;var vv=obj[k];if(typeof vv==='string'&&valid(vv))return clean(vv);if(vv&&typeof vv==='object'){var nested=fromObject(vv,depth+1);if(nested)return nested;}}for(var k2 in obj){if(!Object.prototype.hasOwnProperty.call(obj,k2))continue;var child=obj[k2];if(child&&typeof child==='object'){var nested2=fromObject(child,depth+1);if(nested2)return nested2;}}return '';}" +
+            "function fromStorage(st,label){try{for(var x=0;x<st.length;x++){var k=st.key(x)||'';if(!safeKey(k))continue;var raw=st.getItem(k)||'';if(valid(raw))return {n:clean(raw),s:label+' '+k};try{var parsed=JSON.parse(raw);var found=fromObject(parsed,0);if(found)return {n:found,s:label+' '+k};}catch(e){}}}catch(e){}return null;}" +
+            "if(!name){var a=fromStorage(window.localStorage,'localStorage');if(a){name=a.n;source=a.s;}}" +
+            "if(!name){var b=fromStorage(window.sessionStorage,'sessionStorage');if(b){name=b.n;source=b.s;}}" +
+            "if(!name){try{var cookies=String(document.cookie||'').split(';');for(var cidx=0;cidx<cookies.length&&!name;cidx++){var p=cookies[cidx].split('='),ck=clean(p.shift()||'');if(!safeKey(ck))continue;var cv='';try{cv=decodeURIComponent(p.join('='));}catch(e){cv=p.join('=');}if(valid(cv)){name=clean(cv);source='cookie '+ck;}}}catch(e){}}" +
             "var body=clean((document.body&&document.body.innerText)||'');" +
+            "var statusVisible=/VERIFIED ON THIS DEVICE|CHANGE PIN|PROTECTED/i.test(body);" +
             "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
             "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
-            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,source:source});" +
-            "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,source:''});}})()";
+            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
+            "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
     private SharedPreferences preferences;
     private WebView webView;
@@ -113,6 +117,7 @@ public class MainActivity extends Activity {
     private TextView loadingPlayersText;
     private TextView loadingLiveDot;
     private int loadingStatusPollToken;
+    private int operatorMonitorToken;
     private ValueCallback<Uri[]> fileCallback;
     private String mobileUserAgent;
     private boolean handlingBack;
@@ -223,6 +228,7 @@ public class MainActivity extends Activity {
                 super.onPageStarted(view, url, favicon);
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     loadingStatusPollToken++;
+                    operatorMonitorToken++;
                     resetLoadingSiteStatus();
                     showLoadingScreen("Connecting to dmzranked.com…", 5);
                 }
@@ -237,7 +243,7 @@ public class MainActivity extends Activity {
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
-                        readCurrentOperator(0);
+                        startOperatorMonitor();
                         return;
                     }
                 } catch (Throwable ignored) {
@@ -355,37 +361,70 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void readCurrentOperator(int attempt) {
+    private void startOperatorMonitor() {
         if (webView == null || isFinishing()) return;
+        int token = ++operatorMonitorToken;
+        pollCurrentOperator(token);
+    }
 
-        webView.evaluateJavascript(READ_CURRENT_OPERATOR_SCRIPT, result -> {
-            if (isFinishing() || preferences == null) return;
+    private void pollCurrentOperator(int token) {
+        if (webView == null || isFinishing() || token != operatorMonitorToken) return;
 
-            String decoded = decodeJavascriptString(result);
-            try {
-                JSONObject payload = new JSONObject(decoded);
-                String name = payload.optString("name", "").trim();
-                boolean verified = payload.optBoolean("verified", false);
-                boolean protectedFlag = payload.optBoolean("protected", false);
-                String source = payload.optString("source", "").trim();
+        Uri current;
+        try {
+            String url = webView.getUrl();
+            current = url == null ? null : Uri.parse(url);
+        } catch (Throwable ignored) {
+            current = null;
+        }
+        if (!isDmzUrl(current)) return;
 
-                if (!name.isEmpty()) {
-                    preferences.edit()
-                            .putString(PREF_SELECTED_OPERATOR, name)
-                            .putBoolean(PREF_OPERATOR_VERIFIED, verified)
-                            .putBoolean(PREF_OPERATOR_PROTECTED, protectedFlag)
-                            .putString(PREF_OPERATOR_SOURCE, source)
-                            .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
-                            .apply();
-                    return;
-                }
-            } catch (Throwable ignored) {
-            }
-
-            if (attempt < 12 && webView != null) {
-                webView.postDelayed(() -> readCurrentOperator(attempt + 1), 500);
+        captureCurrentOperator(() -> {
+            if (webView != null && !isFinishing() && token == operatorMonitorToken) {
+                webView.postDelayed(() -> pollCurrentOperator(token), 1500);
             }
         });
+    }
+
+    private void captureCurrentOperator(Runnable after) {
+        if (webView == null || isFinishing()) {
+            if (after != null) after.run();
+            return;
+        }
+
+        try {
+            webView.evaluateJavascript(READ_CURRENT_OPERATOR_SCRIPT, result -> {
+                try {
+                    if (preferences != null) {
+                        String decoded = decodeJavascriptString(result);
+                        JSONObject payload = new JSONObject(decoded);
+                        String name = payload.optString("name", "").trim();
+                        boolean statusVisible = payload.optBoolean("statusVisible", false);
+                        String source = payload.optString("source", "").trim();
+
+                        if (!name.isEmpty()) {
+                            SharedPreferences.Editor editor = preferences.edit()
+                                    .putString(PREF_SELECTED_OPERATOR, name)
+                                    .putString(PREF_OPERATOR_SOURCE, source)
+                                    .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis());
+
+                            if (statusVisible) {
+                                editor.putBoolean(PREF_OPERATOR_VERIFIED, payload.optBoolean("verified", false))
+                                        .putBoolean(PREF_OPERATOR_PROTECTED, payload.optBoolean("protected", false));
+                            }
+                            editor.apply();
+                        }
+                    }
+                } catch (Throwable error) {
+                    Log.d(TAG, "Operator state not available yet", error);
+                } finally {
+                    if (after != null) after.run();
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read operator state", error);
+            if (after != null) after.run();
+        }
     }
 
     private String decodeJavascriptString(String result) {
@@ -515,6 +554,15 @@ public class MainActivity extends Activity {
     private void showSettings() {
         try {
             desktopModeBeforeSettings = preferences.getBoolean(PREF_DESKTOP, false);
+            captureCurrentOperator(this::openSettingsActivity);
+        } catch (Throwable error) {
+            Log.e(TAG, "Settings failure", error);
+            openSettingsActivity();
+        }
+    }
+
+    private void openSettingsActivity() {
+        try {
             startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_REQUEST);
         } catch (Throwable error) {
             Log.e(TAG, "Settings failure", error);
@@ -531,7 +579,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        String appIdentity = "DMZRankedApp/1.0.20 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
+        String appIdentity = "DMZRankedApp/1.0.21 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
         webView.getSettings().setUserAgentString(ua + " " + appIdentity);
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
@@ -643,6 +691,26 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            try {
+                String url = webView.getUrl();
+                if (url != null && isDmzUrl(Uri.parse(url))) {
+                    startOperatorMonitor();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        operatorMonitorToken++;
+        super.onPause();
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle outState) {
         try {
             if (webView != null) webView.saveState(outState);
@@ -684,6 +752,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        operatorMonitorToken++;
         try {
             if (webView != null) {
                 webView.stopLoading();
