@@ -110,7 +110,7 @@ tasks.register("generateDmzLogo") {
                 java.awt.image.BufferedImage.TYPE_INT_ARGB
         )
         def legacyGraphics = legacyIcon.createGraphics()
-        legacyGraphics.setColor(new java.awt.Color(9, 9, 9, 255))
+        legacyGraphics.setColor(new java.awt.Color(17, 17, 17, 255))
         legacyGraphics.fillRect(0, 0, launcherSize, launcherSize)
         legacyGraphics.setRenderingHint(
                 java.awt.RenderingHints.KEY_INTERPOLATION,
@@ -143,6 +143,43 @@ tasks.register("generateDmzLogo") {
             throw new GradleException("Could not write launcher icon fallbacks")
         }
 
+        // Dedicated Android 12+ splash icon. Android applies its own icon
+        // bounds, so use a larger transparent canvas with centered artwork.
+        def splashCanvasSize = 512
+        def splashArtSize = 260
+        def splashIcon = new java.awt.image.BufferedImage(
+                splashCanvasSize,
+                splashCanvasSize,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB
+        )
+        def splashGraphics = splashIcon.createGraphics()
+        splashGraphics.setRenderingHint(
+                java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC
+        )
+        splashGraphics.setRenderingHint(
+                java.awt.RenderingHints.KEY_ANTIALIASING,
+                java.awt.RenderingHints.VALUE_ANTIALIAS_ON
+        )
+
+        double splashScale = Math.min(
+                splashArtSize / (double) transparentImage.getWidth(),
+                splashArtSize / (double) transparentImage.getHeight()
+        )
+        int splashWidth = Math.max(1, (int) Math.round(transparentImage.getWidth() * splashScale))
+        int splashHeight = Math.max(1, (int) Math.round(transparentImage.getHeight() * splashScale))
+        int splashX = (splashCanvasSize - splashWidth).intdiv(2)
+        int splashY = (splashCanvasSize - splashHeight).intdiv(2)
+        splashGraphics.drawImage(transparentImage, splashX, splashY, splashWidth, splashHeight, null)
+        splashGraphics.dispose()
+
+        def splashFile = new File(outputDir, "dmz_splash_icon.png")
+        if (!javax.imageio.ImageIO.write(splashIcon, "png", splashFile)) {
+            throw new GradleException("Could not write Android splash icon")
+        }
+
+        println("Generated Android splash icon: " + splashFile + " (" + splashFile.length() + " bytes)")
+
         println("Generated adaptive and fallback launcher artwork")
     }
 }
@@ -155,8 +192,8 @@ android {
         applicationId 'com.harleytg.dmzrankedunofficial'
         minSdk 26
         targetSdk 36
-        versionCode 113
-        versionName '1.0.13'
+        versionCode 114
+        versionName '1.0.14'
     }
 
     sourceSets {
