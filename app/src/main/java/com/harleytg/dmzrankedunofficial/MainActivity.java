@@ -22,6 +22,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -66,6 +67,7 @@ public class MainActivity extends Activity {
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
         findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
+        ((ImageView) findViewById(R.id.titleLogo)).setImageBitmap(LogoData.decode());
 
         configureWebView();
         applyKeepAwakePreference();
@@ -196,6 +198,7 @@ public class MainActivity extends Activity {
         Switch desktopSite = content.findViewById(R.id.desktopSiteSwitch);
         Switch keepAwake = content.findViewById(R.id.keepAwakeSwitch);
         TextView versionText = content.findViewById(R.id.versionText);
+        ImageView settingsLogo = content.findViewById(R.id.settingsLogo);
         Button reloadButton = content.findViewById(R.id.reloadButton);
         Button clearButton = content.findViewById(R.id.clearDataButton);
 
@@ -203,6 +206,7 @@ public class MainActivity extends Activity {
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
         keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
         versionText.setText("Version " + getVersionName());
+        settingsLogo.setImageBitmap(LogoData.decode());
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Settings")
