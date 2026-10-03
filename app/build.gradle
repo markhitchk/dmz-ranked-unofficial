@@ -13,8 +13,8 @@ tasks.register("generateDmzLogo") {
             include "part-*.txt"
         }.files.sort { a, b -> a.name <=> b.name }
 
-        if (parts.size() != 12) {
-            throw new GradleException("Expected 12 transparent PNG logo parts, found " + parts.size())
+        if (parts.size() != 17) {
+            throw new GradleException("Expected 17 transparent PNG logo parts, found " + parts.size())
         }
 
         def encoded = new StringBuilder()
