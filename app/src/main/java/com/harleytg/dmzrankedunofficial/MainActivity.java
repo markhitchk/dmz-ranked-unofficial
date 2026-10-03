@@ -34,6 +34,8 @@ import android.widget.Toast;
 
 import java.util.Locale;
 
+import org.json.JSONTokener;
+
 public class MainActivity extends Activity {
     private static final String TAG = "DMZRanked";
     private static final String HOME_URL = "https://dmzranked.com/";
@@ -62,6 +64,17 @@ public class MainActivity extends Activity {
             "document.addEventListener('click',function(ev){if(state.suppress){return;}var lab=labelFrom(ev.target);if(!lab){return;}setTimeout(function(){if(!state.suppress&&state.current!==lab){state.stack.push(lab);state.current=lab;}},0);},true);" +
             "window.__dmzAndroidSectionBack=function(){try{if(state.stack.length<=1){return 'empty';}state.stack.pop();var prev=state.stack[state.stack.length-1];var control=findControl(prev);if(!control){return 'missing';}state.current=prev;state.suppress=true;try{control.click();}catch(e){}setTimeout(function(){state.suppress=false;},120);return 'handled';}catch(e){return 'error';}};return 'installed';})()";
 
+    private static final String READ_SITE_STATUS_SCRIPT =
+            "(function(){try{" +
+            "var t=((document.body&&document.body.innerText)||'').replace(/\\s+/g,' ');" +
+            "var live=/\\bLIVE\\b/i.test(t);" +
+            "var sm=t.match(/\\bSYNCED\\s+([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?\\s*(?:AM|PM)?)/i);" +
+            "var pm=t.match(/\\b([0-9][0-9,]*)\\s+PLAYERS?\\b/i);" +
+            "var sync=sm?('SYNCED '+sm[1].toUpperCase()):'';" +
+            "var players=pm?(pm[1]+' PLAYERS'):'';" +
+            "return [live?'LIVE':'',sync,players].join('|||');" +
+            "}catch(e){return '||||||';}})()";
+
     private SharedPreferences preferences;
     private WebView webView;
     private ProgressBar topProgressBar;
@@ -69,6 +82,11 @@ public class MainActivity extends Activity {
     private ProgressBar loadingProgressBar;
     private TextView loadingStageText;
     private TextView loadingVerboseText;
+    private TextView loadingConnectionText;
+    private TextView loadingSyncedText;
+    private TextView loadingPlayersText;
+    private TextView loadingLiveDot;
+    private int loadingStatusPollToken;
     private ValueCallback<Uri[]> fileCallback;
     private String mobileUserAgent;
     private boolean handlingBack;
@@ -89,6 +107,10 @@ public class MainActivity extends Activity {
             loadingProgressBar = findViewById(R.id.loadingProgressBar);
             loadingStageText = findViewById(R.id.loadingStageText);
             loadingVerboseText = findViewById(R.id.loadingVerboseText);
+            loadingConnectionText = findViewById(R.id.loadingConnectionText);
+            loadingSyncedText = findViewById(R.id.loadingSyncedText);
+            loadingPlayersText = findViewById(R.id.loadingPlayersText);
+            loadingLiveDot = findViewById(R.id.loadingLiveDot);
 
             applyBrandLogo(findViewById(R.id.titleLogo));
             applyBrandLogo(findViewById(R.id.loadingLogo));
@@ -174,6 +196,8 @@ public class MainActivity extends Activity {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
                 if (url != null && isDmzUrl(Uri.parse(url))) {
+                    loadingStatusPollToken++;
+                    resetLoadingSiteStatus();
                     showLoadingScreen("Connecting to dmzranked.com…", 5);
                 }
             }
@@ -184,6 +208,10 @@ public class MainActivity extends Activity {
                 try {
                     if (url != null && isDmzUrl(Uri.parse(url))) {
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
+                        int token = ++loadingStatusPollToken;
+                        updateLoadingVerbose("Page loaded • reading LIVE status…");
+                        readLiveSiteStatus(token, 0);
+                        return;
                     }
                 } catch (Throwable ignored) {
                 }
@@ -243,13 +271,82 @@ public class MainActivity extends Activity {
                 }
 
                 if (progress >= 100) {
-                    hideLoadingScreen();
+                    updateLoadingVerbose("Page loaded • waiting for live sync…");
                 }
             }
         });
 
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
                 Toast.makeText(MainActivity.this, "Downloads are disabled in this unofficial client.", Toast.LENGTH_SHORT).show());
+    }
+
+    private void resetLoadingSiteStatus() {
+        if (loadingConnectionText != null) loadingConnectionText.setText("CONNECTING…");
+        if (loadingSyncedText != null) loadingSyncedText.setText("SYNCING…");
+        if (loadingPlayersText != null) loadingPlayersText.setText("— PLAYERS");
+        if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_gold));
+    }
+
+    private void readLiveSiteStatus(int token, int attempt) {
+        if (webView == null || token != loadingStatusPollToken || isFinishing()) return;
+
+        webView.evaluateJavascript(READ_SITE_STATUS_SCRIPT, result -> {
+            if (token != loadingStatusPollToken || isFinishing()) return;
+
+            String decoded = decodeJavascriptString(result);
+            String[] parts = decoded.split("\\|\\|\\|", -1);
+            String live = parts.length > 0 ? parts[0].trim() : "";
+            String synced = parts.length > 1 ? parts[1].trim() : "";
+            String players = parts.length > 2 ? parts[2].trim() : "";
+
+            boolean hasLive = "LIVE".equalsIgnoreCase(live);
+            boolean hasSynced = synced.toUpperCase(Locale.US).startsWith("SYNCED ");
+            boolean hasPlayers = players.toUpperCase(Locale.US).endsWith(" PLAYERS");
+
+            if (hasLive) {
+                if (loadingConnectionText != null) loadingConnectionText.setText("LIVE");
+                if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_green));
+            } else if (attempt >= 12) {
+                if (loadingConnectionText != null) loadingConnectionText.setText("CONNECTED");
+                if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_green));
+            }
+
+            if (hasSynced && loadingSyncedText != null) loadingSyncedText.setText(synced);
+            if (hasPlayers && loadingPlayersText != null) loadingPlayersText.setText(players);
+
+            if ((hasLive && hasSynced && hasPlayers) || attempt >= 20) {
+                if (!hasSynced && loadingSyncedText != null) loadingSyncedText.setText("SYNCED");
+                if (!hasPlayers && loadingPlayersText != null) loadingPlayersText.setText("PLAYERS");
+                updateLoadingVerbose(hasLive ? "Live data connected." : "Site connected.");
+                hideLoadingScreenDelayed(850);
+                return;
+            }
+
+            if (loadingOverlay != null) {
+                loadingOverlay.postDelayed(() -> readLiveSiteStatus(token, attempt + 1), 250);
+            }
+        });
+    }
+
+    private String decodeJavascriptString(String result) {
+        if (result == null || "null".equals(result)) return "";
+        try {
+            Object value = new JSONTokener(result).nextValue();
+            return value instanceof String ? (String) value : String.valueOf(value);
+        } catch (Throwable ignored) {
+            return result.replace("\\\"", "\"");
+        }
+    }
+
+    private void hideLoadingScreenDelayed(long delayMs) {
+        if (loadingProgressBar != null) loadingProgressBar.setProgress(100);
+        if (loadingOverlay != null) {
+            loadingOverlay.postDelayed(() -> {
+                if (!isFinishing() && loadingOverlay != null) {
+                    loadingOverlay.setVisibility(View.GONE);
+                }
+            }, delayMs);
+        }
     }
 
     private void showOfflinePage() {
@@ -274,15 +371,10 @@ public class MainActivity extends Activity {
     }
 
     private void hideLoadingScreen() {
+        loadingStatusPollToken++;
         if (loadingProgressBar != null) loadingProgressBar.setProgress(100);
         updateLoadingVerbose("Ready.");
-        if (loadingOverlay != null) {
-            loadingOverlay.postDelayed(() -> {
-                if (!isFinishing() && loadingOverlay != null) {
-                    loadingOverlay.setVisibility(View.GONE);
-                }
-            }, 120);
-        }
+        hideLoadingScreenDelayed(120);
     }
 
     private void updateLoadingVerbose(String status) {
@@ -379,7 +471,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.16");
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.17");
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
