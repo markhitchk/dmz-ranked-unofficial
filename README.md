@@ -2,17 +2,22 @@
 
 Unofficial Android wrapper for **https://dmzranked.com/**.
 
-This source tree was reconstructed from the existing DMZ Ranked Unofficial APK and cleaned into a small native Android project.
+## Credits
+
+- **Built by Harley's Studios**
+- **Made by Yolando & dchinz**
+- Yolando: YouTube **@itsyolando** and Twitch creator
 
 ## App features
 
-- Native **DMZ Ranked** title bar with the app logo.
-- Settings cog in the title bar.
-- In-app settings for external links, desktop mode, and keeping the screen awake.
+- Native **DMZ Ranked** title bar with the supplied DMZ Ranked logo.
+- Native loading screen shown while the DMZ Ranked website loads in the background.
+- Loading progress bar with optional **verbose loading details**.
+- Settings for desktop mode, keeping the screen awake, and verbose loading.
 - Reload and clear web cache/cookies controls.
-- About section identifying the unofficial Android app as made by **Harley's Studios**.
-- JavaScript, DOM storage, cookies, file uploads, downloads, and DMZ Ranked section back-navigation support.
-- External non-DMZ Ranked links can open in the device browser.
+- Creator credits with Yolando and dchinz profile images.
+- JavaScript, DOM storage, cookies, file uploads, and DMZ Ranked section back-navigation support.
+- External navigation is blocked except for the approved PayPal support link.
 - Offline/error page when the website cannot load.
 
 ## Android configuration
@@ -20,7 +25,7 @@ This source tree was reconstructed from the existing DMZ Ranked Unofficial APK a
 - Package: `com.harleytg.dmzrankedunofficial`
 - Minimum Android: API 26
 - Target/compile SDK: API 36
-- Current source version: `1.0.9` (`109`)
+- Current source version: `1.0.10` (`110`)
 
 ## Build
 
