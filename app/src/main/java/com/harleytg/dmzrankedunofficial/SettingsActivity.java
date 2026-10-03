@@ -1,4 +1,4 @@
-package com.harleytg.dmzrankedunofficial;
+package com.harleytg.dmzranked;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -27,6 +27,10 @@ import android.widget.Toast;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.util.Date;
+
+import org.json.JSONArray;
 
 public class SettingsActivity extends Activity {
     private static final String TAG = "DMZRankedSettings";
@@ -41,6 +45,11 @@ public class SettingsActivity extends Activity {
     private static final String PREF_DESKTOP = "desktop_site";
     private static final String PREF_KEEP_AWAKE = "keep_awake";
     private static final String PREF_VERBOSE_LOADING = "verbose_loading";
+    private static final String PREF_OPERATOR_DIRECTORY = "website_operator_directory";
+    private static final String PREF_OPERATOR_COUNT = "website_operator_count";
+    private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
+    private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
+    private static final String PREF_USER_AGENT = "last_webview_user_agent";
 
     public static final String EXTRA_ACTION = "settings_action";
     public static final String ACTION_RELOAD = "reload";
@@ -98,9 +107,87 @@ public class SettingsActivity extends Activity {
         setupCollapsible(R.id.pageControlsHeader, R.id.pageControlsContent, R.id.pageControlsArrow, false);
         setupCollapsible(R.id.helpFeedbackHeader, R.id.helpFeedbackContent, R.id.helpFeedbackArrow, false);
         setupCollapsible(R.id.creditsHeader, R.id.creditsContent, R.id.creditsArrow, false);
+        setupCollapsible(R.id.operatorsHeader, R.id.operatorsContent, R.id.operatorsArrow, false);
+
+        renderWebsiteOperatorInfo();
 
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        renderWebsiteOperatorInfo();
+    }
+
+    private void renderWebsiteOperatorInfo() {
+        if (preferences == null) return;
+
+        TextView countText = findViewById(R.id.operatorCountText);
+        TextView selectedText = findViewById(R.id.operatorSelectedText);
+        TextView syncText = findViewById(R.id.operatorSyncText);
+        TextView listText = findViewById(R.id.operatorListText);
+        TextView userAgentText = findViewById(R.id.userAgentText);
+        TextView packageText = findViewById(R.id.packageNameText);
+
+        String raw = preferences.getString(PREF_OPERATOR_DIRECTORY, "[]");
+        int storedCount = preferences.getInt(PREF_OPERATOR_COUNT, 0);
+        String selected = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        long syncMs = preferences.getLong(PREF_OPERATOR_SYNC_MS, 0L);
+        String userAgent = preferences.getString(PREF_USER_AGENT, "");
+
+        StringBuilder names = new StringBuilder();
+        int parsedCount = 0;
+        try {
+            JSONArray array = new JSONArray(raw == null ? "[]" : raw);
+            parsedCount = array.length();
+            int limit = Math.min(parsedCount, 500);
+            for (int i = 0; i < limit; i++) {
+                String name = array.optString(i, "").trim();
+                if (name.isEmpty()) continue;
+                if (names.length() > 0) names.append("\n");
+                names.append(name);
+            }
+            if (parsedCount > limit) {
+                names.append("\n\n…showing first ").append(limit)
+                        .append(" of ").append(parsedCount).append(" operators.");
+            }
+        } catch (Throwable ignored) {
+        }
+
+        int count = storedCount > 0 ? storedCount : parsedCount;
+        if (countText != null) {
+            countText.setText(count > 0
+                    ? count + " operators found in the website's Returning operator selector."
+                    : "No operator directory cached yet. Open DMZ Ranked and let the page finish loading.");
+        }
+
+        if (selectedText != null) {
+            selectedText.setText(selected == null || selected.trim().isEmpty()
+                    ? "This device: no operator selected"
+                    : "This device: " + selected.trim());
+        }
+
+        if (syncText != null) {
+            syncText.setText(syncMs > 0
+                    ? "Last pulled: " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(new Date(syncMs))
+                    : "Last pulled: not yet");
+        }
+
+        if (listText != null) {
+            listText.setText(names.length() > 0 ? names.toString() : "Operator names will appear here after the website loads.");
+        }
+
+        if (userAgentText != null) {
+            userAgentText.setText(userAgent == null || userAgent.trim().isEmpty()
+                    ? "User-Agent will appear after the WebView initializes."
+                    : userAgent);
+        }
+
+        if (packageText != null) {
+            packageText.setText(getPackageName());
+        }
     }
 
     private void setupCollapsible(int headerId, int contentId, int arrowId, boolean expandedByDefault) {
@@ -212,7 +299,7 @@ public class SettingsActivity extends Activity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.18");
+                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.19");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
