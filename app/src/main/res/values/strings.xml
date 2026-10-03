@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DMZ Ranked</string>
+    <string name="settings">Settings</string>
+    <string name="reload">Reload DMZ Ranked</string>
+    <string name="clear_web_data">Clear web cache &amp; cookies</string>
+    <string name="desktop_site">Desktop site</string>
+    <string name="desktop_site_summary">Request the desktop version of dmzranked.com.</string>
+    <string name="external_links">Open external links in browser</string>
+    <string name="external_links_summary">Keep non-DMZ Ranked websites outside this app.</string>
+    <string name="keep_screen_awake">Keep screen awake</string>
+    <string name="keep_screen_awake_summary">Prevent the screen from sleeping while this app is open.</string>
+    <string name="about">About</string>
+    <string name="made_by">Unofficial Android app by Harley&apos;s Studios</string>
+    <string name="website">Website: dmzranked.com</string>
+    <string name="unofficial_notice">Unofficial client. DMZ Ranked website content and trademarks belong to their respective owners.</string>
+</resources>
