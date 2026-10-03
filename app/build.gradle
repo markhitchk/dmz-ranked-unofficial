@@ -65,6 +65,85 @@ tasks.register("generateDmzLogo") {
         }
 
         println("Generated transparent PNG logo: " + outputFile + " (" + outputFile.length() + " bytes)")
+
+        // Adaptive icons need a padded foreground so Android's launcher mask does
+        // not shrink the DMZ artwork into a tiny legacy-icon tile.
+        def launcherSize = 512
+        def launcherArtSize = 360
+        def launcherForeground = new java.awt.image.BufferedImage(
+                launcherSize,
+                launcherSize,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB
+        )
+        def foregroundGraphics = launcherForeground.createGraphics()
+        foregroundGraphics.setRenderingHint(
+                java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC
+        )
+        foregroundGraphics.setRenderingHint(
+                java.awt.RenderingHints.KEY_ANTIALIASING,
+                java.awt.RenderingHints.VALUE_ANTIALIAS_ON
+        )
+
+        double logoScale = Math.min(
+                launcherArtSize / (double) transparentImage.getWidth(),
+                launcherArtSize / (double) transparentImage.getHeight()
+        )
+        int logoWidth = Math.max(1, (int) Math.round(transparentImage.getWidth() * logoScale))
+        int logoHeight = Math.max(1, (int) Math.round(transparentImage.getHeight() * logoScale))
+        int logoX = (launcherSize - logoWidth).intdiv(2)
+        int logoY = (launcherSize - logoHeight).intdiv(2)
+        foregroundGraphics.drawImage(transparentImage, logoX, logoY, logoWidth, logoHeight, null)
+        foregroundGraphics.dispose()
+
+        def foregroundFile = new File(outputDir, "dmz_launcher_foreground.png")
+        if (!javax.imageio.ImageIO.write(launcherForeground, "png", foregroundFile)) {
+            throw new GradleException("Could not write adaptive launcher foreground")
+        }
+
+        // Base mipmap fallback. API 26+ uses the adaptive icon XML override.
+        def legacyDir = new File(generatedLogoResDir, "mipmap-nodpi")
+        legacyDir.mkdirs()
+        def legacyIcon = new java.awt.image.BufferedImage(
+                launcherSize,
+                launcherSize,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB
+        )
+        def legacyGraphics = legacyIcon.createGraphics()
+        legacyGraphics.setColor(new java.awt.Color(9, 9, 9, 255))
+        legacyGraphics.fillRect(0, 0, launcherSize, launcherSize)
+        legacyGraphics.setRenderingHint(
+                java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC
+        )
+
+        int legacyArtSize = 420
+        double legacyScale = Math.min(
+                legacyArtSize / (double) transparentImage.getWidth(),
+                legacyArtSize / (double) transparentImage.getHeight()
+        )
+        int legacyWidth = Math.max(1, (int) Math.round(transparentImage.getWidth() * legacyScale))
+        int legacyHeight = Math.max(1, (int) Math.round(transparentImage.getHeight() * legacyScale))
+        int legacyX = (launcherSize - legacyWidth).intdiv(2)
+        int legacyY = (launcherSize - legacyHeight).intdiv(2)
+        legacyGraphics.drawImage(
+                transparentImage,
+                legacyX,
+                legacyY,
+                legacyWidth,
+                legacyHeight,
+                null
+        )
+        legacyGraphics.dispose()
+
+        def legacyIconFile = new File(legacyDir, "ic_launcher.png")
+        def legacyRoundFile = new File(legacyDir, "ic_launcher_round.png")
+        if (!javax.imageio.ImageIO.write(legacyIcon, "png", legacyIconFile) ||
+                !javax.imageio.ImageIO.write(legacyIcon, "png", legacyRoundFile)) {
+            throw new GradleException("Could not write launcher icon fallbacks")
+        }
+
+        println("Generated adaptive and fallback launcher artwork")
     }
 }
 
@@ -76,8 +155,8 @@ android {
         applicationId 'com.harleytg.dmzrankedunofficial'
         minSdk 26
         targetSdk 36
-        versionCode 111
-        versionName '1.0.11'
+        versionCode 112
+        versionName '1.0.12'
     }
 
     sourceSets {
