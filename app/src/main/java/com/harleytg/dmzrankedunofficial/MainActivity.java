@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(webView, true);
 
-        webView.setBackgroundColor(Color.rgb(9, 9, 9));
+        webView.setBackgroundColor(Color.rgb(8, 10, 9));
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -254,10 +254,10 @@ public class MainActivity extends Activity {
         String html = "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>" +
                 "<style>html,body{margin:0;background:#080a09;color:#f1f3ef;font-family:Arial,sans-serif;min-height:100%}" +
                 "body{display:grid;place-items:center;min-height:100vh;padding:24px;box-sizing:border-box}" +
-                ".card{width:min(460px,100%);background:linear-gradient(135deg,#171b18,#0b0f0d);border:1px solid #545a54;border-left:4px solid #f2b632;border-radius:16px;padding:28px;box-sizing:border-box}" +
-                ".eyebrow{color:#d7a42e;letter-spacing:.22em;font-size:12px;font-weight:800}.title{font-size:38px;line-height:.95;font-weight:900;letter-spacing:.06em;margin:10px 0 8px}.title span{color:#f2b632}.copy{color:#9da39d;line-height:1.5}" +
-                ".live{display:inline-block;margin:14px 0;color:#f1f3ef;background:#101512;border:1px solid #374039;border-radius:6px;padding:8px 12px;font-weight:800;font-size:13px}.dot{color:#66f219}" +
-                ".retry{display:block;margin-top:20px;text-align:center;background:linear-gradient(#f5c24b,#d99615);color:#080a09;text-decoration:none;font-weight:900;letter-spacing:.08em;padding:13px;border-radius:6px}" +
+                ".card{width:min(460px,100%);background:linear-gradient(135deg,#14191d,#0b0f11);border:1px solid #4a504d;border-left:4px solid #f6c453;border-radius:16px;padding:28px;box-sizing:border-box}" +
+                ".eyebrow{color:#e2b24d;letter-spacing:.22em;font-size:12px;font-weight:800}.title{font-size:38px;line-height:.95;font-weight:900;letter-spacing:.06em;margin:10px 0 8px}.title span{color:#f6c453}.copy{color:#999f9b;line-height:1.5}" +
+                ".live{display:inline-block;margin:14px 0;color:#f1f3ef;background:#101512;border:1px solid #374039;border-radius:6px;padding:8px 12px;font-weight:800;font-size:13px}.dot{color:#55d582}" +
+                ".retry{display:block;margin-top:20px;text-align:center;background:linear-gradient(#f9d16a,#d8a433);color:#080a09;text-decoration:none;font-weight:900;letter-spacing:.08em;padding:13px;border-radius:6px}" +
                 "</style></head><body><div class='card'><div class='eyebrow'>DMZ RANKED</div><div class='title'>RANKED <span>OFFLINE</span></div>" +
                 "<div class='live'><span class='dot'>●</span> CONNECTION LOST</div><div class='copy'>DMZ Ranked could not load. Check your connection, then reconnect to the leaderboard.</div>" +
                 "<a class='retry' href='" + HOME_URL + "'>RETRY DMZ RANKED</a></div></body></html>";
@@ -353,7 +353,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.13");
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.14");
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
@@ -420,11 +420,11 @@ public class MainActivity extends Activity {
             root.setOrientation(LinearLayout.VERTICAL);
             root.setGravity(Gravity.CENTER);
             root.setPadding(48, 48, 48, 48);
-            root.setBackgroundColor(Color.rgb(9, 9, 9));
+            root.setBackgroundColor(Color.rgb(8, 10, 9));
 
             TextView title = new TextView(this);
             title.setText("RANKED CLIENT ERROR");
-            title.setTextColor(Color.rgb(242, 182, 50));
+            title.setTextColor(Color.rgb(246, 196, 83));
             title.setTextSize(26);
             title.setGravity(Gravity.CENTER);
 
