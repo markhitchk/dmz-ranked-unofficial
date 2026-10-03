@@ -471,7 +471,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.17");
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.18");
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
