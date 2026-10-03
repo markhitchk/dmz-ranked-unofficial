@@ -1,0 +1,24 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.harleytg.dmzrankedunofficial'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.harleytg.dmzrankedunofficial'
+        minSdk 26
+        targetSdk 36
+        versionCode 109
+        versionName '1.0.9'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
