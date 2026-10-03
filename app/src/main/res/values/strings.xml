@@ -12,11 +12,15 @@
     <string name="verbose_loading">Verbose loading details</string>
     <string name="verbose_loading_summary">Show live loading status and percentage underneath the loading bar.</string>
     <string name="credits">Credits</string>
-    <string name="built_by">Built by Harley\'s Studios</string>
-    <string name="made_by">Made by Yolando &amp; dchinz</string>
-    <string name="yolando_social">YouTube: @itsyolando • YouTube / Twitch creator</string>
+    <string name="app_development_title">APP DEVELOPMENT</string>
+    <string name="app_development_name">Harley\'s Studios</string>
+    <string name="app_development_summary">Built and maintained by Harley\'s Studios for this unofficial Android client.</string>
+    <string name="website_credits_title">DMZ RANKED WEBSITE</string>
+    <string name="website_credits_summary">Website created by Yolando &amp; dchinz.</string>
+    <string name="yolando_social">DMZ Ranked creator • YouTube / Twitch</string>
     <string name="co_creator">DMZ Ranked co-creator</string>
-    <string name="paypal_support">Support via PayPal</string>
+    <string name="paypal_support">Support DMZ Ranked creators via PayPal</string>
+    <string name="paypal_support_summary">Opens the DMZ Ranked creators\' PayPal support link. Payments are not for Harley\'s Studios.</string>
     <string name="website">Website: dmzranked.com</string>
     <string name="unofficial_notice">Unofficial client. DMZ Ranked website content and third-party trademarks belong to their respective owners.</string>
 </resources>
