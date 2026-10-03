@@ -38,6 +38,8 @@ public class MainActivity extends Activity {
     private static final String TAG = "DMZRanked";
     private static final String HOME_URL = "https://dmzranked.com/";
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
+    private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
+    private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
     private static final int FILE_REQUEST = 2001;
     private static final int SETTINGS_REQUEST = 2002;
 
@@ -304,10 +306,10 @@ public class MainActivity extends Activity {
                 return false;
             }
 
-            if (isAllowedPayPalLink(uri)) {
+            if (isAllowedExternalLink(uri)) {
                 openExternal(uri);
             } else {
-                Toast.makeText(this, "External link blocked. Only the approved PayPal support link is allowed.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "External link blocked. Allowed links are the approved PayPal and DMZ Ranked Discord invites.", Toast.LENGTH_SHORT).show();
             }
             return true;
         }
@@ -322,8 +324,25 @@ public class MainActivity extends Activity {
         return host.equals("dmzranked.com") || host.endsWith(".dmzranked.com");
     }
 
-    private boolean isAllowedPayPalLink(Uri uri) {
-        return uri != null && uri.toString().startsWith(PAYPAL_SHARE_URL);
+    private boolean isAllowedExternalLink(Uri uri) {
+        if (uri == null) return false;
+        String value = uri.toString();
+        if (value.startsWith(PAYPAL_SHARE_URL)
+                || value.startsWith(APP_SUPPORT_DISCORD_URL)
+                || value.startsWith(MAIN_DISCORD_URL)) {
+            return true;
+        }
+
+        String host = uri.getHost();
+        if (host == null) return false;
+        host = host.toLowerCase(Locale.US);
+        if (!host.equals("discord.gg") && !host.equals("www.discord.gg") && !host.equals("discord.com")) {
+            return false;
+        }
+
+        String path = uri.getPath();
+        if (path == null) return false;
+        return path.contains("kdHneTZkyd") || path.contains("jTaTHqw45F");
     }
 
     private void openExternal(Uri uri) {
@@ -353,7 +372,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.14");
+        webView.getSettings().setUserAgentString(ua + " DMZRankedUnofficial/1.0.15");
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
             webView.reload();
