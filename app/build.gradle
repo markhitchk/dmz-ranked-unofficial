@@ -185,15 +185,15 @@ tasks.register("generateDmzLogo") {
 }
 
 android {
-    namespace 'com.harleytg.dmzrankedunofficial'
+    namespace 'com.harleytg.dmzranked'
     compileSdk 36
 
     defaultConfig {
-        applicationId 'com.harleytg.dmzrankedunofficial'
+        applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 118
-        versionName '1.0.18'
+        versionCode 119
+        versionName '1.0.19'
     }
 
     sourceSets {
