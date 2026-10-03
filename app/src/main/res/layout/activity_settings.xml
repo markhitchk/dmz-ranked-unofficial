@@ -131,6 +131,73 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/signedInOperatorCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/settings_card_background"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.10"
+                    android:text="WEBSITE OPERATOR • THIS DEVICE"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/signedInOperatorNameText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:text="No operator selected"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="21sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/signedInOperatorStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text="Open DMZ Ranked and select or enter your operator name."
+                    android:textColor="@color/dmz_green"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/signedInOperatorSourceText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:text="Website account view"
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/signedInOperatorSyncText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:text="Last checked: not yet"
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Shows the operator currently selected or entered on dmzranked.com in this app. It does not expose your PIN."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
 <LinearLayout
                 android:id="@+id/creditsHeader"
                 android:layout_width="match_parent"
@@ -515,169 +582,7 @@
                     android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
-                        <LinearLayout
-                android:id="@+id/operatorsHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="14dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.12"
-                    android:text="WEBSITE OPERATORS"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/operatorsArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="▾"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/operatorsContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="10dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/settings_card_background"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.06"
-                        android:text="RETURNING OPERATOR DIRECTORY"
-                        android:textColor="@color/dmz_gold"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/operatorCountText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="7dp"
-                        android:text="No operator directory cached yet."
-                        android:textColor="@color/dmz_white"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/operatorSelectedText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="5dp"
-                        android:text="This device: no operator selected"
-                        android:textColor="@color/dmz_gold_soft"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/operatorSyncText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Last pulled: not yet"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="This reads the names offered by dmzranked.com under Returning operator. It is an operator directory, not a live-online-user tracker."
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/operatorListText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="monospace"
-                        android:text="Operator names will appear here after the website loads."
-                        android:textColor="@color/dmz_white"
-                        android:textIsSelectable="true"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/settings_action_background"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="APP / WEBVIEW INFO"
-                        android:textColor="@color/dmz_gold"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Package"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/packageNameText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:text="com.harleytg.dmzranked"
-                        android:textColor="@color/dmz_white"
-                        android:textIsSelectable="true"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="User-Agent"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/userAgentText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:text="User-Agent will appear after the WebView initializes."
-                        android:textColor="@color/dmz_white"
-                        android:textIsSelectable="true"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </LinearLayout>
+                        
 
 <LinearLayout
                 android:id="@+id/pageControlsHeader"
