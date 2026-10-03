@@ -31,6 +31,8 @@ import java.net.URL;
 public class SettingsActivity extends Activity {
     private static final String TAG = "DMZRankedSettings";
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
+    private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
+    private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
     private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
     private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
 
@@ -86,6 +88,10 @@ public class SettingsActivity extends Activity {
         });
         findViewById(R.id.clearDataCard).setOnClickListener(v -> clearWebData());
         findViewById(R.id.paypalCard).setOnClickListener(v -> openPayPal());
+        findViewById(R.id.feedbackCard).setOnClickListener(v ->
+                startActivity(new Intent(this, FeedbackActivity.class)));
+        findViewById(R.id.appSupportDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
+        findViewById(R.id.mainDiscordCard).setOnClickListener(v -> openExternal(MAIN_DISCORD_URL));
 
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
@@ -155,6 +161,14 @@ public class SettingsActivity extends Activity {
         }
     }
 
+    private void openExternal(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "No app can open this link.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void applyBrandLogo(ImageView imageView) {
         if (imageView == null) return;
         imageView.setBackgroundColor(Color.TRANSPARENT);
@@ -173,7 +187,7 @@ public class SettingsActivity extends Activity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
-                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.14");
+                connection.setRequestProperty("User-Agent", "DMZRankedUnofficial/1.0.15");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
