@@ -198,6 +198,73 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
+
+            <LinearLayout
+                android:id="@+id/websiteDataCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/settings_card_background"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.10"
+                    android:text="WEBSITE DATA &amp; COOKIES"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/webDataCookieStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:text="Checking dmzranked.com cookies…"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:text="DMZ Ranked can save operator/device state using WebView cookies and site storage such as localStorage or IndexedDB. Cookie values and PIN data are never shown here."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="App-private WebView storage"
+                    android:textColor="@color/dmz_gold_soft"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/webDataStoragePathText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="monospace"
+                    android:text="Loading storage path…"
+                    android:textColor="@color/dmz_white"
+                    android:textIsSelectable="true"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Android keeps this website data inside the private sandbox for com.harleytg.dmzranked. Other normal apps cannot read it. Use Clear Web Data below to remove WebView cache, cookies, and site storage."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
 <LinearLayout
                 android:id="@+id/creditsHeader"
                 android:layout_width="match_parent"
