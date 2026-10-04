@@ -1,12 +1,19 @@
 package com.harleytg.dmzranked;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -32,8 +39,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -46,11 +56,14 @@ public class MainActivity extends Activity {
     private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
     private static final int FILE_REQUEST = 2001;
     private static final int SETTINGS_REQUEST = 2002;
+    private static final int NOTIFICATION_PERMISSION_REQUEST = 2003;
+    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
 
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_DESKTOP = "desktop_site";
     private static final String PREF_KEEP_AWAKE = "keep_awake";
     private static final String PREF_VERBOSE_LOADING = "verbose_loading";
+    private static final String PREF_SITE_NOTIFICATIONS = "site_notifications";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
     private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
@@ -105,6 +118,18 @@ public class MainActivity extends Activity {
             "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
             "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
+    private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
+            "(function(){try{" +
+            "function clean(v){return String(v||'').replace(/\\s+/g,' ').trim();}" +
+            "function visible(el){try{var st=getComputedStyle(el),r=el.getBoundingClientRect();return st.display!=='none'&&st.visibility!=='hidden'&&r.width>0&&r.height>0;}catch(e){return true;}}" +
+            "var q='[role=alert],.toast,.notification,[class*=toast],[class*=notification],[data-notification]';" +
+            "var nodes=[].slice.call(document.querySelectorAll(q)),seen={},out=[];" +
+            "for(var i=0;i<nodes.length;i++){var el=nodes[i];if(!visible(el))continue;var t=clean(el.innerText||el.textContent||'');" +
+            "if(t.length<4||t.length>320||/^notifications?$/i.test(t)||/^no notifications/i.test(t))continue;" +
+            "if(!seen[t]){seen[t]=1;out.push(t);}if(out.length>=12)break;}" +
+            "return JSON.stringify(out);" +
+            "}catch(e){return '[]';}})()";
+
     private SharedPreferences preferences;
     private WebView webView;
     private ProgressBar topProgressBar;
@@ -117,6 +142,9 @@ public class MainActivity extends Activity {
     private TextView loadingPlayersText;
     private TextView loadingLiveDot;
     private int loadingStatusPollToken;
+    private int siteNotificationMonitorToken;
+    private boolean siteNotificationBaselineReady;
+    private final LinkedHashSet<String> seenSiteNotifications = new LinkedHashSet<>();
     private int operatorMonitorToken;
     private ValueCallback<Uri[]> fileCallback;
     private String mobileUserAgent;
@@ -149,6 +177,8 @@ public class MainActivity extends Activity {
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
 
             configureWebView();
+            ensureSiteNotificationChannel();
+            requestSiteNotificationPermissionIfNeeded();
             applyKeepAwakePreference();
             showLoadingScreen("Starting DMZ Ranked…", 0);
 
@@ -229,6 +259,9 @@ public class MainActivity extends Activity {
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     loadingStatusPollToken++;
                     operatorMonitorToken++;
+                    siteNotificationMonitorToken++;
+                    siteNotificationBaselineReady = false;
+                    seenSiteNotifications.clear();
                     resetLoadingSiteStatus();
                     showLoadingScreen("Connecting to dmzranked.com…", 5);
                 }
@@ -244,6 +277,7 @@ public class MainActivity extends Activity {
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
                         startOperatorMonitor();
+                        startSiteNotificationMonitor();
                         return;
                     }
                 } catch (Throwable ignored) {
@@ -425,6 +459,148 @@ public class MainActivity extends Activity {
             Log.d(TAG, "Could not read operator state", error);
             if (after != null) after.run();
         }
+    }
+
+    private void ensureSiteNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null || manager.getNotificationChannel(SITE_NOTIFICATION_CHANNEL) != null) return;
+
+        NotificationChannel channel = new NotificationChannel(
+                SITE_NOTIFICATION_CHANNEL,
+                "DMZ Ranked website notifications",
+                NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setDescription("Notifications mirrored from dmzranked.com while the app is running.");
+        manager.createNotificationChannel(channel);
+    }
+
+    private void requestSiteNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < 33 || preferences == null
+                || !preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    NOTIFICATION_PERMISSION_REQUEST);
+        }
+    }
+
+    private void startSiteNotificationMonitor() {
+        if (webView == null || isFinishing() || preferences == null
+                || !preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
+            return;
+        }
+        int token = ++siteNotificationMonitorToken;
+        pollSiteNotifications(token);
+    }
+
+    private void pollSiteNotifications(int token) {
+        if (webView == null || isFinishing() || token != siteNotificationMonitorToken
+                || preferences == null || !preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
+            return;
+        }
+
+        Uri current;
+        try {
+            String url = webView.getUrl();
+            current = url == null ? null : Uri.parse(url);
+        } catch (Throwable ignored) {
+            current = null;
+        }
+        if (!isDmzUrl(current)) return;
+
+        try {
+            webView.evaluateJavascript(READ_SITE_NOTIFICATIONS_SCRIPT, result -> {
+                if (isFinishing() || token != siteNotificationMonitorToken) return;
+
+                try {
+                    String decoded = decodeJavascriptString(result);
+                    JSONArray items = new JSONArray(decoded);
+
+                    if (!siteNotificationBaselineReady) {
+                        for (int i = 0; i < items.length(); i++) {
+                            String text = items.optString(i, "").trim();
+                            if (!text.isEmpty()) seenSiteNotifications.add(text);
+                        }
+                        siteNotificationBaselineReady = true;
+                    } else {
+                        for (int i = 0; i < items.length(); i++) {
+                            String text = items.optString(i, "").trim();
+                            if (!text.isEmpty() && seenSiteNotifications.add(text)) {
+                                postNativeSiteNotification(text);
+                            }
+                        }
+                    }
+
+                    while (seenSiteNotifications.size() > 120) {
+                        Iterator<String> iterator = seenSiteNotifications.iterator();
+                        if (!iterator.hasNext()) break;
+                        iterator.next();
+                        iterator.remove();
+                    }
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not parse site notifications", error);
+                }
+
+                if (webView != null && !isFinishing() && token == siteNotificationMonitorToken) {
+                    webView.postDelayed(() -> pollSiteNotifications(token), 1800);
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read site notifications", error);
+            if (webView != null && !isFinishing() && token == siteNotificationMonitorToken) {
+                webView.postDelayed(() -> pollSiteNotifications(token), 1800);
+            }
+        }
+    }
+
+    private void postNativeSiteNotification(String message) {
+        if (message == null || message.trim().isEmpty() || preferences == null
+                || !preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        ensureSiteNotificationChannel();
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        Intent launch = new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent contentIntent = PendingIntent.getActivity(
+                this,
+                4100,
+                launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        String body = message.trim();
+        if (body.length() > 320) body = body.substring(0, 319) + "…";
+
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? new Notification.Builder(this, SITE_NOTIFICATION_CHANNEL)
+                : new Notification.Builder(this);
+
+        builder.setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("DMZ Ranked")
+                .setContentText(body)
+                .setStyle(new Notification.BigTextStyle().bigText(body))
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setColor(getColor(R.color.dmz_gold))
+                .setCategory(Notification.CATEGORY_STATUS);
+
+        try {
+            Bitmap logo = BitmapFactory.decodeResource(getResources(), R.drawable.dmz_ranked_logo);
+            if (logo != null) builder.setLargeIcon(logo);
+        } catch (Throwable ignored) {
+        }
+
+        manager.notify(12000 + Math.abs(body.hashCode() % 8000), builder.build());
     }
 
     private String decodeJavascriptString(String result) {
@@ -698,6 +874,7 @@ public class MainActivity extends Activity {
                 String url = webView.getUrl();
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     startOperatorMonitor();
+                    startSiteNotificationMonitor();
                 }
             } catch (Throwable ignored) {
             }
@@ -707,6 +884,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         operatorMonitorToken++;
+        siteNotificationMonitorToken++;
         super.onPause();
     }
 
@@ -725,6 +903,12 @@ public class MainActivity extends Activity {
 
         if (requestCode == SETTINGS_REQUEST) {
             applyKeepAwakePreference();
+            requestSiteNotificationPermissionIfNeeded();
+            if (preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
+                startSiteNotificationMonitor();
+            } else {
+                siteNotificationMonitorToken++;
+            }
             updateLoadingVerbose(loadingVerboseText == null ? "" : loadingVerboseText.getText().toString());
 
             boolean desktopNow = preferences.getBoolean(PREF_DESKTOP, false);
@@ -753,6 +937,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         operatorMonitorToken++;
+        siteNotificationMonitorToken++;
         try {
             if (webView != null) {
                 webView.stopLoading();
