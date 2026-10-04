@@ -212,6 +212,15 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+
+        beta {
+            initWith debug
+            applicationIdSuffix '.beta'
+            versionNameSuffix '-beta'
+            debuggable true
+            matchingFallbacks = ['debug']
+            resValue 'string', 'app_name', 'DMZ Ranked Beta'
+        }
     }
 }
 
