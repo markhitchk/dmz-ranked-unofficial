@@ -5,6 +5,8 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.net.Uri;
@@ -26,10 +28,13 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.UUID;
 
 public class FeedbackActivity extends Activity {
@@ -261,41 +266,101 @@ public class FeedbackActivity extends Activity {
             connection.setReadTimeout(10_000);
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            connection.setRequestProperty("User-Agent", "DMZRankedApp/" + getVersionName() + " (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
+            connection.setRequestProperty(
+                    "User-Agent",
+                    "DMZRankedApp/" + getVersionName()
+                            + " (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
 
             String device = Build.MANUFACTURER + " " + Build.MODEL
                     + " • Android " + Build.VERSION.RELEASE
                     + " (API " + Build.VERSION.SDK_INT + ")";
             String contactText = contact.isEmpty() ? "Not provided" : truncate(contact, 300);
+            String timestamp = Instant.now().toString();
+            long versionCode = getVersionCode();
 
             String json = "{"
-                    + "\"username\":\"DMZ Ranked App Feedback\","
+                    + "\"username\":\"DMZ Ranked • App Feedback\","
                     + "\"allowed_mentions\":{\"parse\":[]},"
+                    + "\"attachments\":[{\"id\":0,\"filename\":\"dmz-ranked-logo.png\","
+                    + "\"description\":\"DMZ Ranked app logo\"}],"
                     + "\"embeds\":[{"
-                    + "\"title\":\"" + escape("[" + category + "] " + truncate(subject, 180)) + "\","
+                    + "\"author\":{\"name\":\"DMZ Ranked • Android App Feedback\"},"
+                    + "\"title\":\"" + escape(truncate(subject, 180)) + "\","
                     + "\"description\":\"" + escape(truncate(details, 3500)) + "\","
                     + "\"color\":16172115,"
+                    + "\"thumbnail\":{\"url\":\"attachment://dmz-ranked-logo.png\"},"
                     + "\"fields\":["
-                    + "{\"name\":\"Report ID\",\"value\":\"" + escape(reportId) + "\",\"inline\":true},"
-                    + "{\"name\":\"App Version\",\"value\":\"" + escape(getVersionName()) + "\",\"inline\":true},"
+                    + "{\"name\":\"Report ID\",\"value\":``" + escape(reportId) + "``\",\"inline\":true},"
+                    + "{\"name\":\"Type\",\"value\":\"" + escape(category) + "\",\"inline\":true},"
                     + "{\"name\":\"Scope\",\"value\":\"Android app only\",\"inline\":true},"
-                    + "{\"name\":\"Contact\",\"value\":\"" + escape(contactText) + "\",\"inline\":false},"
-                    + "{\"name\":\"Device\",\"value\":\"" + escape(device) + "\",\"inline\":false}"
+                    + "{\"name\":\"App Version\",\"value\":\"" + escape(getVersionName())
+                    + " (" + versionCode + ")\",\"inline\":true},"
+                    + "{\"name\":\"Package\",\"value\":``com.harleytg.dmzranked``\",\"inline\":true},"
+                    + "{\"name\":\"Contact\",\"value\":\"" + escape(contactText) + "\",\"inline\":true},"
+                    + "{\"name\":\"Device / OS\",\"value\":\"" + escape(device) + "\",\"inline\":false},"
+                    + "{\"name\":\"Routing\",\"value\":\"App bugs and app features → Harley's Studios\\nWebsite/server issues → Main DMZ Ranked Discord\",\"inline\":false}"
                     + "],"
-                    + "\"footer\":{\"text\":\"App-only feedback • DMZ Ranked Unofficial Android Client\"}"
+                    + "\"timestamp\":\"" + escape(timestamp) + "\","
+                    + "\"footer\":{\"text\":\"Harley's Studios • App-only feedback • " + escape(reportId) + "\"}"
                     + "}]}";
 
-            byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
-            connection.setFixedLengthStreamingMode(bytes.length);
+            byte[] logoBytes = loadLogoPng();
+            String boundary = "----DMZRankedFeedback" + UUID.randomUUID().toString().replace("-", "");
+            byte[] multipartBody = buildMultipartPayload(boundary, json, logoBytes);
+
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            connection.setFixedLengthStreamingMode(multipartBody.length);
             try (OutputStream out = connection.getOutputStream()) {
-                out.write(bytes);
+                out.write(multipartBody);
             }
             return connection.getResponseCode();
         } finally {
             connection.disconnect();
         }
     }
+
+    private byte[] loadLogoPng() throws Exception {
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.dmz_ranked_logo);
+        if (bitmap == null) {
+            throw new IllegalStateException("DMZ Ranked logo could not be decoded");
+        }
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+                throw new IllegalStateException("DMZ Ranked logo could not be encoded");
+            }
+            return out.toByteArray();
+        } finally {
+            bitmap.recycle();
+        }
+    }
+
+    private byte[] buildMultipartPayload(String boundary, String json, byte[] logoBytes) throws Exception {
+        try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+             DataOutputStream out = new DataOutputStream(bytes)) {
+
+            writeMultipartText(out, "--" + boundary + "\r\n");
+            writeMultipartText(out, "Content-Disposition: form-data; name=\"payload_json\"\r\n");
+            writeMultipartText(out, "Content-Type: application/json; charset=UTF-8\r\n\r\n");
+            writeMultipartText(out, json);
+            writeMultipartText(out, "\r\n");
+
+            writeMultipartText(out, "--" + boundary + "\r\n");
+            writeMultipartText(out,
+                    "Content-Disposition: form-data; name=\"files[0]\"; filename=\"dmz-ranked-logo.png\"\r\n");
+            writeMultipartText(out, "Content-Type: image/png\r\n\r\n");
+            out.write(logoBytes);
+            writeMultipartText(out, "\r\n--" + boundary + "--\r\n");
+            out.flush();
+
+            return bytes.toByteArray();
+        }
+    }
+
+    private void writeMultipartText(DataOutputStream out, String value) throws Exception {
+        out.write(value.getBytes(StandardCharsets.UTF_8));
+    }
+
 
     private void openExternal(String url) {
         try {
@@ -410,6 +475,18 @@ public class FeedbackActivity extends Activity {
             return info.versionName == null ? "Unknown" : info.versionName;
         } catch (Exception error) {
             return "Unknown";
+        }
+    }
+
+    private long getVersionCode() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return info.getLongVersionCode();
+            }
+            return info.versionCode;
+        } catch (Exception error) {
+            return -1L;
         }
     }
 
