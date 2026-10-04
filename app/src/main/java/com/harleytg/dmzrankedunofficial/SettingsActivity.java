@@ -52,6 +52,10 @@ public class SettingsActivity extends Activity {
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
+    private static final String PREF_SITE_LOCAL_COUNT = "website_local_storage_count";
+    private static final String PREF_SITE_SESSION_COUNT = "website_session_storage_count";
+    private static final String PREF_SITE_INDEXEDDB_AVAILABLE = "website_indexeddb_available";
+    private static final String PREF_SITE_STORAGE_SYNC_MS = "website_storage_sync_ms";
 
     public static final String EXTRA_ACTION = "settings_action";
     public static final String ACTION_RELOAD = "reload";
@@ -180,6 +184,7 @@ public class SettingsActivity extends Activity {
 
     private void renderWebsiteDataInfo() {
         TextView cookieStatus = findViewById(R.id.webDataCookieStatusText);
+        TextView siteStorageStatus = findViewById(R.id.webDataSiteStorageStatusText);
         TextView storagePath = findViewById(R.id.webDataStoragePathText);
 
         try {
@@ -192,6 +197,30 @@ public class SettingsActivity extends Activity {
             }
         } catch (Throwable error) {
             if (cookieStatus != null) cookieStatus.setText("Cookies: status unavailable");
+        }
+
+        int localCount = preferences == null ? 0 : preferences.getInt(PREF_SITE_LOCAL_COUNT, 0);
+        int sessionCount = preferences == null ? 0 : preferences.getInt(PREF_SITE_SESSION_COUNT, 0);
+        boolean indexedDbAvailable = preferences != null
+                && preferences.getBoolean(PREF_SITE_INDEXEDDB_AVAILABLE, false);
+        long storageSyncMs = preferences == null ? 0L
+                : preferences.getLong(PREF_SITE_STORAGE_SYNC_MS, 0L);
+
+        if (siteStorageStatus != null) {
+            if (storageSyncMs <= 0L) {
+                siteStorageStatus.setText("Site storage: open DMZ Ranked once to inspect it.");
+            } else {
+                StringBuilder status = new StringBuilder("Site storage: ")
+                        .append(localCount).append(" localStorage item")
+                        .append(localCount == 1 ? "" : "s")
+                        .append(" • ")
+                        .append(sessionCount).append(" sessionStorage item")
+                        .append(sessionCount == 1 ? "" : "s");
+                if (indexedDbAvailable) {
+                    status.append(" • IndexedDB available");
+                }
+                siteStorageStatus.setText(status.toString());
+            }
         }
 
         try {
@@ -284,6 +313,10 @@ public class SettingsActivity extends Activity {
                     .remove(PREF_OPERATOR_PROTECTED)
                     .remove(PREF_OPERATOR_SOURCE)
                     .remove(PREF_OPERATOR_SYNC_MS)
+                    .remove(PREF_SITE_LOCAL_COUNT)
+                    .remove(PREF_SITE_SESSION_COUNT)
+                    .remove(PREF_SITE_INDEXEDDB_AVAILABLE)
+                    .remove(PREF_SITE_STORAGE_SYNC_MS)
                     .apply();
             renderWebsiteOperatorInfo();
             CookieManager.getInstance().removeAllCookies(value -> runOnUiThread(() -> {
