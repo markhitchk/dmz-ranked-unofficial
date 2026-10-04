@@ -180,7 +180,11 @@ final class OperatorBackupStore {
             String raw = prefs(context).getString(KEY_BACKUPS, "{}");
             JSONObject root = new JSONObject(raw == null ? "{}" : raw);
             // Enforce the two-operator cap for existing installs too, not only after the next save.
+            int before = root.length();
             prune(root);
+            if (root.length() != before) {
+                prefs(context).edit().putString(KEY_BACKUPS, root.toString()).apply();
+            }
             return root;
         } catch (Throwable ignored) {
             return new JSONObject();
