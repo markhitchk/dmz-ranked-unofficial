@@ -156,7 +156,7 @@ public class MainActivity extends Activity {
             "(function(){try{" +
             "if(!window.__dmzNativeEvents)window.__dmzNativeEvents=[];" +
             "if(!window.__dmzNativeSeen)window.__dmzNativeSeen={};" +
-            "function clean(v){var d=document.createElement('div');d.innerHTML=String(v==null?'':v);return String(d.textContent||d.innerText||'').replace(/\\\\s+/g,' ').trim();}" +
+            "function clean(v){var d=document.createElement('div');d.innerHTML=String(v==null?'':v);return String(d.textContent||d.innerText||'').replace(/\\s+/g,' ').trim();}" +
             "function emit(prefix,text,key){text=clean(text);if(!text||text.length<3)return;var k=String(key||prefix+'|'+text);var now=Date.now(),last=window.__dmzNativeSeen[k]||0;if(now-last<2500)return;window.__dmzNativeSeen[k]=now;window.__dmzNativeEvents.push(prefix+text);if(window.__dmzNativeEvents.length>40)window.__dmzNativeEvents.splice(0,window.__dmzNativeEvents.length-40);}" +
             "function wrap(name,after){var fn=window[name];if(typeof fn!=='function'||fn.__dmzNativeWrapped)return false;var w=function(){var args=arguments,out=fn.apply(this,args);try{after.apply(this,args);}catch(e){}return out;};try{Object.keys(fn).forEach(function(k){w[k]=fn[k];});}catch(e){}w.__dmzNativeWrapped=true;w.__dmzNativeOriginal=fn;window[name]=w;return true;}" +
             "window.__dmzInstallNativeHooks=function(){" +
@@ -171,7 +171,7 @@ public class MainActivity extends Activity {
             "if(!window.__dmzNativeObserver){" +
             "window.__dmzNativeObserver=new MutationObserver(function(){" +
             "try{window.__dmzInstallNativeHooks();" +
-            "var b=document.getElementById('banner');if(b&&/\\\\bshow\\\\b/.test(b.className||'')){var bt=clean(b.innerText||b.textContent||'');if(bt)emit('[WEBSITE]',bt,'dom:banner:'+bt);}" +
+            "var b=document.getElementById('banner');if(b&&/\\bshow\\b/.test(b.className||'')){var bt=clean(b.innerText||b.textContent||'');if(bt)emit('[WEBSITE]',bt,'dom:banner:'+bt);}" +
             "var u=document.getElementById('updatesDot');if(u&&getComputedStyle(u).display!=='none'){emit('[UPDATE]','New DMZ Ranked website update is available.','dom:updates');}" +
             "}catch(e){}" +
             "});" +
@@ -184,7 +184,7 @@ public class MainActivity extends Activity {
             "(function(){try{" +
             "if(window.__dmzInstallNativeHooks)try{window.__dmzInstallNativeHooks();}catch(e){}" +
             "var out=[];if(Array.isArray(window.__dmzNativeEvents)&&window.__dmzNativeEvents.length){out=window.__dmzNativeEvents.splice(0,20);}" +
-            "function clean(v){return String(v||'').replace(/\\\\s+/g,' ').trim();}" +
+            "function clean(v){return String(v||'').replace(/\\s+/g,' ').trim();}" +
             "function visible(el){try{var st=getComputedStyle(el),r=el.getBoundingClientRect();return st.display!=='none'&&st.visibility!=='hidden'&&r.width>0&&r.height>0;}catch(e){return true;}}" +
             "function add(prefix,el,key){if(!el||!visible(el))return;var t=clean(el.innerText||el.textContent||'');if(t.length<4||t.length>420)return;var full=prefix+t;if(out.indexOf(full)<0)out.push(full);}" +
             "if(!window.__dmzNativeBridgeInstalled){" +
@@ -1226,6 +1226,9 @@ public class MainActivity extends Activity {
     private void openSettingsActivity() {
         try {
             startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_REQUEST);
+            if (preferences == null || preferences.getBoolean(PREF_APP_ANIMATIONS, true)) {
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            }
         } catch (Throwable error) {
             Log.e(TAG, "Settings failure", error);
             Toast.makeText(this, "Settings could not open: " + safeMessage(error), Toast.LENGTH_LONG).show();
