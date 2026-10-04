@@ -5,18 +5,46 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
 
-    <!-- Android notification small icons must be a solid monochrome mask.
-         This simplified DMZ Ranked crosshair mark stays readable at status-bar size. -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M11,1h2v4h-2zM11,19h2v4h-2zM1,11h4v2H1zM19,11h4v2h-4z" />
+    <!-- Monochrome Android status-bar mask based on the supplied notification icon:
+         circular ring with the centered fork/trident mark. Android supplies the
+         final notification color, so this asset intentionally contains only white. -->
 
+    <!-- Outer circular ring -->
     <path
         android:fillColor="#FFFFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M12,5a7,7 0,1 0,0,14a7,7 0,1 0,0,-14zM12,7a5,5 0,1 1,0,10a5,5 0,1 1,0,-10z" />
+        android:pathData="M12,2
+            a10,10 0,1 0,0,20
+            a10,10 0,1 0,0,-20
+            M12,4.2
+            a7.8,7.8 0,1 1,0,15.6
+            a7.8,7.8 0,1 1,0,-15.6" />
 
+    <!-- Center vertical stem and pointed lower tip -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M7.2,9.1L12,12.8l4.8,-3.7v2.7L12,15.6l-4.8,-3.8z" />
+        android:pathData="M10.9,7.2
+            h2.2
+            v7.0
+            l-1.1,2.2
+            l-1.1,-2.2
+            z" />
+
+    <!-- Left branch -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6.9,11.6
+            l1.5,-1.5
+            l3.6,3.6
+            l-1.5,1.5
+            z" />
+
+    <!-- Right branch -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M17.1,11.6
+            l-1.5,-1.5
+            l-3.6,3.6
+            l1.5,1.5
+            z" />
 </vector>
