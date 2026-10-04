@@ -184,7 +184,7 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 132
+        versionCode 133
         versionName '1.0.30'
     }
 
@@ -217,6 +217,7 @@ android {
             initWith debug
             applicationIdSuffix '.beta'
             versionNameSuffix '-beta'
+            signingConfig signingConfigs.release
             debuggable true
             matchingFallbacks = ['debug']
             resValue 'string', 'app_name', 'DMZ Ranked [Beta]'
