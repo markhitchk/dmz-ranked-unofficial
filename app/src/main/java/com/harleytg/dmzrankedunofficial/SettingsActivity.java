@@ -784,7 +784,7 @@ public class SettingsActivity extends Activity {
             return;
         }
 
-        if (availability == UpdateAvailability.NOT_AVAILABLE) {
+        if (availability == UpdateAvailability.UPDATE_NOT_AVAILABLE) {
             if (status != null) {
                 status.setText("Up to date • " + installedVersionLabel());
             }
