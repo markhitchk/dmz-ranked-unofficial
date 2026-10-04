@@ -523,12 +523,9 @@ public class MainActivity extends Activity {
                 "var name=" + quotedName + ";" +
                 "var input=document.getElementById('playerName');" +
                 "var pick=document.getElementById('playerPick');" +
-                "if(!window.__dmzAndroidOperatorGuard){" +
-                "window.__dmzAndroidOperatorGuard=true;" +
                 "function touched(e){if(e&&e.isTrusted){window.__dmzAndroidOperatorTouched=true;}}" +
-                "if(input){input.addEventListener('input',touched,true);input.addEventListener('change',touched,true);}" +
-                "if(pick){pick.addEventListener('change',touched,true);}" +
-                "}" +
+                "if(input&&!input.__dmzAndroidOperatorGuard){input.__dmzAndroidOperatorGuard=true;input.addEventListener('input',touched,true);input.addEventListener('change',touched,true);}" +
+                "if(pick&&!pick.__dmzAndroidOperatorGuard){pick.__dmzAndroidOperatorGuard=true;pick.addEventListener('change',touched,true);}" +
                 "if(window.__dmzAndroidOperatorTouched){return 'user';}" +
                 "if(!input&&!pick){return 'wait';}" +
                 "var target=name.toLowerCase(),pickMatched=false;" +
