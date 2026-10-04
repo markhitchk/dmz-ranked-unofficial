@@ -72,6 +72,10 @@ public class SettingsActivity extends Activity {
     private static final String PREF_WEBVIEW_DEBUG = "webview_debug";
     private static final String PREF_LAST_PAGE_URL = "last_page_url";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
+    private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
+    private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
+    private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
+    private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
     private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
 
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
@@ -542,8 +546,12 @@ public class SettingsActivity extends Activity {
                 ? "Website operator not currently detected"
                 : "Current website operator: " + selected.trim();
 
+        String protection = OperatorBackupStore.isProtected(backup)
+                ? " • PIN protected"
+                : " • No PIN detected";
         target.setText(current
                 + "\nLatest app backup: " + backedUpOperator
+                + protection
                 + " • " + entries + " entries • " + when
                 + "\nSaved operators: " + backupCount);
         target.setTextColor(getColor(R.color.dmz_green));
@@ -712,7 +720,14 @@ public class SettingsActivity extends Activity {
             tempWebView.destroy();
 
             WebStorage.getInstance().deleteAllData();
-            preferences.edit().remove(PREF_LAST_PAGE_URL).apply();
+            preferences.edit()
+                    .remove(PREF_LAST_PAGE_URL)
+                    .remove(PREF_SELECTED_OPERATOR)
+                    .remove(PREF_OPERATOR_VERIFIED)
+                    .remove(PREF_OPERATOR_PROTECTED)
+                    .remove(PREF_OPERATOR_SOURCE)
+                    .remove(PREF_OPERATOR_SYNC_MS)
+                    .apply();
 
             CookieManager.getInstance().removeAllCookies(value -> runOnUiThread(() -> {
                 CookieManager.getInstance().flush();
