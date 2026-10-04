@@ -4,9 +4,13 @@ plugins {
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
+def sourceHarleysStudiosAboutBase64 = file("src/main/logo/about/harleys_studios_about.png.b64")
+def sourceHarleyGamerAboutBase64 = file("src/main/logo/about/harley_the_gamer_about.png.b64")
 
 tasks.register("generateDmzLogo") {
     inputs.file(sourceLogoFile)
+    inputs.file(sourceHarleysStudiosAboutBase64)
+    inputs.file(sourceHarleyGamerAboutBase64)
     outputs.dir(generatedLogoResDir)
 
     doLast {
@@ -50,6 +54,38 @@ tasks.register("generateDmzLogo") {
 
         def outputDir = new File(generatedLogoResDir, "drawable-nodpi")
         outputDir.mkdirs()
+
+        def decodeAboutPng = { File encodedSource, String outputName ->
+            if (!encodedSource.exists()) {
+                throw new GradleException("Missing About logo source: " + encodedSource)
+            }
+
+            byte[] pngBytes
+            try {
+                pngBytes = java.util.Base64.getDecoder().decode(encodedSource.text.trim())
+            } catch (IllegalArgumentException error) {
+                throw new GradleException("Invalid base64 About logo: " + encodedSource, error)
+            }
+
+            if (pngBytes.length < 8 ||
+                    pngBytes[0] != (byte) 0x89 ||
+                    pngBytes[1] != (byte) 0x50 ||
+                    pngBytes[2] != (byte) 0x4E ||
+                    pngBytes[3] != (byte) 0x47 ||
+                    pngBytes[4] != (byte) 0x0D ||
+                    pngBytes[5] != (byte) 0x0A ||
+                    pngBytes[6] != (byte) 0x1A ||
+                    pngBytes[7] != (byte) 0x0A) {
+                throw new GradleException("Decoded About logo is not a valid PNG: " + encodedSource)
+            }
+
+            def destination = new File(outputDir, outputName)
+            destination.bytes = pngBytes
+            println("Generated About PNG: " + destination + " (" + destination.length() + " bytes)")
+        }
+
+        decodeAboutPng(sourceHarleysStudiosAboutBase64, "harleys_studios_about.png")
+        decodeAboutPng(sourceHarleyGamerAboutBase64, "harley_the_gamer_about.png")
 
         def outputFile = new File(outputDir, "dmz_ranked_logo.png")
         if (!javax.imageio.ImageIO.write(transparentImage, "png", outputFile)) {
@@ -184,8 +220,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 131
-        versionName '1.0.29'
+        versionCode 132
+        versionName '1.0.30'
     }
 
     sourceSets {
