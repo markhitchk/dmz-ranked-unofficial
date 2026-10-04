@@ -65,6 +65,10 @@ public class MainActivity extends Activity {
     private static final String PREF_KEEP_AWAKE = "keep_awake";
     private static final String PREF_VERBOSE_LOADING = "verbose_loading";
     private static final String PREF_SITE_NOTIFICATIONS = "site_notifications";
+    private static final String PREF_PULL_REFRESH = "pull_to_refresh";
+    private static final String PREF_REMEMBER_LAST_PAGE = "remember_last_page";
+    private static final String PREF_WEBVIEW_DEBUG = "webview_debug";
+    private static final String PREF_LAST_PAGE_URL = "last_page_url";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
     private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
@@ -189,7 +193,17 @@ public class MainActivity extends Activity {
             if (savedInstanceState != null) {
                 webView.restoreState(savedInstanceState);
             } else {
-                webView.loadUrl(HOME_URL);
+                String initialUrl = HOME_URL;
+                if (preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true)) {
+                    String remembered = preferences.getString(PREF_LAST_PAGE_URL, HOME_URL);
+                    try {
+                        if (remembered != null && isDmzUrl(Uri.parse(remembered))) {
+                            initialUrl = remembered;
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+                webView.loadUrl(initialUrl);
             }
         } catch (Throwable error) {
             Log.e(TAG, "Startup failure", error);
@@ -245,6 +259,7 @@ public class MainActivity extends Activity {
 
         mobileUserAgent = settings.getUserAgentString();
         applyDesktopMode(false);
+        applyWebViewDebuggingPreference();
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
@@ -277,11 +292,12 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 try {
                     if (url != null && isDmzUrl(Uri.parse(url))) {
+                        saveLastPageIfNeeded(url);
+                        applyDesktopViewportIfNeeded(view);
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
-                        startOperatorMonitor();
                         startSiteNotificationMonitor();
                         return;
                     }
@@ -356,6 +372,11 @@ public class MainActivity extends Activity {
         if (webView == null) return;
 
         webView.setOnTouchListener((view, event) -> {
+            if (preferences != null && !preferences.getBoolean(PREF_PULL_REFRESH, true)) {
+                pullRefreshTracking = false;
+                pullRefreshTriggered = false;
+                return false;
+            }
             if (event == null) return false;
 
             switch (event.getActionMasked()) {
@@ -795,7 +816,7 @@ public class MainActivity extends Activity {
     private void showSettings() {
         try {
             desktopModeBeforeSettings = preferences.getBoolean(PREF_DESKTOP, false);
-            captureCurrentOperator(this::openSettingsActivity);
+            openSettingsActivity();
         } catch (Throwable error) {
             Log.e(TAG, "Settings failure", error);
             openSettingsActivity();
@@ -813,18 +834,77 @@ public class MainActivity extends Activity {
 
     private void applyDesktopMode(boolean reload) {
         if (webView == null || mobileUserAgent == null) return;
+
         boolean desktop = preferences != null && preferences.getBoolean(PREF_DESKTOP, false);
-        String ua = mobileUserAgent;
-        if (desktop) {
-            ua = mobileUserAgent.replace("; wv", "")
-                    .replace("Android", "X11; Linux x86_64")
-                    .replaceAll("Mobile\\s*", "");
-        }
+        WebSettings settings = webView.getSettings();
         String appIdentity = "DMZRankedApp/1.0.24 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
-        webView.getSettings().setUserAgentString(ua + " " + appIdentity);
+
+        if (desktop) {
+            String chromeToken = "Chrome/120.0.0.0";
+            int chromeStart = mobileUserAgent.indexOf("Chrome/");
+            if (chromeStart >= 0) {
+                int chromeEnd = mobileUserAgent.indexOf(' ', chromeStart);
+                chromeToken = chromeEnd > chromeStart
+                        ? mobileUserAgent.substring(chromeStart, chromeEnd)
+                        : mobileUserAgent.substring(chromeStart);
+            }
+
+            String desktopUa = "Mozilla/5.0 (X11; Linux x86_64) "
+                    + "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    + chromeToken + " Safari/537.36";
+            settings.setUserAgentString(desktopUa + " " + appIdentity);
+            settings.setUseWideViewPort(true);
+            settings.setLoadWithOverviewMode(true);
+        } else {
+            settings.setUserAgentString(mobileUserAgent + " " + appIdentity);
+            settings.setUseWideViewPort(false);
+            settings.setLoadWithOverviewMode(false);
+        }
+
         if (reload && webView.getUrl() != null) {
-            showLoadingScreen("Applying desktop mode…", 0);
+            showLoadingScreen("Applying desktop website mode…", 0);
             webView.reload();
+        }
+    }
+
+    private void applyDesktopViewportIfNeeded(WebView view) {
+        if (view == null || preferences == null || !preferences.getBoolean(PREF_DESKTOP, false)) {
+            return;
+        }
+
+        String script = "(function(){try{"
+                + "var m=document.querySelector('meta[name=viewport]');"
+                + "if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}"
+                + "m.setAttribute('content','width=1280, initial-scale=0.75, minimum-scale=0.25, maximum-scale=3, user-scalable=yes');"
+                + "document.documentElement.style.minWidth='1180px';"
+                + "return 'desktop-viewport-applied';"
+                + "}catch(e){return 'desktop-viewport-error';}})()";
+        try {
+            view.evaluateJavascript(script, null);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void applyWebViewDebuggingPreference() {
+        try {
+            boolean enabled = preferences != null && preferences.getBoolean(PREF_WEBVIEW_DEBUG, false);
+            WebView.setWebContentsDebuggingEnabled(enabled);
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not change WebView debugging", error);
+        }
+    }
+
+    private void saveLastPageIfNeeded(String url) {
+        if (preferences == null || !preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true)
+                || url == null) {
+            return;
+        }
+        try {
+            Uri uri = Uri.parse(url);
+            if (isDmzUrl(uri)) {
+                preferences.edit().putString(PREF_LAST_PAGE_URL, url).apply();
+            }
+        } catch (Throwable ignored) {
         }
     }
 
@@ -938,7 +1018,6 @@ public class MainActivity extends Activity {
             try {
                 String url = webView.getUrl();
                 if (url != null && isDmzUrl(Uri.parse(url))) {
-                    startOperatorMonitor();
                     startSiteNotificationMonitor();
                 }
             } catch (Throwable ignored) {
@@ -968,6 +1047,7 @@ public class MainActivity extends Activity {
 
         if (requestCode == SETTINGS_REQUEST) {
             applyKeepAwakePreference();
+            applyWebViewDebuggingPreference();
             requestSiteNotificationPermissionIfNeeded();
             if (preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
                 startSiteNotificationMonitor();
