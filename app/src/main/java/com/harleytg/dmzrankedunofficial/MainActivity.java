@@ -255,6 +255,11 @@ public class MainActivity extends Activity {
             applyBrandLogo(findViewById(R.id.titleLogo));
             applyBrandLogo(findViewById(R.id.loadingLogo));
 
+            TextView titleText = findViewById(R.id.titleText);
+            if (titleText != null && getPackageName().endsWith(".beta")) {
+                titleText.setText("DMZ Ranked [Beta]");
+            }
+
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
 
             configureWebView();
@@ -1198,8 +1203,8 @@ public class MainActivity extends Activity {
                 ? "standard"
                 : preferences.getString(PREF_CONTENT_SIZE, "standard");
         int zoom = 100;
-        if ("compact".equals(size)) zoom = 90;
-        else if ("large".equals(size)) zoom = 115;
+        if ("compact".equals(size)) zoom = 96;
+        else if ("large".equals(size)) zoom = 104;
         try {
             webView.getSettings().setTextZoom(zoom);
         } catch (Throwable error) {
