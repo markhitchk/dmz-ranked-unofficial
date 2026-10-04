@@ -66,8 +66,8 @@ public class SettingsActivity extends Activity {
     private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
     private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
-    private static final String PLAY_STORE_HTTPS = "https://play.google.com/store/apps/details?id=com.harleytg.dmzranked";
-    private static final String PLAY_STORE_MARKET = "market://details?id=com.harleytg.dmzranked";
+    private static final String PLAY_STORE_HTTPS_PREFIX = "https://play.google.com/store/apps/details?id=";
+    private static final String PLAY_STORE_MARKET_PREFIX = "market://details?id=";
     private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
     private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
 
@@ -1019,11 +1019,12 @@ public class SettingsActivity extends Activity {
 
     private void openPlayStore() {
         try {
-            Intent market = new Intent(Intent.ACTION_VIEW, Uri.parse(PLAY_STORE_MARKET));
+            Intent market = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse(PLAY_STORE_MARKET_PREFIX + getPackageName()));
             market.setPackage("com.android.vending");
             startActivity(market);
         } catch (Throwable ignored) {
-            openExternal(PLAY_STORE_HTTPS);
+            openExternal(PLAY_STORE_HTTPS_PREFIX + getPackageName());
         }
     }
 
