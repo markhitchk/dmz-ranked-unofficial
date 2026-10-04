@@ -86,6 +86,8 @@ public class SettingsActivity extends Activity {
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
     private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
+    private static final String PREF_CONTENT_SIZE = "content_size";
+    private static final String PREF_APP_ANIMATIONS = "app_animations";
 
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
@@ -164,6 +166,7 @@ public class SettingsActivity extends Activity {
         Switch verboseLoading = findViewById(R.id.verboseLoadingSwitch);
         Switch siteNotifications = findViewById(R.id.siteNotificationsSwitch);
         Switch operatorAutoSave = findViewById(R.id.operatorAutoSaveSwitch);
+        Switch appAnimations = findViewById(R.id.appAnimationsSwitch);
         Switch webviewDebug = findViewById(R.id.webviewDebugSwitch);
 
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
@@ -173,6 +176,7 @@ public class SettingsActivity extends Activity {
         verboseLoading.setChecked(preferences.getBoolean(PREF_VERBOSE_LOADING, false));
         siteNotifications.setChecked(preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true));
         operatorAutoSave.setChecked(preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true));
+        appAnimations.setChecked(preferences.getBoolean(PREF_APP_ANIMATIONS, true));
         webviewDebug.setChecked(preferences.getBoolean(PREF_WEBVIEW_DEBUG, false));
 
         desktopSite.setOnCheckedChangeListener((buttonView, checked) ->
@@ -192,6 +196,10 @@ public class SettingsActivity extends Activity {
         });
         operatorAutoSave.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_OPERATOR_AUTOSAVE, checked).apply());
+        appAnimations.setOnCheckedChangeListener((buttonView, checked) -> {
+            preferences.edit().putBoolean(PREF_APP_ANIMATIONS, checked).apply();
+            if (checked) runEntryAnimations();
+        });
         webviewDebug.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_WEBVIEW_DEBUG, checked).apply());
 
@@ -202,7 +210,13 @@ public class SettingsActivity extends Activity {
         bindToggleCard(R.id.verboseLoadingCard, verboseLoading);
         bindToggleCard(R.id.siteNotificationsCard, siteNotifications);
         bindToggleCard(R.id.operatorAutoSaveCard, operatorAutoSave);
+        bindToggleCard(R.id.appAnimationsCard, appAnimations);
         bindToggleCard(R.id.webviewDebugCard, webviewDebug);
+
+        findViewById(R.id.contentSizeCompactButton).setOnClickListener(v -> setContentSize("compact"));
+        findViewById(R.id.contentSizeStandardButton).setOnClickListener(v -> setContentSize("standard"));
+        findViewById(R.id.contentSizeLargeButton).setOnClickListener(v -> setContentSize("large"));
+        updateContentSizeUi();
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
         findViewById(R.id.creditsButton).setOnClickListener(v -> toggleCredits());
@@ -258,6 +272,7 @@ public class SettingsActivity extends Activity {
         setDeveloperSectionVisible(false);
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
+        runEntryAnimations();
     }
 
     @Override
@@ -283,6 +298,57 @@ public class SettingsActivity extends Activity {
             appUpdateManager.unregisterListener(installStateUpdatedListener);
         }
         super.onStop();
+    }
+
+    private void setContentSize(String size) {
+        String next = ("compact".equals(size) || "large".equals(size)) ? size : "standard";
+        preferences.edit().putString(PREF_CONTENT_SIZE, next).apply();
+        updateContentSizeUi();
+    }
+
+    private void updateContentSizeUi() {
+        if (preferences == null) return;
+        String size = preferences.getString(PREF_CONTENT_SIZE, "standard");
+        if (!"compact".equals(size) && !"large".equals(size)) size = "standard";
+
+        TextView compact = findViewById(R.id.contentSizeCompactButton);
+        TextView standard = findViewById(R.id.contentSizeStandardButton);
+        TextView large = findViewById(R.id.contentSizeLargeButton);
+        TextView summary = findViewById(R.id.contentSizeSummary);
+
+        int active = getColor(R.color.dmz_gold);
+        int inactive = getColor(R.color.dmz_muted);
+        if (compact != null) compact.setTextColor("compact".equals(size) ? active : inactive);
+        if (standard != null) standard.setTextColor("standard".equals(size) ? active : inactive);
+        if (large != null) large.setTextColor("large".equals(size) ? active : inactive);
+
+        if (summary != null) {
+            if ("compact".equals(size)) {
+                summary.setText("Compact • 90% website text • more content fits on screen.");
+            } else if ("large".equals(size)) {
+                summary.setText("Large • 115% website text • easier to read.");
+            } else {
+                summary.setText("Standard • 100% website text • default size.");
+            }
+        }
+    }
+
+    private void runEntryAnimations() {
+        if (preferences != null && !preferences.getBoolean(PREF_APP_ANIMATIONS, true)) return;
+        View search = findViewById(R.id.settingsSearch);
+        View scroll = findViewById(R.id.settingsScroll);
+        if (search != null) {
+            search.animate().cancel();
+            search.setAlpha(0f);
+            search.setTranslationY(-10f);
+            search.animate().alpha(1f).translationY(0f).setDuration(180L).start();
+        }
+        if (scroll != null) {
+            scroll.animate().cancel();
+            scroll.setAlpha(0f);
+            scroll.setTranslationY(18f);
+            scroll.animate().alpha(1f).translationY(0f).setDuration(240L).setStartDelay(45L).start();
+        }
     }
 
     private void handleDeveloperUnlockTap() {
@@ -447,6 +513,13 @@ public class SettingsActivity extends Activity {
             ((TextView) findViewById(R.id.creditsButton)).setText("HIDE CREDITS");
         }
 
+        boolean appearanceMatch =
+                showIfMatches(R.id.contentSizeCard, q,
+                        "appearance display size compact standard large zoom text content density")
+                | showIfMatches(R.id.appAnimationsCard, q,
+                        "appearance animation animations motion fade transition smooth");
+        findViewById(R.id.appearanceSection).setVisibility(appearanceMatch ? View.VISIBLE : View.GONE);
+
         boolean appMatch =
                 showIfMatches(R.id.desktopSiteCard, q,
                         "desktop website site layout pc view user agent wide viewport")
@@ -529,8 +602,9 @@ public class SettingsActivity extends Activity {
                         "danger reset app settings defaults");
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
-        boolean any = aboutMatch || appMatch || operatorMatch || notificationMatch || updateMatch
-                || actionMatch || helpMatch || dangerMatch || developerMatch;
+        boolean any = aboutMatch || appearanceMatch || appMatch || operatorMatch
+                || notificationMatch || updateMatch || actionMatch || helpMatch
+                || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
     }
 
@@ -553,45 +627,57 @@ public class SettingsActivity extends Activity {
 
 
     private void updateOperatorBackupStatus() {
-        TextView target = findViewById(R.id.operatorStatusText);
-        if (target == null || preferences == null) return;
+        TextView status = findViewById(R.id.operatorStatusText);
+        TextView list = findViewById(R.id.operatorListText);
+        if (status == null || preferences == null) return;
 
         String selected = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        selected = selected == null ? "" : selected.trim();
+        boolean verified = preferences.getBoolean(PREF_OPERATOR_VERIFIED, false);
+        boolean protectedFlag = preferences.getBoolean(PREF_OPERATOR_PROTECTED, false);
+
         JSONObject backup = OperatorBackupStore.get(this, selected);
         if (backup == null) backup = OperatorBackupStore.latest(this);
 
-        int backupCount = OperatorBackupStore.backupCount(this);
-        if (backup == null) {
-            String current = selected == null || selected.trim().isEmpty()
-                    ? "No website operator detected yet"
-                    : "Current website operator: " + selected.trim();
-            target.setText(current
-                    + "\nNo app backup yet • " + backupCount + " saved operator"
-                    + (backupCount == 1 ? "" : "s"));
-            target.setTextColor(getColor(R.color.dmz_muted));
-            return;
+        if (selected.isEmpty()) {
+            status.setText("No current website operator detected. Open DMZRanked.com and select or use an operator.");
+            status.setTextColor(getColor(R.color.dmz_muted));
+        } else {
+            StringBuilder current = new StringBuilder();
+            current.append("Current website operator: ").append(selected);
+            current.append(verified ? "\n● Verified on this device" : "\n● Detected from website");
+            current.append(protectedFlag ? " • PIN protected" : " • No PIN detected");
+
+            if (backup != null && selected.equalsIgnoreCase(OperatorBackupStore.operatorName(backup))) {
+                long savedAt = OperatorBackupStore.savedAt(backup);
+                int entries = OperatorBackupStore.entryCount(backup);
+                String when = savedAt <= 0L
+                        ? "not backed up yet"
+                        : DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                                .format(new Date(savedAt));
+                current.append("\n").append(entries).append(" safe entries • Last backup ").append(when);
+            }
+            status.setText(current.toString());
+            status.setTextColor(getColor(R.color.dmz_green));
         }
 
-        String backedUpOperator = OperatorBackupStore.operatorName(backup);
-        long savedAt = OperatorBackupStore.savedAt(backup);
-        int entries = OperatorBackupStore.entryCount(backup);
-        String when = savedAt <= 0L
-                ? "unknown time"
-                : DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-                        .format(new Date(savedAt));
-        String current = selected == null || selected.trim().isEmpty()
-                ? "Website operator not currently detected"
-                : "Current website operator: " + selected.trim();
-
-        String protection = OperatorBackupStore.isProtected(backup)
-                ? " • PIN protected"
-                : " • No PIN detected";
-        target.setText(current
-                + "\nLatest app backup: " + backedUpOperator
-                + protection
-                + " • " + entries + " entries • " + when
-                + "\nSaved operators: " + backupCount);
-        target.setTextColor(getColor(R.color.dmz_green));
+        if (list != null) {
+            String[] names = OperatorBackupStore.operatorNames(this);
+            StringBuilder imported = new StringBuilder();
+            imported.append("Imported operators: ").append(names.length).append(" / 2");
+            if (names.length == 0) {
+                imported.append("\nNone imported yet.");
+            } else {
+                for (int i = 0; i < names.length; i++) {
+                    String name = names[i];
+                    imported.append("\n").append(i + 1).append(". ").append(name);
+                    if (!selected.isEmpty() && selected.equalsIgnoreCase(name)) {
+                        imported.append("  • CURRENT");
+                    }
+                }
+            }
+            list.setText(imported.toString());
+        }
     }
 
     private void requestNotificationPermissionIfNeeded(boolean postTestAfter) {
