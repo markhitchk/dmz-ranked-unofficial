@@ -1,11 +1,13 @@
 package com.harleytg.dmzranked;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -43,6 +45,8 @@ public class SettingsActivity extends Activity {
     private static final String PREF_DESKTOP = "desktop_site";
     private static final String PREF_KEEP_AWAKE = "keep_awake";
     private static final String PREF_VERBOSE_LOADING = "verbose_loading";
+    private static final String PREF_SITE_NOTIFICATIONS = "site_notifications";
+    private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
     private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
@@ -70,10 +74,12 @@ public class SettingsActivity extends Activity {
         Switch desktopSite = findViewById(R.id.desktopSiteSwitch);
         Switch keepAwake = findViewById(R.id.keepAwakeSwitch);
         Switch verboseLoading = findViewById(R.id.verboseLoadingSwitch);
+        Switch siteNotifications = findViewById(R.id.siteNotificationsSwitch);
 
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
         keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
         verboseLoading.setChecked(preferences.getBoolean(PREF_VERBOSE_LOADING, false));
+        siteNotifications.setChecked(preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true));
 
         desktopSite.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_DESKTOP, checked).apply());
@@ -81,6 +87,10 @@ public class SettingsActivity extends Activity {
                 preferences.edit().putBoolean(PREF_KEEP_AWAKE, checked).apply());
         verboseLoading.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_VERBOSE_LOADING, checked).apply());
+        siteNotifications.setOnCheckedChangeListener((buttonView, checked) -> {
+            preferences.edit().putBoolean(PREF_SITE_NOTIFICATIONS, checked).apply();
+            if (checked) requestNotificationPermissionIfNeeded();
+        });
 
         findViewById(R.id.desktopSiteCard).setOnClickListener(v ->
                 desktopSite.setChecked(!desktopSite.isChecked()));
@@ -88,6 +98,8 @@ public class SettingsActivity extends Activity {
                 keepAwake.setChecked(!keepAwake.isChecked()));
         findViewById(R.id.verboseLoadingCard).setOnClickListener(v ->
                 verboseLoading.setChecked(!verboseLoading.isChecked()));
+        findViewById(R.id.siteNotificationsCard).setOnClickListener(v ->
+                siteNotifications.setChecked(!siteNotifications.isChecked()));
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
         findViewById(R.id.reloadCard).setOnClickListener(v -> {
@@ -191,6 +203,15 @@ public class SettingsActivity extends Activity {
             if (storagePath != null) {
                 storagePath.setText("App-private Android WebView storage");
             }
+        }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    NOTIFICATION_PERMISSION_REQUEST);
         }
     }
 
