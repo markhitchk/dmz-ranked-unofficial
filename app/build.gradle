@@ -4,8 +4,8 @@ plugins {
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
-def sourceHarleysStudiosAbout = file("src/main/logo/about/raw/harleys_studios_about.png")
-def sourceHarleyGamerAbout = file("src/main/logo/about/raw/harley_the_gamer_about.png")
+def sourceHarleysStudiosAbout = file("src/main/logo/about/clean/harleys_studios_about.png.b64")
+def sourceHarleyGamerAbout = file("src/main/logo/about/clean/harley_the_gamer_about.png.b64")
 
 tasks.register("generateDmzLogo") {
     inputs.file(sourceLogoFile)
@@ -63,7 +63,13 @@ tasks.register("generateDmzLogo") {
                 throw new GradleException("Missing About logo PNG: " + source)
             }
 
-            byte[] bytes = source.bytes
+            byte[] bytes
+            try {
+                bytes = java.util.Base64.getDecoder().decode(source.text.trim())
+            } catch (IllegalArgumentException error) {
+                throw new GradleException("Invalid base64 About logo source: " + source, error)
+            }
+
             byte[] signature = [
                     (byte) 0x89, (byte) 0x50, (byte) 0x4E, (byte) 0x47,
                     (byte) 0x0D, (byte) 0x0A, (byte) 0x1A, (byte) 0x0A
