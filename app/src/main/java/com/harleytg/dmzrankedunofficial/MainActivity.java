@@ -70,10 +70,6 @@ public class MainActivity extends Activity {
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
-    private static final String PREF_SITE_LOCAL_COUNT = "website_local_storage_count";
-    private static final String PREF_SITE_SESSION_COUNT = "website_session_storage_count";
-    private static final String PREF_SITE_INDEXEDDB_AVAILABLE = "website_indexeddb_available";
-    private static final String PREF_SITE_STORAGE_SYNC_MS = "website_storage_sync_ms";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -120,11 +116,7 @@ public class MainActivity extends Activity {
             "var statusVisible=/VERIFIED ON THIS DEVICE|CHANGE PIN|PROTECTED/i.test(body);" +
             "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
             "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
-            "var localCount=0,sessionCount=0,indexedDbAvailable=false;" +
-            "try{localCount=window.localStorage?window.localStorage.length:0;}catch(e){}" +
-            "try{sessionCount=window.sessionStorage?window.sessionStorage.length:0;}catch(e){}" +
-            "try{indexedDbAvailable=!!window.indexedDB;}catch(e){}" +
-            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source,localCount:localCount,sessionCount:sessionCount,indexedDbAvailable:indexedDbAvailable});" +
+            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
             "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
@@ -509,17 +501,6 @@ public class MainActivity extends Activity {
                         String name = payload.optString("name", "").trim();
                         boolean statusVisible = payload.optBoolean("statusVisible", false);
                         String source = payload.optString("source", "").trim();
-                        int localCount = Math.max(0, payload.optInt("localCount", 0));
-                        int sessionCount = Math.max(0, payload.optInt("sessionCount", 0));
-                        boolean indexedDbAvailable = payload.optBoolean("indexedDbAvailable", false);
-
-                        preferences.edit()
-                                .putInt(PREF_SITE_LOCAL_COUNT, localCount)
-                                .putInt(PREF_SITE_SESSION_COUNT, sessionCount)
-                                .putBoolean(PREF_SITE_INDEXEDDB_AVAILABLE, indexedDbAvailable)
-                                .putLong(PREF_SITE_STORAGE_SYNC_MS, System.currentTimeMillis())
-                                .apply();
-
                         if (!name.isEmpty()) {
                             SharedPreferences.Editor editor = preferences.edit()
                                     .putString(PREF_SELECTED_OPERATOR, name)
@@ -839,7 +820,7 @@ public class MainActivity extends Activity {
                     .replace("Android", "X11; Linux x86_64")
                     .replaceAll("Mobile\\s*", "");
         }
-        String appIdentity = "DMZRankedApp/1.0.23 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
+        String appIdentity = "DMZRankedApp/1.0.24 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)";
         webView.getSettings().setUserAgentString(ua + " " + appIdentity);
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop mode…", 0);
