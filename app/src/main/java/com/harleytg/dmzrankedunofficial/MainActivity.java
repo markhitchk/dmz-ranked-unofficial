@@ -165,7 +165,7 @@ public class MainActivity extends Activity {
             "wrap('showBanner',function(kind,html){emit('[WEBSITE]',clean(html),'banner:'+clean(html));});" +
             "wrap('showSeasonPopup',function(s){s=s||{};emit('[SEASON]','New season: '+(s.name||'DMZ Ranked season'),'season:'+String(s.start||s.name||''));});" +
             "wrap('buildChangelogPopup',function(entries){var e=(entries&&entries.length)?entries[0]:null;emit('[UPDATE]',e&&e.title?('Website update: '+e.title):'DMZ Ranked website update available','update:'+(e&&e.v!=null?e.v:clean(e&&e.title||'')));});" +
-            "wrap('showMsg',function(id,kind,text){if(kind==='err'){emit('[WEBSITE]',text,'msg:'+id+':'+text);}else if(kind==='warn'&&id!=='logMsg'){emit('[WEBSITE]',text,'msg:'+id+':'+text);}});" +
+            "wrap('showMsg',function(id,kind,text){text=String(text||'');if(id==='logMsg'&&kind==='ok'&&/^Logged for /i.test(text))return;emit('[WEBSITE]',text,'msg:'+id+':'+kind+':'+text);});" +
             "return true;};" +
             "window.__dmzInstallNativeHooks();" +
             "if(!window.__dmzNativeObserver){" +
