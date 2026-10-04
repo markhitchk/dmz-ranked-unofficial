@@ -6,6 +6,7 @@ def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
 def sourceHarleysStudiosAbout = file("src/main/logo/about/clean/harleys_studios_about.png.b64")
 def sourceHarleyGamerAbout = file("src/main/logo/about/clean/harley_the_gamer_about.png.b64")
+// About branding sources are metadata-free PNGs encoded as text so AAPT2 only sees sanitized output.
 
 tasks.register("generateDmzLogo") {
     inputs.file(sourceLogoFile)
