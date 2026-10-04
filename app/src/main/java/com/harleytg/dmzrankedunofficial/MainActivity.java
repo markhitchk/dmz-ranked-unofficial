@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.graphics.Insets;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -69,6 +70,10 @@ public class MainActivity extends Activity {
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
+    private static final String PREF_SITE_LOCAL_COUNT = "website_local_storage_count";
+    private static final String PREF_SITE_SESSION_COUNT = "website_session_storage_count";
+    private static final String PREF_SITE_INDEXEDDB_AVAILABLE = "website_indexeddb_available";
+    private static final String PREF_SITE_STORAGE_SYNC_MS = "website_storage_sync_ms";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -115,7 +120,11 @@ public class MainActivity extends Activity {
             "var statusVisible=/VERIFIED ON THIS DEVICE|CHANGE PIN|PROTECTED/i.test(body);" +
             "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
             "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
-            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
+            "var localCount=0,sessionCount=0,indexedDbAvailable=false;" +
+            "try{localCount=window.localStorage?window.localStorage.length:0;}catch(e){}" +
+            "try{sessionCount=window.sessionStorage?window.sessionStorage.length:0;}catch(e){}" +
+            "try{indexedDbAvailable=!!window.indexedDB;}catch(e){}" +
+            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source,localCount:localCount,sessionCount:sessionCount,indexedDbAvailable:indexedDbAvailable});" +
             "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
@@ -150,6 +159,9 @@ public class MainActivity extends Activity {
     private String mobileUserAgent;
     private boolean handlingBack;
     private boolean desktopModeBeforeSettings;
+    private float pullRefreshStartY;
+    private boolean pullRefreshTracking;
+    private boolean pullRefreshTriggered;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -247,6 +259,7 @@ public class MainActivity extends Activity {
         cookies.setAcceptThirdPartyCookies(webView, true);
 
         webView.setBackgroundColor(Color.rgb(8, 10, 9));
+        configurePullToRefresh();
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -347,6 +360,67 @@ public class MainActivity extends Activity {
                 Toast.makeText(MainActivity.this, "Downloads are disabled in this unofficial client.", Toast.LENGTH_SHORT).show());
     }
 
+    private void configurePullToRefresh() {
+        if (webView == null) return;
+
+        webView.setOnTouchListener((view, event) -> {
+            if (event == null) return false;
+
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    pullRefreshTracking = webView.getScrollY() <= 0;
+                    pullRefreshTriggered = false;
+                    pullRefreshStartY = event.getY();
+                    break;
+
+                case MotionEvent.ACTION_MOVE:
+                    if (pullRefreshTracking && webView.getScrollY() <= 0) {
+                        float distance = event.getY() - pullRefreshStartY;
+                        if (distance >= dpToPx(96)) {
+                            pullRefreshTriggered = true;
+                            if (topProgressBar != null) {
+                                topProgressBar.setVisibility(View.VISIBLE);
+                                topProgressBar.setProgress(18);
+                            }
+                        } else if (topProgressBar != null && distance > dpToPx(24)) {
+                            topProgressBar.setVisibility(View.VISIBLE);
+                            topProgressBar.setProgress(Math.min(16,
+                                    Math.max(4, (int) ((distance / dpToPx(96)) * 16f))));
+                        }
+                    }
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    if (pullRefreshTracking && pullRefreshTriggered && webView.getScrollY() <= 0) {
+                        performPullToRefresh();
+                    } else if (topProgressBar != null && loadingOverlay != null
+                            && loadingOverlay.getVisibility() != View.VISIBLE) {
+                        topProgressBar.setVisibility(View.GONE);
+                    }
+                    pullRefreshTracking = false;
+                    pullRefreshTriggered = false;
+                    break;
+
+                case MotionEvent.ACTION_CANCEL:
+                    pullRefreshTracking = false;
+                    pullRefreshTriggered = false;
+                    break;
+            }
+            return false;
+        });
+    }
+
+    private void performPullToRefresh() {
+        if (webView == null || webView.getUrl() == null) return;
+        showLoadingScreen("Refreshing DMZ Ranked…", 4);
+        Toast.makeText(this, "Refreshing DMZ Ranked…", Toast.LENGTH_SHORT).show();
+        webView.reload();
+    }
+
+    private float dpToPx(int dp) {
+        return dp * getResources().getDisplayMetrics().density;
+    }
+
     private void resetLoadingSiteStatus() {
         if (loadingConnectionText != null) loadingConnectionText.setText("CONNECTING…");
         if (loadingSyncedText != null) loadingSyncedText.setText("SYNCING…");
@@ -435,6 +509,16 @@ public class MainActivity extends Activity {
                         String name = payload.optString("name", "").trim();
                         boolean statusVisible = payload.optBoolean("statusVisible", false);
                         String source = payload.optString("source", "").trim();
+                        int localCount = Math.max(0, payload.optInt("localCount", 0));
+                        int sessionCount = Math.max(0, payload.optInt("sessionCount", 0));
+                        boolean indexedDbAvailable = payload.optBoolean("indexedDbAvailable", false);
+
+                        preferences.edit()
+                                .putInt(PREF_SITE_LOCAL_COUNT, localCount)
+                                .putInt(PREF_SITE_SESSION_COUNT, sessionCount)
+                                .putBoolean(PREF_SITE_INDEXEDDB_AVAILABLE, indexedDbAvailable)
+                                .putLong(PREF_SITE_STORAGE_SYNC_MS, System.currentTimeMillis())
+                                .apply();
 
                         if (!name.isEmpty()) {
                             SharedPreferences.Editor editor = preferences.edit()
