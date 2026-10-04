@@ -96,6 +96,48 @@ final class OperatorBackupStore {
         }
     }
 
+    static String exportJson(Context context) {
+        if (context == null) return "{}";
+        try {
+            return loadRoot(context).toString();
+        } catch (Throwable ignored) {
+            return "{}";
+        }
+    }
+
+    static int importJson(Context context, String raw) {
+        if (context == null || raw == null || raw.trim().isEmpty()) return 0;
+        try {
+            JSONObject incoming = new JSONObject(raw);
+            JSONObject root = loadRoot(context);
+            int imported = 0;
+            Iterator<String> keys = incoming.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                JSONObject record = incoming.optJSONObject(key);
+                if (record == null) continue;
+                String name = operatorName(record);
+                JSONObject storage = record.optJSONObject("storage");
+                if (name.isEmpty() || storage == null) continue;
+
+                JSONObject clean = new JSONObject();
+                clean.put("operator", name);
+                clean.put("savedAt", record.optLong("savedAt", System.currentTimeMillis()));
+                clean.put("origin", record.optString("origin", "https://dmzranked.com"));
+                clean.put("storage", storage);
+                clean.put("entryCount", storage.length());
+                clean.put("protected", record.optBoolean("protected", false));
+                root.put(normalize(name), clean);
+                imported++;
+            }
+            prune(root);
+            prefs(context).edit().putString(KEY_BACKUPS, root.toString()).commit();
+            return Math.min(imported, MAX_OPERATORS);
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
     static String[] operatorNames(Context context) {
         if (context == null) return new String[0];
         try {
