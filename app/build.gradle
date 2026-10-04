@@ -202,8 +202,20 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            def stableKeystore = System.getenv("DMZ_RELEASE_KEYSTORE")
+                    ?: "${System.properties['user.home']}/.android/debug.keystore"
+            storeFile file(stableKeystore)
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
