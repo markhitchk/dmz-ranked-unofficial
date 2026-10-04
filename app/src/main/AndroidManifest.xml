@@ -15,6 +15,12 @@
         android:theme="@style/Theme.DMZRanked"
         android:usesCleartextTraffic="false">
 
+        <provider
+            android:name=".MigrationProvider"
+            android:authorities="${applicationId}.migration"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
         <activity
             android:name=".FeedbackActivity"
             android:exported="false" />
