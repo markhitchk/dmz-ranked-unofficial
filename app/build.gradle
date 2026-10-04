@@ -4,9 +4,13 @@ plugins {
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
+def sourceHarleysStudiosAbout = file("src/main/logo/about/raw/harleys_studios_about.png")
+def sourceHarleyGamerAbout = file("src/main/logo/about/raw/harley_the_gamer_about.png")
 
 tasks.register("generateDmzLogo") {
     inputs.file(sourceLogoFile)
+    inputs.file(sourceHarleysStudiosAbout)
+    inputs.file(sourceHarleyGamerAbout)
     outputs.dir(generatedLogoResDir)
 
     doLast {
@@ -50,6 +54,80 @@ tasks.register("generateDmzLogo") {
 
         def outputDir = new File(generatedLogoResDir, "drawable-nodpi")
         outputDir.mkdirs()
+
+        // AAPT2 can crash on otherwise-valid PNGs containing embedded ICC/text
+        // metadata. Keep the original pixel stream but strip all nonessential
+        // ancillary chunks before exposing these About logos as Android resources.
+        def writeAndroidSafePng = { File source, File destination ->
+            if (!source.exists()) {
+                throw new GradleException("Missing About logo PNG: " + source)
+            }
+
+            byte[] bytes = source.bytes
+            byte[] signature = [
+                    (byte) 0x89, (byte) 0x50, (byte) 0x4E, (byte) 0x47,
+                    (byte) 0x0D, (byte) 0x0A, (byte) 0x1A, (byte) 0x0A
+            ] as byte[]
+            if (bytes.length < 20) {
+                throw new GradleException("About logo PNG is too small: " + source)
+            }
+            for (int i = 0; i < signature.length; i++) {
+                if (bytes[i] != signature[i]) {
+                    throw new GradleException("About logo is not a valid PNG: " + source)
+                }
+            }
+
+            def keepChunks = ["IHDR", "PLTE", "tRNS", "IDAT", "IEND"] as Set
+            def cleaned = new java.io.ByteArrayOutputStream(bytes.length)
+            cleaned.write(bytes, 0, 8)
+
+            int pos = 8
+            boolean sawIend = false
+            while (pos + 12 <= bytes.length) {
+                long dataLength =
+                        ((bytes[pos] & 0xFFL) << 24) |
+                        ((bytes[pos + 1] & 0xFFL) << 16) |
+                        ((bytes[pos + 2] & 0xFFL) << 8) |
+                        (bytes[pos + 3] & 0xFFL)
+                long chunkLength = dataLength + 12L
+                if (chunkLength > Integer.MAX_VALUE || pos + chunkLength > bytes.length) {
+                    throw new GradleException("Corrupt PNG chunk in About logo: " + source)
+                }
+
+                String type = new String(
+                        bytes,
+                        pos + 4,
+                        4,
+                        java.nio.charset.StandardCharsets.ISO_8859_1
+                )
+                if (keepChunks.contains(type)) {
+                    cleaned.write(bytes, pos, (int) chunkLength)
+                }
+
+                pos += (int) chunkLength
+                if ("IEND".equals(type)) {
+                    sawIend = true
+                    break
+                }
+            }
+
+            if (!sawIend) {
+                throw new GradleException("About logo PNG is missing IEND: " + source)
+            }
+
+            destination.bytes = cleaned.toByteArray()
+            println("Generated Android-safe About PNG: " + destination
+                    + " (" + source.length() + " -> " + destination.length() + " bytes)")
+        }
+
+        writeAndroidSafePng(
+                sourceHarleysStudiosAbout,
+                new File(outputDir, "harleys_studios_about.png")
+        )
+        writeAndroidSafePng(
+                sourceHarleyGamerAbout,
+                new File(outputDir, "harley_the_gamer_about.png")
+        )
 
         def outputFile = new File(outputDir, "dmz_ranked_logo.png")
         if (!javax.imageio.ImageIO.write(transparentImage, "png", outputFile)) {
