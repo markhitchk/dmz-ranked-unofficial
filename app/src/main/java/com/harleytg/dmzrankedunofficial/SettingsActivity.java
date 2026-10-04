@@ -247,10 +247,14 @@ public class SettingsActivity extends Activity {
         });
         findViewById(R.id.clearCacheCard).setOnClickListener(v -> clearWebCacheOnly());
         findViewById(R.id.clearDataCard).setOnClickListener(v -> confirmClearWebData());
-        findViewById(R.id.saveOperatorCard).setOnClickListener(v -> {
+        View.OnClickListener syncOperator = v -> {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_SAVE_OPERATOR));
             finish();
-        });
+        };
+        findViewById(R.id.saveOperatorCard).setOnClickListener(syncOperator);
+        findViewById(R.id.refreshOperatorCard).setOnClickListener(syncOperator);
+        findViewById(R.id.backupOperatorCard).setOnClickListener(syncOperator);
+        findViewById(R.id.openWebsiteCard).setOnClickListener(v -> finish());
         findViewById(R.id.restoreOperatorCard).setOnClickListener(v -> {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_RESTORE_OPERATOR));
             finish();
@@ -662,6 +666,9 @@ public class SettingsActivity extends Activity {
     private void updateOperatorBackupStatus() {
         TextView status = findViewById(R.id.operatorStatusText);
         TextView list = findViewById(R.id.operatorListText);
+        TextView count = findViewById(R.id.operatorCountText);
+        TextView active = findViewById(R.id.operatorActiveBadge);
+        TextView backupSummary = findViewById(R.id.operatorBackupSummaryText);
         if (status == null || preferences == null) return;
 
         String selected = preferences.getString(PREF_SELECTED_OPERATOR, "");
@@ -669,47 +676,75 @@ public class SettingsActivity extends Activity {
         boolean verified = preferences.getBoolean(PREF_OPERATOR_VERIFIED, false);
         boolean protectedFlag = preferences.getBoolean(PREF_OPERATOR_PROTECTED, false);
 
-        JSONObject backup = OperatorBackupStore.get(this, selected);
-        if (backup == null) backup = OperatorBackupStore.latest(this);
+        JSONObject selectedBackup = OperatorBackupStore.get(this, selected);
+        JSONObject latestBackup = selectedBackup != null
+                ? selectedBackup
+                : OperatorBackupStore.latest(this);
 
         if (selected.isEmpty()) {
-            status.setText("No current website operator detected. Open DMZRanked.com and select or use an operator.");
+            status.setText("No operator detected\nOpen DMZRanked.com and select an operator.");
             status.setTextColor(getColor(R.color.dmz_muted));
+            if (active != null) {
+                active.setText("○ Not detected");
+                active.setTextColor(getColor(R.color.dmz_muted));
+            }
         } else {
             StringBuilder current = new StringBuilder();
-            current.append("Current website operator: ").append(selected);
-            current.append(verified ? "\n● Verified on this device" : "\n● Detected from website");
-            current.append(protectedFlag ? " • PIN protected" : " • No PIN detected");
-
-            if (backup != null && selected.equalsIgnoreCase(OperatorBackupStore.operatorName(backup))) {
-                long savedAt = OperatorBackupStore.savedAt(backup);
-                int entries = OperatorBackupStore.entryCount(backup);
-                String when = savedAt <= 0L
-                        ? "not backed up yet"
-                        : DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-                                .format(new Date(savedAt));
-                current.append("\n").append(entries).append(" safe entries • Last backup ").append(when);
+            current.append(selected);
+            current.append("\n");
+            current.append(verified ? "✓ Verified on this device" : "Detected from website selection");
+            current.append(protectedFlag ? "  •  PIN protected" : "  •  No PIN detected");
+            if (selectedBackup != null) {
+                current.append("  •  ")
+                        .append(OperatorBackupStore.entryCount(selectedBackup))
+                        .append(" entries");
             }
             status.setText(current.toString());
             status.setTextColor(getColor(R.color.dmz_green));
+            if (active != null) {
+                active.setText("● Active on DMZRanked.com");
+                active.setTextColor(getColor(R.color.dmz_green));
+            }
         }
 
+        String[] names = OperatorBackupStore.operatorNames(this);
+        if (count != null) count.setText(names.length + " / 2 imported");
+
         if (list != null) {
-            String[] names = OperatorBackupStore.operatorNames(this);
-            StringBuilder imported = new StringBuilder();
-            imported.append("Imported operators: ").append(names.length).append(" / 2");
             if (names.length == 0) {
-                imported.append("\nNone imported yet.");
+                list.setText("No imported operators yet.");
+                list.setTextColor(getColor(R.color.dmz_muted));
             } else {
+                StringBuilder imported = new StringBuilder();
                 for (int i = 0; i < names.length; i++) {
+                    if (i > 0) imported.append("\n\n");
                     String name = names[i];
-                    imported.append("\n").append(i + 1).append(". ").append(name);
-                    if (!selected.isEmpty() && selected.equalsIgnoreCase(name)) {
-                        imported.append("  • CURRENT");
+                    boolean current = !selected.isEmpty() && selected.equalsIgnoreCase(name);
+                    imported.append(current ? "◉  " : "○  ").append(name);
+                    JSONObject row = OperatorBackupStore.get(this, name);
+                    if (current) imported.append("\n    ● Current");
+                    if (row != null) {
+                        imported.append(current ? "  •  " : "\n    ")
+                                .append("Saved on this device");
                     }
                 }
+                list.setText(imported.toString());
+                list.setTextColor(getColor(R.color.dmz_white));
             }
-            list.setText(imported.toString());
+        }
+
+        if (backupSummary != null) {
+            if (latestBackup == null) {
+                backupSummary.setText("No local operator backup yet.");
+            } else {
+                long savedAt = OperatorBackupStore.savedAt(latestBackup);
+                String when = savedAt <= 0L
+                        ? "Unknown time"
+                        : DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                                .format(new Date(savedAt));
+                backupSummary.setText("Last backup: " + when
+                        + "  •  " + OperatorBackupStore.entryCount(latestBackup) + " entries");
+            }
         }
     }
 
