@@ -56,8 +56,6 @@ jobs:
           fi
 
       - name: Build update-compatible APK and Play AAB
-        env:
-          DMZ_RELEASE_KEYSTORE: ${{ env.HOME }}/.android/debug.keystore
         run: gradle assembleDebug bundleRelease
 
       - name: Show APK signing certificate
