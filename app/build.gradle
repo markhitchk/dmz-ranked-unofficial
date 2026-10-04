@@ -219,7 +219,7 @@ android {
             versionNameSuffix '-beta'
             debuggable true
             matchingFallbacks = ['debug']
-            resValue 'string', 'app_name', 'DMZ Ranked Beta'
+            resValue 'string', 'app_name', 'DMZ Ranked [Beta]'
         }
     }
 }
