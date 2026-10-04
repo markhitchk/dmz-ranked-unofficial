@@ -77,5 +77,5 @@ jobs:
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DMZ-Ranked-1.0.24-126-AAB
+          name: DMZ-Ranked-1.0.25-127-AAB
           path: app/build/outputs/bundle/release/app-release.aab
