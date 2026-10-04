@@ -62,7 +62,26 @@
         </LinearLayout>
     </LinearLayout>
 
+    <EditText
+        android:id="@+id/settingsSearch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/settings_search_background"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="10dp"
+        android:hint="@string/settings_search_hint"
+        android:imeOptions="actionDone"
+        android:inputType="text"
+        android:maxLines="1"
+        android:textColor="@color/dmz_white"
+        android:textColorHint="@color/dmz_muted"
+        android:textSize="15sp" />
+
     <ScrollView
+        android:id="@+id/settingsScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -74,845 +93,718 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="16dp"
-            android:paddingTop="18dp"
+            android:paddingTop="14dp"
             android:paddingEnd="16dp"
             android:paddingBottom="28dp">
 
+            <TextView
+                android:id="@+id/searchEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="No app settings match your search."
+                android:textColor="@color/dmz_muted"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
             <LinearLayout
+                android:id="@+id/aboutCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/settings_card_background"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="16dp">
 
-                <ImageView
-                    android:id="@+id/aboutLogo"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
-                    android:contentDescription="DMZ Ranked logo"
-                    android:scaleType="centerInside"
-                    android:src="@drawable/dmz_ranked_logo" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/aboutLogo"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:contentDescription="DMZ Ranked logo"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/dmz_ranked_logo" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:letterSpacing="0.05"
+                            android:text="DMZ RANKED"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/versionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Version"
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/buildText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Build"
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Unofficial Android client"
+                            android:textColor="@color/dmz_gold"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/creditsSummaryText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Website by Yolando &amp; dchinz • Android app by Harley's Studios"
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/creditsButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/settings_support_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="14dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="VIEW CREDITS"
+                    android:textColor="@color/dmz_black"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/creditsContent"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_marginTop="14dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/dmz_card_border" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
                         android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.05"
-                        android:text="DMZ RANKED"
-                        android:textColor="@color/dmz_white"
-                        android:textSize="24sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/versionText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="Version"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="Unofficial Android client"
+                        android:letterSpacing="0.08"
+                        android:text="@string/app_development_title"
                         android:textColor="@color/dmz_gold"
                         android:textSize="12sp"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:text="@string/app_development_name"
+                        android:textColor="@color/dmz_white"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/app_development_summary"
+                        android:textColor="@color/dmz_muted"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.08"
+                        android:text="@string/website_credits_title"
+                        android:textColor="@color/dmz_gold"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:text="@string/website_credits_summary"
+                        android:textColor="@color/dmz_white"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/yolandoAvatar"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:contentDescription="Yolando avatar"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/dmz_ranked_logo" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Yolando"
+                                android:textColor="@color/dmz_white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/yolando_social"
+                                android:textColor="@color/dmz_muted"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/dchinzAvatar"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:contentDescription="dchinz avatar"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/dmz_ranked_logo" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="dchinz"
+                                android:textColor="@color/dmz_white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/co_creator"
+                                android:textColor="@color/dmz_muted"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/paypalCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/settings_action_background"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/paypal_support"
+                                android:textColor="@color/dmz_white"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/paypal_support_summary"
+                                android:textColor="@color/dmz_muted"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/settings_support_background"
+                            android:paddingStart="12dp"
+                            android:paddingTop="7dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="7dp"
+                            android:text="OPEN ↗"
+                            android:textColor="@color/dmz_black"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/signedInOperatorCard"
+                android:id="@+id/appExperienceSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/settings_card_background"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="10dp"
                     android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.10"
-                    android:text="WEBSITE OPERATOR • THIS DEVICE"
+                    android:letterSpacing="0.14"
+                    android:text="APP EXPERIENCE"
                     android:textColor="@color/dmz_gold"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/signedInOperatorNameText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="7dp"
-                    android:fontFamily="sans-serif-condensed"
-                    android:text="No operator selected"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="21sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/signedInOperatorStatusText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="Open DMZ Ranked and select or enter your operator name."
-                    android:textColor="@color/dmz_green"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/signedInOperatorSourceText"
+                <LinearLayout
+                    android:id="@+id/desktopSiteCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="7dp"
-                    android:text="Website account view"
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="12sp" />
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/desktop_site" android:textColor="@color/dmz_white" android:fontFamily="sans-serif-condensed" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/desktop_site_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <Switch android:id="@+id/desktopSiteSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
 
-                <TextView
-                    android:id="@+id/signedInOperatorSyncText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Last checked: not yet"
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="12sp" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/keepAwakeCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="Shows the operator currently selected or entered on dmzranked.com in this app. It does not expose your PIN."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-
-            
-
-<LinearLayout
-                android:id="@+id/creditsHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="14dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.12"
-                    android:text="CREDITS"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/creditsArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="▾"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/creditsContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="10dp"
-                android:visibility="gone">
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/settings_card_background"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.08"
-                    android:text="@string/app_development_title"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/app_development_name"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/app_development_summary"
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_card_background"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.08"
-                    android:text="@string/website_credits_title"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/website_credits_summary"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:id="@+id/yolandoAvatar"
-                        android:layout_width="54dp"
-                        android:layout_height="54dp"
-                        android:contentDescription="Yolando avatar"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/dmz_ranked_logo" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Yolando"
-                            android:textColor="@color/dmz_white"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/yolando_social"
-                            android:textColor="@color/dmz_muted"
-                            android:textSize="13sp" />
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/keep_screen_awake" android:textColor="@color/dmz_white" android:fontFamily="sans-serif-condensed" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/keep_screen_awake_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
                     </LinearLayout>
+                    <Switch android:id="@+id/keepAwakeSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="14dp"
-                    android:layout_marginBottom="14dp"
-                    android:background="@color/dmz_card_border" />
-
                 <LinearLayout
+                    android:id="@+id/pullRefreshCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:id="@+id/dchinzAvatar"
-                        android:layout_width="54dp"
-                        android:layout_height="54dp"
-                        android:contentDescription="dchinz avatar"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/dmz_ranked_logo" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="dchinz"
-                            android:textColor="@color/dmz_white"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/co_creator"
-                            android:textColor="@color/dmz_muted"
-                            android:textSize="13sp" />
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/pull_to_refresh" android:textColor="@color/dmz_white" android:fontFamily="sans-serif-condensed" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/pull_to_refresh_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
                     </LinearLayout>
+                    <Switch android:id="@+id/pullRefreshSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/paypalCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_support_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/paypal_support"
-                    android:textColor="@color/dmz_black"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.03"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="@string/paypal_support_summary"
-                    android:textColor="#B0000000"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="10dp"
-                android:fontFamily="sans-serif-condensed"
-                android:letterSpacing="0.14"
-                android:text="APP SETTINGS"
-                android:textColor="@color/dmz_gold"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:id="@+id/desktopSiteCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/rememberLastPageCard"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/desktop_site"
-                        android:textColor="@color/dmz_white"
-                        android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.03"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/desktop_site_summary"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="13sp" />
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/remember_last_page" android:textColor="@color/dmz_white" android:fontFamily="sans-serif-condensed" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/remember_last_page_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <Switch android:id="@+id/rememberLastPageSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
-
-                <Switch
-                    android:id="@+id/desktopSiteSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:showText="false"
-                    android:thumbTint="@color/dmz_switch_thumb"
-                    android:trackTint="@color/dmz_switch_track" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/keepAwakeCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/verboseLoadingCard"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/keep_screen_awake"
-                        android:textColor="@color/dmz_white"
-                        android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.03"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/keep_screen_awake_summary"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="13sp" />
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/verbose_loading" android:textColor="@color/dmz_white" android:fontFamily="sans-serif-condensed" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/verbose_loading_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <Switch android:id="@+id/verboseLoadingSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
-
-                <Switch
-                    android:id="@+id/keepAwakeSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:showText="false"
-                    android:thumbTint="@color/dmz_switch_thumb"
-                    android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/verboseLoadingCard"
+                android:id="@+id/notificationsSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginTop="24dp" android:layout_marginBottom="10dp" android:fontFamily="sans-serif-condensed" android:letterSpacing="0.14" android:text="NOTIFICATIONS" android:textColor="@color/dmz_gold" android:textSize="13sp" android:textStyle="bold" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/siteNotificationsCard"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/verbose_loading"
-                        android:textColor="@color/dmz_white"
-                        android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.03"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/verbose_loading_summary"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="13sp" />
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/site_notifications" android:textColor="@color/dmz_white" android:fontFamily="sans-serif-condensed" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/site_notifications_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                        <TextView android:id="@+id/notificationStatusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Permission status" android:textColor="@color/dmz_green" android:textSize="12sp" android:textStyle="bold" />
+                    </LinearLayout>
+                    <Switch android:id="@+id/siteNotificationsSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
-
-                <Switch
-                    android:id="@+id/verboseLoadingSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:showText="false"
-                    android:thumbTint="@color/dmz_switch_thumb"
-                    android:trackTint="@color/dmz_switch_track" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/siteNotificationsCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/notificationSettingsCard"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.03"
-                        android:text="@string/site_notifications"
-                        android:textColor="@color/dmz_white"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/site_notifications_summary"
-                        android:textColor="@color/dmz_muted"
-                        android:textSize="13sp" />
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/notification_settings" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/notification_settings_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="OPEN ›" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
                 </LinearLayout>
 
-                <Switch
-                    android:id="@+id/siteNotificationsSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:showText="false"
-                    android:thumbTint="@color/dmz_switch_thumb"
-                    android:trackTint="@color/dmz_switch_track" />
-            </LinearLayout>
-
-<LinearLayout
-                android:id="@+id/pageControlsHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="14dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.12"
-                    android:text="PAGE CONTROLS"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/pageControlsArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="▾"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/pageControlsContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="10dp"
-                android:visibility="gone">
-
-
-            <LinearLayout
-                android:id="@+id/reloadCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/settings_action_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/reload"
-                    android:textColor="@color/dmz_white"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.03"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/testNotificationCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Reload the current DMZ Ranked page."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/test_notification" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/test_notification_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="TEST" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/clearDataCard"
+                android:id="@+id/updatesSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_action_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginTop="24dp" android:layout_marginBottom="10dp" android:fontFamily="sans-serif-condensed" android:letterSpacing="0.14" android:text="APP UPDATES" android:textColor="@color/dmz_gold" android:textSize="13sp" android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/clear_web_data"
-                    android:textColor="@color/dmz_white"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.03"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/checkUpdatesCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Clear WebView cache, cookies, and site storage."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
-            </LinearLayout>
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/check_updates" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/updateVersionText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/check_updates_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="CHECK ›" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
 
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/helpFeedbackHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="14dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.12"
-                    android:text="HELP &amp; FEEDBACK"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/helpFeedbackArrow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="▾"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/helpFeedbackContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="10dp"
-                android:visibility="gone">
-
-
-            <LinearLayout
-                android:id="@+id/feedbackCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/settings_card_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.03"
-                    android:text="Send app feedback / report"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/playStoreCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Report bugs, request features, ask for app support, or send other feedback to the app team."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/open_google_play" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/open_google_play_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="PLAY ↗" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/appSupportDiscordCard"
+                android:id="@+id/pageActionsSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_action_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginTop="24dp" android:layout_marginBottom="10dp" android:fontFamily="sans-serif-condensed" android:letterSpacing="0.14" android:text="PAGE &amp; DATA ACTIONS" android:textColor="@color/dmz_gold" android:textSize="13sp" android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="App Support Discord"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/reloadCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Help specifically for the unofficial Android app."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/reload" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Reload the current DMZ Ranked page." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="RELOAD" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/clearCacheCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/clear_web_cache" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Clear WebView cache without deleting website cookies or sign-in data." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="CLEAR" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/clearDataCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/clear_web_data" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Clear cache, cookies, and website storage. This can sign you out." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_danger_button_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="CLEAR DATA" android:textColor="@color/dmz_white" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/mainDiscordCard"
+                android:id="@+id/helpSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_action_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginTop="24dp" android:layout_marginBottom="10dp" android:fontFamily="sans-serif-condensed" android:letterSpacing="0.14" android:text="HELP &amp; COMMUNITY" android:textColor="@color/dmz_gold" android:textSize="13sp" android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Main DMZ Ranked Discord"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                <LinearLayout android:id="@+id/feedbackCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/settings_action_background" android:clickable="true" android:focusable="true" android:foreground="?android:attr/selectableItemBackground" android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Send app feedback / report" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Report Android app bugs or request app features." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="OPEN ›" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Open the main DMZ Ranked community Discord."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
+                <LinearLayout android:id="@+id/appSupportDiscordCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/settings_action_background" android:clickable="true" android:focusable="true" android:foreground="?android:attr/selectableItemBackground" android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="App Support Discord" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Help specifically for the unofficial Android app." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="OPEN ↗" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/mainDiscordCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/settings_action_background" android:clickable="true" android:focusable="true" android:foreground="?android:attr/selectableItemBackground" android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Main DMZ Ranked Discord" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Open the main DMZ Ranked community Discord." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="OPEN ↗" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/betaGroupCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/settings_action_background" android:clickable="true" android:focusable="true" android:foreground="?android:attr/selectableItemBackground" android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Join App Beta Group" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Open the Google Group used for Play closed testing." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="JOIN ↗" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/betaGroupCard"
+                android:id="@+id/developerSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/settings_action_background"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginTop="24dp" android:layout_marginBottom="10dp" android:fontFamily="sans-serif-condensed" android:letterSpacing="0.14" android:text="DEVELOPER &amp; DIAGNOSTICS" android:textColor="@color/dmz_gold" android:textSize="13sp" android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Join App Beta Group"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
+                    android:id="@+id/diagnosticsCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="Open the official Google Group used for DMZ Ranked unofficial app beta access."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
-            </LinearLayout>
+                    android:background="@drawable/settings_card_background"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Runtime information" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/diagnosticsSummaryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Loading diagnostics…" android:textColor="@color/dmz_muted" android:textIsSelectable="true" android:textSize="13sp" />
+                </LinearLayout>
 
-            </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/webviewDebugCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingEnd="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/webview_debugging" android:textColor="@color/dmz_white" android:textSize="17sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/webview_debugging_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <Switch android:id="@+id/webviewDebugSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
 
-            
+                <LinearLayout
+                    android:id="@+id/copyDiagnosticsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/copy_diagnostics" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/copy_diagnostics_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="COPY" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/resetSettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/reset_app_settings" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/reset_app_settings_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_danger_button_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="RESET" android:textColor="@color/dmz_white" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="22dp"
                 android:gravity="center"
                 android:text="@string/unofficial_notice"
                 android:textColor="@color/dmz_muted"
