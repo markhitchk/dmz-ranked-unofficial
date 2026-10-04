@@ -184,8 +184,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 128
-        versionName '1.0.26'
+        versionCode 129
+        versionName '1.0.27'
     }
 
     sourceSets {
