@@ -119,8 +119,8 @@ public class MainActivity extends Activity {
             "function fromStorage(st,label){try{for(var x=0;x<st.length;x++){var k=st.key(x)||'';if(!safeKey(k))continue;var raw=st.getItem(k)||'';if(valid(raw))return {n:clean(raw),s:label+' '+k};try{var parsed=JSON.parse(raw);var found=fromObject(parsed,0);if(found)return {n:found,s:label+' '+k};}catch(e){}}}catch(e){}return null;}" +
             "if(!name){var a=fromStorage(window.localStorage,'localStorage');if(a){name=a.n;source=a.s;}}" +
             "if(!name){var b=fromStorage(window.sessionStorage,'sessionStorage');if(b){name=b.n;source=b.s;}}" +
-            "var sec=document.getElementById('nameSec');var secText='';try{secText=clean(sec&&sec.innerText||'');}catch(e){}" +
-            "var statusVisible=!!secText;var verified=/VERIFIED ON THIS DEVICE/i.test(secText);" +
+            "var sec=document.getElementById('nameSec');var secText='';try{secText=clean(sec&&(sec.textContent||sec.innerText)||'');}catch(e){}" +
+            "var statusVisible=!!sec&&sec.style.display!=='none'&&!!secText;var verified=statusVisible&&/VERIFIED ON THIS DEVICE/i.test(secText);" +
             "var protectedFlag=/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
             "return JSON.stringify({name:name,rememberedName:remembered,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
             "}catch(e){return JSON.stringify({name:'',rememberedName:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
@@ -131,8 +131,8 @@ public class MainActivity extends Activity {
             "if(host!=='dmzranked.com'&&!host.endsWith('.dmzranked.com')){return JSON.stringify({origin:'',storage:{},count:0,error:'origin'});}" +
             "function blockedKey(k){return /pin|pass(word|code)?|token|auth|session|secret|cookie|credential|jwt|bearer|csrf|oauth|api[_.-]?key/i.test(String(k||''));}" +
             "function blockedValue(v){v=String(v||'');if(/eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}/.test(v))return true;return /[\\\"'](?:access_?token|refresh_?token|password|passcode|session|secret|authorization|oauth|jwt|api_?key)[\\\"']?\\s*[:=]/i.test(v);}" +
-            "var sec=document.getElementById('nameSec');var secText='';try{secText=String(sec&&sec.innerText||'').replace(/\\s+/g,' ').trim();}catch(e){}" +
-            "var verified=/VERIFIED ON THIS DEVICE/i.test(secText);" +
+            "var sec=document.getElementById('nameSec');var secText='';try{secText=String(sec&&(sec.textContent||sec.innerText)||'').replace(/\\s+/g,' ').trim();}catch(e){}" +
+            "var secVisible=!!sec&&sec.style.display!=='none'&&!!secText;var verified=secVisible&&/VERIFIED ON THIS DEVICE/i.test(secText);" +
             "var protectedFlag=/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
             "var storage={},count=0,total=0;" +
             "for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||'';if(!k||blockedKey(k))continue;var v=localStorage.getItem(k);if(v==null||blockedValue(v)||v.length>300000)continue;var next=total+k.length+v.length;if(next>1000000)break;storage[k]=v;count++;total=next;}" +
@@ -541,6 +541,9 @@ public class MainActivity extends Activity {
                         boolean statusVisible = payload.optBoolean("statusVisible", false);
                         String source = payload.optString("source", "").trim();
                         if (!name.isEmpty()) {
+                            String previousName = preferences.getString(PREF_SELECTED_OPERATOR, "");
+                            boolean operatorChanged = previousName == null
+                                    || !previousName.trim().equalsIgnoreCase(name);
                             SharedPreferences.Editor editor = preferences.edit()
                                     .putString(PREF_SELECTED_OPERATOR, name)
                                     .putString(PREF_OPERATOR_SOURCE, source)
@@ -549,6 +552,11 @@ public class MainActivity extends Activity {
                             if (statusVisible) {
                                 editor.putBoolean(PREF_OPERATOR_VERIFIED, payload.optBoolean("verified", false))
                                         .putBoolean(PREF_OPERATOR_PROTECTED, payload.optBoolean("protected", false));
+                            } else if (operatorChanged) {
+                                // Never carry operator A's PIN state over to operator B while the
+                                // site is still refreshing #nameSec for the new selection.
+                                editor.putBoolean(PREF_OPERATOR_VERIFIED, false)
+                                        .putBoolean(PREF_OPERATOR_PROTECTED, false);
                             }
                             editor.apply();
                             if (preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
