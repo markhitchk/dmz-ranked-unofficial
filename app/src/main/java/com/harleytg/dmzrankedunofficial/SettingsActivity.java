@@ -22,8 +22,11 @@ import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.Editable;
+import android.text.InputFilter;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
@@ -40,6 +43,8 @@ import android.widget.Toast;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Locale;
 
 public class SettingsActivity extends Activity {
@@ -66,12 +71,30 @@ public class SettingsActivity extends Activity {
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
 
+    // Developer tools are intentionally hidden from normal Settings. Five taps on
+    // Harley's Studios in Credits opens the PIN gate. The PIN itself is never stored
+    // in plaintext: verification uses two salted SHA-256 stages and compares the final
+    // digest in constant time.
+    private static final int DEV_UNLOCK_TAPS = 5;
+    private static final long DEV_TAP_WINDOW_MS = 4500L;
+    private static final int DEV_MAX_PIN_ATTEMPTS = 5;
+    private static final long DEV_PIN_LOCKOUT_MS = 30000L;
+    private static final String DEV_HASH_SALT_1 = "DMZRanked::DeveloperGate::Layer1::v1";
+    private static final String DEV_HASH_SALT_2 = "HarleysStudios::DeveloperGate::Layer2::v1";
+    private static final String DEV_PIN_DOUBLE_HASH =
+            "af237b066602cebf2ea25843fdab831639173b894205a21192b15c6ac242c23d";
+
     public static final String EXTRA_ACTION = "settings_action";
     public static final String ACTION_RELOAD = "reload";
 
     private SharedPreferences preferences;
     private boolean pendingTestNotification;
     private boolean creditsExpanded;
+    private boolean developerUnlocked;
+    private int developerTapCount;
+    private long developerTapWindowStartedAt;
+    private int developerPinFailures;
+    private long developerPinLockoutUntil;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,6 +169,7 @@ public class SettingsActivity extends Activity {
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
         findViewById(R.id.creditsButton).setOnClickListener(v -> toggleCredits());
+        findViewById(R.id.developerUnlockTrigger).setOnClickListener(v -> handleDeveloperUnlockTap());
         findViewById(R.id.reloadCard).setOnClickListener(v -> {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_RELOAD));
             finish();
@@ -156,7 +180,10 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
         findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> openPlayStore());
         findViewById(R.id.playStoreCard).setOnClickListener(v -> openPlayStore());
-        findViewById(R.id.copyDiagnosticsCard).setOnClickListener(v -> copyDiagnostics());
+        findViewById(R.id.copyDiagnosticsCard).setOnClickListener(v -> {
+            if (developerUnlocked) copyDiagnostics();
+        });
+        findViewById(R.id.lockDeveloperToolsCard).setOnClickListener(v -> lockDeveloperTools());
         findViewById(R.id.resetSettingsCard).setOnClickListener(v -> confirmResetSettings());
         findViewById(R.id.paypalCard).setOnClickListener(v -> openExternal(PAYPAL_SHARE_URL));
         findViewById(R.id.feedbackCard).setOnClickListener(v ->
@@ -182,7 +209,7 @@ public class SettingsActivity extends Activity {
         });
 
         updateNotificationStatus();
-        updateDiagnosticsSummary();
+        setDeveloperSectionVisible(false);
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
     }
@@ -191,7 +218,139 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         updateNotificationStatus();
-        updateDiagnosticsSummary();
+        if (developerUnlocked) updateDiagnosticsSummary();
+    }
+
+    private void handleDeveloperUnlockTap() {
+        long now = SystemClock.elapsedRealtime();
+        if (developerTapWindowStartedAt == 0L
+                || now - developerTapWindowStartedAt > DEV_TAP_WINDOW_MS) {
+            developerTapWindowStartedAt = now;
+            developerTapCount = 0;
+        }
+
+        developerTapCount++;
+        if (developerTapCount < DEV_UNLOCK_TAPS) return;
+
+        developerTapCount = 0;
+        developerTapWindowStartedAt = 0L;
+        promptForDeveloperPin();
+    }
+
+    private void promptForDeveloperPin() {
+        long now = SystemClock.elapsedRealtime();
+        if (developerPinLockoutUntil > now) {
+            long seconds = Math.max(1L, (developerPinLockoutUntil - now + 999L) / 1000L);
+            Toast.makeText(this,
+                    "Developer PIN temporarily locked. Try again in " + seconds + " seconds.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        EditText pinInput = new EditText(this);
+        pinInput.setSingleLine(true);
+        pinInput.setHint("Developer PIN");
+        pinInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        pinInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4)});
+        int horizontalPadding = Math.round(24 * getResources().getDisplayMetrics().density);
+        pinInput.setPadding(horizontalPadding, pinInput.getPaddingTop(),
+                horizontalPadding, pinInput.getPaddingBottom());
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Developer access")
+                .setMessage("Enter the 4-digit developer PIN.")
+                .setView(pinInput)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Unlock", null)
+                .create();
+
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String entered = pinInput.getText() == null
+                            ? ""
+                            : pinInput.getText().toString();
+                    if (verifyDeveloperPin(entered)) {
+                        developerPinFailures = 0;
+                        developerPinLockoutUntil = 0L;
+                        developerUnlocked = true;
+                        setDeveloperSectionVisible(true);
+                        updateDiagnosticsSummary();
+                        EditText search = findViewById(R.id.settingsSearch);
+                        if (search != null) applySearch(search.getText().toString());
+                        Toast.makeText(this, "Developer tools unlocked.", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                        return;
+                    }
+
+                    developerPinFailures++;
+                    pinInput.setText("");
+                    pinInput.setError("Incorrect developer PIN");
+
+                    if (developerPinFailures >= DEV_MAX_PIN_ATTEMPTS) {
+                        developerPinFailures = 0;
+                        developerPinLockoutUntil =
+                                SystemClock.elapsedRealtime() + DEV_PIN_LOCKOUT_MS;
+                        dialog.dismiss();
+                        Toast.makeText(this,
+                                "Too many incorrect PIN attempts. Developer access locked for 30 seconds.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                }));
+        dialog.show();
+    }
+
+    private boolean verifyDeveloperPin(String pin) {
+        if (pin == null || pin.length() != 4) return false;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] first = digest.digest((DEV_HASH_SALT_1 + pin)
+                    .getBytes(StandardCharsets.UTF_8));
+            String firstHex = toHex(first);
+
+            digest.reset();
+            byte[] second = digest.digest((DEV_HASH_SALT_2 + firstHex)
+                    .getBytes(StandardCharsets.UTF_8));
+            byte[] expected = hexToBytes(DEV_PIN_DOUBLE_HASH);
+            return MessageDigest.isEqual(second, expected);
+        } catch (Throwable error) {
+            Log.e(TAG, "Developer PIN verification failed", error);
+            return false;
+        }
+    }
+
+    private String toHex(byte[] bytes) {
+        StringBuilder out = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) {
+            out.append(String.format(Locale.US, "%02x", value & 0xff));
+        }
+        return out.toString();
+    }
+
+    private byte[] hexToBytes(String hex) {
+        if (hex == null || (hex.length() & 1) != 0) return new byte[0];
+        byte[] out = new byte[hex.length() / 2];
+        for (int i = 0; i < out.length; i++) {
+            int hi = Character.digit(hex.charAt(i * 2), 16);
+            int lo = Character.digit(hex.charAt(i * 2 + 1), 16);
+            if (hi < 0 || lo < 0) return new byte[0];
+            out[i] = (byte) ((hi << 4) | lo);
+        }
+        return out;
+    }
+
+    private void setDeveloperSectionVisible(boolean visible) {
+        View section = findViewById(R.id.developerSection);
+        if (section != null) {
+            section.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void lockDeveloperTools() {
+        developerUnlocked = false;
+        setDeveloperSectionVisible(false);
+        EditText search = findViewById(R.id.settingsSearch);
+        if (search != null) applySearch(search.getText().toString());
+        Toast.makeText(this, "Developer tools locked.", Toast.LENGTH_SHORT).show();
     }
 
     private void bindToggleCard(int cardId, Switch toggle) {
@@ -257,9 +416,7 @@ public class SettingsActivity extends Activity {
                 showIfMatches(R.id.reloadCard, q,
                         "reload refresh page action")
                 | showIfMatches(R.id.clearCacheCard, q,
-                        "clear cache webview temporary files")
-                | showIfMatches(R.id.clearDataCard, q,
-                        "clear data cookies website storage sign out reset web");
+                        "clear cache webview temporary files");
         findViewById(R.id.pageActionsSection).setVisibility(actionMatch ? View.VISIBLE : View.GONE);
 
         boolean helpMatch =
@@ -273,19 +430,32 @@ public class SettingsActivity extends Activity {
                         "beta group closed testing google play tester");
         findViewById(R.id.helpSection).setVisibility(helpMatch ? View.VISIBLE : View.GONE);
 
-        boolean developerMatch =
-                showIfMatches(R.id.diagnosticsCard, q,
-                        "developer diagnostics runtime android device webview version permission")
-                | showIfMatches(R.id.webviewDebugCard, q,
-                        "webview debugging developer adb inspect")
-                | showIfMatches(R.id.copyDiagnosticsCard, q,
-                        "copy diagnostic report support device webview")
+        boolean developerMatch = false;
+        if (developerUnlocked) {
+            developerMatch =
+                    showIfMatches(R.id.diagnosticsCard, q,
+                            "developer diagnostics runtime android device webview version permission")
+                    | showIfMatches(R.id.webviewDebugCard, q,
+                            "webview debugging developer adb inspect")
+                    | showIfMatches(R.id.copyDiagnosticsCard, q,
+                            "copy diagnostic report support device webview")
+                    | showIfMatches(R.id.lockDeveloperToolsCard, q,
+                            "lock developer tools diagnostics");
+            findViewById(R.id.developerSection)
+                    .setVisibility(developerMatch ? View.VISIBLE : View.GONE);
+        } else {
+            setDeveloperSectionVisible(false);
+        }
+
+        boolean dangerMatch =
+                showIfMatches(R.id.clearDataCard, q,
+                        "danger clear data cookies website storage sign out reset web")
                 | showIfMatches(R.id.resetSettingsCard, q,
-                        "reset app settings defaults developer");
-        findViewById(R.id.developerSection).setVisibility(developerMatch ? View.VISIBLE : View.GONE);
+                        "danger reset app settings defaults");
+        findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
         boolean any = aboutMatch || appMatch || notificationMatch || updateMatch
-                || actionMatch || helpMatch || developerMatch;
+                || actionMatch || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
     }
 
