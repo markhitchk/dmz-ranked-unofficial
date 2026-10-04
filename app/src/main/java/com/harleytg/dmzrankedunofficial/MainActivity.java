@@ -121,7 +121,7 @@ public class MainActivity extends Activity {
             "if(!name){var b=fromStorage(window.sessionStorage,'sessionStorage');if(b){name=b.n;source=b.s;}}" +
             "var sec=document.getElementById('nameSec');var secText='';try{secText=clean(sec&&(sec.textContent||sec.innerText)||'');}catch(e){}" +
             "var statusVisible=!!sec&&sec.style.display!=='none'&&!!secText;var verified=statusVisible&&/VERIFIED ON THIS DEVICE/i.test(secText);" +
-            "var protectedFlag=/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
+            "var protectedFlag=statusVisible&&/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
             "return JSON.stringify({name:name,rememberedName:remembered,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
             "}catch(e){return JSON.stringify({name:'',rememberedName:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
             "function blockedValue(v){v=String(v||'');if(/eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}/.test(v))return true;return /[\\\"'](?:access_?token|refresh_?token|password|passcode|session|secret|authorization|oauth|jwt|api_?key)[\\\"']?\\s*[:=]/i.test(v);}" +
             "var sec=document.getElementById('nameSec');var secText='';try{secText=String(sec&&(sec.textContent||sec.innerText)||'').replace(/\\s+/g,' ').trim();}catch(e){}" +
             "var secVisible=!!sec&&sec.style.display!=='none'&&!!secText;var verified=secVisible&&/VERIFIED ON THIS DEVICE/i.test(secText);" +
-            "var protectedFlag=/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
+            "var protectedFlag=secVisible&&/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
             "var storage={},count=0,total=0;" +
             "for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||'';if(!k||blockedKey(k))continue;var v=localStorage.getItem(k);if(v==null||blockedValue(v)||v.length>300000)continue;var next=total+k.length+v.length;if(next>1000000)break;storage[k]=v;count++;total=next;}" +
             "return JSON.stringify({origin:String(location.origin||''),storage:storage,count:count,protected:protectedFlag,verified:verified});" +
