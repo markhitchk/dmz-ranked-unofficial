@@ -74,6 +74,7 @@ public class MainActivity extends Activity {
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
+    private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -123,6 +124,20 @@ public class MainActivity extends Activity {
             "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
             "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
+    private static final String READ_OPERATOR_BACKUP_SCRIPT =
+            "(function(){try{" +
+            "var host=String(location.hostname||'').toLowerCase();" +
+            "if(host!=='dmzranked.com'&&!host.endsWith('.dmzranked.com')){return JSON.stringify({origin:'',storage:{},count:0,error:'origin'});}" +
+            "function blockedKey(k){return /pin|pass(word|code)?|token|auth|session|secret|cookie|credential|jwt|bearer|csrf|oauth|api[_.-]?key/i.test(String(k||''));}" +
+            "function blockedValue(v){v=String(v||'');if(/eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}/.test(v))return true;return /[\\\"'](?:access_?token|refresh_?token|password|passcode|session|secret|authorization|oauth|jwt|api_?key)[\\\"']?\\s*[:=]/i.test(v);}" +
+            "var body=String((document.body&&document.body.innerText)||'');" +
+            "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
+            "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
+            "var storage={},count=0,total=0;" +
+            "for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||'';if(!k||blockedKey(k))continue;var v=localStorage.getItem(k);if(v==null||blockedValue(v)||v.length>300000)continue;var next=total+k.length+v.length;if(next>1000000)break;storage[k]=v;count++;total=next;}" +
+            "return JSON.stringify({origin:String(location.origin||''),storage:storage,count:count,protected:protectedFlag,verified:verified});" +
+            "}catch(e){return JSON.stringify({origin:'',storage:{},count:0,error:String(e&&e.message||e)});}})()";
+
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
             "(function(){try{" +
             "function clean(v){return String(v||'').replace(/\\s+/g,' ').trim();}" +
@@ -151,6 +166,7 @@ public class MainActivity extends Activity {
     private boolean siteNotificationBaselineReady;
     private final LinkedHashSet<String> seenSiteNotifications = new LinkedHashSet<>();
     private int operatorMonitorToken;
+    private long lastOperatorBackupCaptureMs;
     private ValueCallback<Uri[]> fileCallback;
     private String mobileUserAgent;
     private boolean handlingBack;
@@ -299,6 +315,7 @@ public class MainActivity extends Activity {
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
                         startSiteNotificationMonitor();
+                        startOperatorMonitor();
                         return;
                     }
                 } catch (Throwable ignored) {
@@ -533,6 +550,9 @@ public class MainActivity extends Activity {
                                         .putBoolean(PREF_OPERATOR_PROTECTED, payload.optBoolean("protected", false));
                             }
                             editor.apply();
+                            if (preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
+                                maybeAutoSaveOperator(name);
+                            }
                         }
                     }
                 } catch (Throwable error) {
@@ -544,6 +564,195 @@ public class MainActivity extends Activity {
         } catch (Throwable error) {
             Log.d(TAG, "Could not read operator state", error);
             if (after != null) after.run();
+        }
+    }
+
+
+    private void maybeAutoSaveOperator(String operatorName) {
+        if (operatorName == null || operatorName.trim().isEmpty() || webView == null
+                || preferences == null || !preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastOperatorBackupCaptureMs < 8000L) return;
+        lastOperatorBackupCaptureMs = now;
+        captureOperatorBackup(operatorName, false);
+    }
+
+    private void captureOperatorBackup(String operatorName, boolean userRequested) {
+        String cleanName = operatorName == null ? "" : operatorName.trim();
+        if (cleanName.isEmpty() || webView == null || isFinishing()) {
+            if (userRequested) {
+                Toast.makeText(this, "No DMZ Ranked operator is selected yet.", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        Uri current;
+        try {
+            String url = webView.getUrl();
+            current = url == null ? null : Uri.parse(url);
+        } catch (Throwable ignored) {
+            current = null;
+        }
+        if (!isDmzUrl(current)) {
+            if (userRequested) {
+                Toast.makeText(this, "Open DMZ Ranked before saving an operator.", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        try {
+            webView.evaluateJavascript(READ_OPERATOR_BACKUP_SCRIPT, result -> {
+                try {
+                    String decoded = decodeJavascriptString(result);
+                    JSONObject payload = new JSONObject(decoded);
+                    int count = payload.optInt("count", 0);
+                    if (count <= 0) {
+                        if (userRequested) {
+                            Toast.makeText(MainActivity.this,
+                                    "No safe operator website data is available to save yet.",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                        return;
+                    }
+
+                    boolean saved = OperatorBackupStore.save(
+                            MainActivity.this,
+                            cleanName,
+                            decoded);
+                    if (userRequested) {
+                        Toast.makeText(MainActivity.this,
+                                saved
+                                        ? "Saved " + cleanName + " in the app (" + count + " website entries)."
+                                        : "Could not save this operator.",
+                                saved ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
+                    }
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not save operator backup", error);
+                    if (userRequested) {
+                        Toast.makeText(MainActivity.this,
+                                "Could not save this operator.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read operator website data", error);
+            if (userRequested) {
+                Toast.makeText(this, "Could not read operator website data.", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void restoreOperatorBackup() {
+        if (webView == null || isFinishing()) return;
+
+        Uri current;
+        try {
+            String url = webView.getUrl();
+            current = url == null ? null : Uri.parse(url);
+        } catch (Throwable ignored) {
+            current = null;
+        }
+        if (!isDmzUrl(current)) {
+            Toast.makeText(this, "Open DMZ Ranked before restoring an operator.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String selected = preferences == null
+                ? ""
+                : preferences.getString(PREF_SELECTED_OPERATOR, "");
+        JSONObject backup = OperatorBackupStore.get(this, selected);
+        if (backup == null) backup = OperatorBackupStore.latest(this);
+        if (backup == null) {
+            Toast.makeText(this, "No saved operator backup is available.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final JSONObject finalBackup = backup;
+        final String operatorName = OperatorBackupStore.operatorName(backup);
+        final String script = OperatorBackupStore.buildRestoreScript(backup);
+        if (script == null) {
+            Toast.makeText(this, "The saved operator backup has no restorable website data.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        try {
+            webView.evaluateJavascript(READ_CURRENT_OPERATOR_SCRIPT, statusResult -> {
+                try {
+                    String decoded = decodeJavascriptString(statusResult);
+                    JSONObject currentState = new JSONObject(decoded);
+                    String liveName = currentState.optString("name", "").trim();
+                    boolean liveVerified = currentState.optBoolean("verified", false);
+                    boolean liveProtected = currentState.optBoolean("protected", false);
+                    boolean sameOperator = !liveName.isEmpty()
+                            && liveName.equalsIgnoreCase(operatorName);
+
+                    if (!liveName.isEmpty() && !sameOperator) {
+                        Toast.makeText(MainActivity.this,
+                                "Switch DMZ Ranked to " + operatorName
+                                        + " before restoring this operator.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    boolean pinRequired = OperatorBackupStore.isProtected(finalBackup)
+                            || (sameOperator && liveProtected);
+                    if (pinRequired && (!sameOperator || !liveVerified)) {
+                        Toast.makeText(MainActivity.this,
+                                operatorName + " is PIN protected. Select that operator on DMZ Ranked "
+                                        + "and enter its PIN first.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    applyOperatorBackup(finalBackup, operatorName, script);
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not verify operator protection before restore", error);
+                    Toast.makeText(MainActivity.this,
+                            "Could not verify this operator. Restore was blocked for safety.",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read operator protection state", error);
+            Toast.makeText(this,
+                    "Could not verify this operator. Restore was blocked for safety.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void applyOperatorBackup(JSONObject backup, String operatorName, String script) {
+        try {
+            webView.evaluateJavascript(script, result -> {
+                String clean = decodeJavascriptString(result);
+                if (clean.startsWith("restored:")) {
+                    if (preferences != null && !operatorName.isEmpty()) {
+                        preferences.edit()
+                                .putString(PREF_SELECTED_OPERATOR, operatorName)
+                                .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
+                                .apply();
+                    }
+                    Toast.makeText(MainActivity.this,
+                            "Restored " + (operatorName.isEmpty() ? "saved operator" : operatorName)
+                                    + ". Reloading DMZ Ranked…",
+                            Toast.LENGTH_SHORT).show();
+                    showLoadingScreen("Restoring saved operator…", 8);
+                    webView.reload();
+                } else {
+                    Log.d(TAG, "Operator restore result: " + clean
+                            + " backup=" + OperatorBackupStore.entryCount(backup));
+                    Toast.makeText(MainActivity.this,
+                            "DMZ Ranked could not restore the saved operator data.",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not restore operator backup", error);
+            Toast.makeText(this, "Could not restore the saved operator.", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1019,6 +1228,7 @@ public class MainActivity extends Activity {
                 String url = webView.getUrl();
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     startSiteNotificationMonitor();
+                    startOperatorMonitor();
                 }
             } catch (Throwable ignored) {
             }
@@ -1060,6 +1270,20 @@ public class MainActivity extends Activity {
             boolean desktopChanged = desktopNow != desktopModeBeforeSettings;
             String action = data == null ? null : data.getStringExtra(SettingsActivity.EXTRA_ACTION);
             boolean reloadRequested = SettingsActivity.ACTION_RELOAD.equals(action);
+            boolean saveOperatorRequested = SettingsActivity.ACTION_SAVE_OPERATOR.equals(action);
+            boolean restoreOperatorRequested = SettingsActivity.ACTION_RESTORE_OPERATOR.equals(action);
+
+            if (saveOperatorRequested) {
+                captureCurrentOperator(() -> captureOperatorBackup(
+                        preferences == null ? "" : preferences.getString(PREF_SELECTED_OPERATOR, ""),
+                        true));
+                return;
+            }
+
+            if (restoreOperatorRequested) {
+                restoreOperatorBackup();
+                return;
+            }
 
             if (desktopChanged) {
                 applyDesktopMode(false);

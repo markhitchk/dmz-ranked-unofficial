@@ -45,7 +45,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.Locale;
+
+import org.json.JSONObject;
 
 public class SettingsActivity extends Activity {
     private static final String TAG = "DMZRankedSettings";
@@ -67,6 +71,12 @@ public class SettingsActivity extends Activity {
     private static final String PREF_REMEMBER_LAST_PAGE = "remember_last_page";
     private static final String PREF_WEBVIEW_DEBUG = "webview_debug";
     private static final String PREF_LAST_PAGE_URL = "last_page_url";
+    private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
+    private static final String PREF_OPERATOR_VERIFIED = "website_operator_verified";
+    private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
+    private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
+    private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
+    private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
 
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
@@ -86,6 +96,8 @@ public class SettingsActivity extends Activity {
 
     public static final String EXTRA_ACTION = "settings_action";
     public static final String ACTION_RELOAD = "reload";
+    public static final String ACTION_SAVE_OPERATOR = "save_operator";
+    public static final String ACTION_RESTORE_OPERATOR = "restore_operator";
 
     private SharedPreferences preferences;
     private boolean pendingTestNotification;
@@ -131,6 +143,7 @@ public class SettingsActivity extends Activity {
         Switch rememberLastPage = findViewById(R.id.rememberLastPageSwitch);
         Switch verboseLoading = findViewById(R.id.verboseLoadingSwitch);
         Switch siteNotifications = findViewById(R.id.siteNotificationsSwitch);
+        Switch operatorAutoSave = findViewById(R.id.operatorAutoSaveSwitch);
         Switch webviewDebug = findViewById(R.id.webviewDebugSwitch);
 
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
@@ -139,6 +152,7 @@ public class SettingsActivity extends Activity {
         rememberLastPage.setChecked(preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true));
         verboseLoading.setChecked(preferences.getBoolean(PREF_VERBOSE_LOADING, false));
         siteNotifications.setChecked(preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true));
+        operatorAutoSave.setChecked(preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true));
         webviewDebug.setChecked(preferences.getBoolean(PREF_WEBVIEW_DEBUG, false));
 
         desktopSite.setOnCheckedChangeListener((buttonView, checked) ->
@@ -156,6 +170,8 @@ public class SettingsActivity extends Activity {
             if (checked) requestNotificationPermissionIfNeeded(false);
             updateNotificationStatus();
         });
+        operatorAutoSave.setOnCheckedChangeListener((buttonView, checked) ->
+                preferences.edit().putBoolean(PREF_OPERATOR_AUTOSAVE, checked).apply());
         webviewDebug.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_WEBVIEW_DEBUG, checked).apply());
 
@@ -165,6 +181,7 @@ public class SettingsActivity extends Activity {
         bindToggleCard(R.id.rememberLastPageCard, rememberLastPage);
         bindToggleCard(R.id.verboseLoadingCard, verboseLoading);
         bindToggleCard(R.id.siteNotificationsCard, siteNotifications);
+        bindToggleCard(R.id.operatorAutoSaveCard, operatorAutoSave);
         bindToggleCard(R.id.webviewDebugCard, webviewDebug);
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
@@ -176,6 +193,14 @@ public class SettingsActivity extends Activity {
         });
         findViewById(R.id.clearCacheCard).setOnClickListener(v -> clearWebCacheOnly());
         findViewById(R.id.clearDataCard).setOnClickListener(v -> confirmClearWebData());
+        findViewById(R.id.saveOperatorCard).setOnClickListener(v -> {
+            setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_SAVE_OPERATOR));
+            finish();
+        });
+        findViewById(R.id.restoreOperatorCard).setOnClickListener(v -> {
+            setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_RESTORE_OPERATOR));
+            finish();
+        });
         findViewById(R.id.notificationSettingsCard).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
         findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> openPlayStore());
@@ -209,6 +234,7 @@ public class SettingsActivity extends Activity {
         });
 
         updateNotificationStatus();
+        updateOperatorBackupStatus();
         setDeveloperSectionVisible(false);
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
@@ -218,6 +244,7 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         updateNotificationStatus();
+        updateOperatorBackupStatus();
         if (developerUnlocked) updateDiagnosticsSummary();
     }
 
@@ -396,6 +423,17 @@ public class SettingsActivity extends Activity {
                         "detailed verbose loading status percentage progress");
         findViewById(R.id.appExperienceSection).setVisibility(appMatch ? View.VISIBLE : View.GONE);
 
+        boolean operatorMatch =
+                showIfMatches(R.id.operatorStatusCard, q,
+                        "operator website account profile saved backup current dmz ranked")
+                | showIfMatches(R.id.operatorAutoSaveCard, q,
+                        "operator auto save backup local restore website data")
+                | showIfMatches(R.id.saveOperatorCard, q,
+                        "operator save now backup local website data")
+                | showIfMatches(R.id.restoreOperatorCard, q,
+                        "operator restore recover backup local website data");
+        findViewById(R.id.operatorBackupSection).setVisibility(operatorMatch ? View.VISIBLE : View.GONE);
+
         boolean notificationMatch =
                 showIfMatches(R.id.siteNotificationsCard, q,
                         "website notifications alerts permission android")
@@ -454,7 +492,7 @@ public class SettingsActivity extends Activity {
                         "danger reset app settings defaults");
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
-        boolean any = aboutMatch || appMatch || notificationMatch || updateMatch
+        boolean any = aboutMatch || appMatch || operatorMatch || notificationMatch || updateMatch
                 || actionMatch || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
     }
@@ -474,6 +512,49 @@ public class SettingsActivity extends Activity {
             if (source.contains(term)) return true;
         }
         return false;
+    }
+
+
+    private void updateOperatorBackupStatus() {
+        TextView target = findViewById(R.id.operatorStatusText);
+        if (target == null || preferences == null) return;
+
+        String selected = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        JSONObject backup = OperatorBackupStore.get(this, selected);
+        if (backup == null) backup = OperatorBackupStore.latest(this);
+
+        int backupCount = OperatorBackupStore.backupCount(this);
+        if (backup == null) {
+            String current = selected == null || selected.trim().isEmpty()
+                    ? "No website operator detected yet"
+                    : "Current website operator: " + selected.trim();
+            target.setText(current
+                    + "\nNo app backup yet • " + backupCount + " saved operator"
+                    + (backupCount == 1 ? "" : "s"));
+            target.setTextColor(getColor(R.color.dmz_muted));
+            return;
+        }
+
+        String backedUpOperator = OperatorBackupStore.operatorName(backup);
+        long savedAt = OperatorBackupStore.savedAt(backup);
+        int entries = OperatorBackupStore.entryCount(backup);
+        String when = savedAt <= 0L
+                ? "unknown time"
+                : DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                        .format(new Date(savedAt));
+        String current = selected == null || selected.trim().isEmpty()
+                ? "Website operator not currently detected"
+                : "Current website operator: " + selected.trim();
+
+        String protection = OperatorBackupStore.isProtected(backup)
+                ? " • PIN protected"
+                : " • No PIN detected";
+        target.setText(current
+                + "\nLatest app backup: " + backedUpOperator
+                + protection
+                + " • " + entries + " entries • " + when
+                + "\nSaved operators: " + backupCount);
+        target.setTextColor(getColor(R.color.dmz_green));
     }
 
     private void requestNotificationPermissionIfNeeded(boolean postTestAfter) {
@@ -625,7 +706,7 @@ public class SettingsActivity extends Activity {
     private void confirmClearWebData() {
         new AlertDialog.Builder(this)
                 .setTitle("Clear website data?")
-                .setMessage("This clears WebView cache, cookies, and site storage. You may be signed out of DMZ Ranked.")
+                .setMessage("This clears WebView cache, cookies, and site storage. You may be signed out of DMZ Ranked. App-managed operator backups are kept so they can be restored afterward.")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Clear data", (dialog, which) -> clearWebData())
                 .show();
@@ -639,12 +720,19 @@ public class SettingsActivity extends Activity {
             tempWebView.destroy();
 
             WebStorage.getInstance().deleteAllData();
-            preferences.edit().remove(PREF_LAST_PAGE_URL).apply();
+            preferences.edit()
+                    .remove(PREF_LAST_PAGE_URL)
+                    .remove(PREF_SELECTED_OPERATOR)
+                    .remove(PREF_OPERATOR_VERIFIED)
+                    .remove(PREF_OPERATOR_PROTECTED)
+                    .remove(PREF_OPERATOR_SOURCE)
+                    .remove(PREF_OPERATOR_SYNC_MS)
+                    .apply();
 
             CookieManager.getInstance().removeAllCookies(value -> runOnUiThread(() -> {
                 CookieManager.getInstance().flush();
                 Toast.makeText(SettingsActivity.this,
-                        "Website cache, cookies, and site storage cleared.",
+                        "Website data cleared. App operator backups were kept.",
                         Toast.LENGTH_SHORT).show();
             }));
         } catch (Throwable error) {
@@ -656,7 +744,7 @@ public class SettingsActivity extends Activity {
     private void confirmResetSettings() {
         new AlertDialog.Builder(this)
                 .setTitle("Reset app settings?")
-                .setMessage("This restores Android app settings to defaults. Website cookies and site storage are not deleted.")
+                .setMessage("This restores Android app settings to defaults. Website cookies, site storage, and saved operator backups are not deleted.")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Reset", (dialog, which) -> {
                     preferences.edit().clear().apply();
