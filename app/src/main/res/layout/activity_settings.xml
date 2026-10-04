@@ -649,7 +649,53 @@
                     android:trackTint="@color/dmz_switch_track" />
             </LinearLayout>
 
-                        
+            <LinearLayout
+                android:id="@+id/siteNotificationsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/settings_card_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingEnd="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.03"
+                        android:text="@string/site_notifications"
+                        android:textColor="@color/dmz_white"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/site_notifications_summary"
+                        android:textColor="@color/dmz_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/siteNotificationsSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:showText="false"
+                    android:thumbTint="@color/dmz_switch_thumb"
+                    android:trackTint="@color/dmz_switch_track" />
+            </LinearLayout>
 
 <LinearLayout
                 android:id="@+id/pageControlsHeader"
