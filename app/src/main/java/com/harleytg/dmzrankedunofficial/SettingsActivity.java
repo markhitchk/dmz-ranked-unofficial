@@ -89,7 +89,7 @@ public class SettingsActivity extends Activity {
     private static final String PREF_CONTENT_SIZE = "content_size";
     private static final String PREF_APP_ANIMATIONS = "app_animations";
 
-    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
+    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
     private static final int PLAY_UPDATE_REQUEST = 2005;
 
@@ -124,6 +124,11 @@ public class SettingsActivity extends Activity {
     private long developerPinLockoutUntil;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(AppUiScale.wrap(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -139,6 +144,18 @@ public class SettingsActivity extends Activity {
 
         applyBrandLogo(findViewById(R.id.settingsLogo));
         applyBrandLogo(findViewById(R.id.aboutLogo));
+
+        boolean betaBuild = getPackageName().endsWith(".beta");
+        TextView settingsSubtitle = findViewById(R.id.settingsSubtitle);
+        TextView aboutTitle = findViewById(R.id.aboutTitle);
+        if (settingsSubtitle != null) {
+            settingsSubtitle.setText(betaBuild
+                    ? "DMZ RANKED [BETA] • ANDROID"
+                    : "DMZ RANKED • ANDROID");
+        }
+        if (aboutTitle != null) {
+            aboutTitle.setText(betaBuild ? "DMZ RANKED [BETA]" : "DMZ RANKED");
+        }
 
         PackageInfo packageInfo = getPackageInfoSafe();
         String versionName = packageInfo == null || packageInfo.versionName == null
@@ -191,7 +208,10 @@ public class SettingsActivity extends Activity {
                 preferences.edit().putBoolean(PREF_VERBOSE_LOADING, checked).apply());
         siteNotifications.setOnCheckedChangeListener((buttonView, checked) -> {
             preferences.edit().putBoolean(PREF_SITE_NOTIFICATIONS, checked).apply();
-            if (checked) requestNotificationPermissionIfNeeded(false);
+            if (checked) {
+                ensureNotificationChannel();
+                requestNotificationPermissionIfNeeded(false);
+            }
             updateNotificationStatus();
         });
         operatorAutoSave.setOnCheckedChangeListener((buttonView, checked) ->
@@ -310,8 +330,13 @@ public class SettingsActivity extends Activity {
 
     private void setContentSize(String size) {
         String next = ("compact".equals(size) || "large".equals(size)) ? size : "standard";
-        preferences.edit().putString(PREF_CONTENT_SIZE, next).apply();
-        updateContentSizeUi();
+        String current = preferences.getString(PREF_CONTENT_SIZE, "standard");
+        if (next.equals(current)) {
+            updateContentSizeUi();
+            return;
+        }
+        preferences.edit().putString(PREF_CONTENT_SIZE, next).commit();
+        recreate();
     }
 
     private void updateContentSizeUi() {
@@ -332,11 +357,11 @@ public class SettingsActivity extends Activity {
 
         if (summary != null) {
             if ("compact".equals(size)) {
-                summary.setText("Compact • 90% website text • more content fits on screen.");
+                summary.setText("Compact • smaller cards, controls, text, and website content.");
             } else if ("large".equals(size)) {
-                summary.setText("Large • 115% website text • easier to read.");
+                summary.setText("Large • larger cards, controls, text, and website content.");
             } else {
-                summary.setText("Standard • 100% website text • default size.");
+                summary.setText("Standard • default app and website sizing.");
             }
         }
     }
@@ -730,15 +755,27 @@ public class SettingsActivity extends Activity {
                 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
 
+        NotificationManager manager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        boolean headsUpEnabled = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager != null) {
+            NotificationChannel channel = manager.getNotificationChannel(SITE_NOTIFICATION_CHANNEL);
+            headsUpEnabled = channel == null
+                    || channel.getImportance() >= NotificationManager.IMPORTANCE_HIGH;
+        }
+
         if (!enabled) {
             status.setText("Website notifications are off");
             status.setTextColor(getColor(R.color.dmz_muted));
-        } else if (permissionGranted) {
-            status.setText("Enabled • Android permission granted");
-            status.setTextColor(getColor(R.color.dmz_green));
-        } else {
+        } else if (!permissionGranted) {
             status.setText("Permission needed • tap Android notification settings");
             status.setTextColor(getColor(R.color.dmz_gold));
+        } else if (!headsUpEnabled) {
+            status.setText("Enabled • pop-up alerts disabled by Android");
+            status.setTextColor(getColor(R.color.dmz_gold));
+        } else {
+            status.setText("Enabled • heads-up pop-up alerts on");
+            status.setTextColor(getColor(R.color.dmz_green));
         }
     }
 
@@ -748,9 +785,13 @@ public class SettingsActivity extends Activity {
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
                 SITE_NOTIFICATION_CHANNEL,
-                "DMZ Ranked website alerts",
-                NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("Website alerts and app notification tests from DMZ Ranked.");
+                "DMZ Ranked live alerts",
+                NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription("Heads-up raid, review, website, season, update, and test alerts.");
+        channel.enableVibration(true);
+        channel.enableLights(true);
+        channel.setShowBadge(true);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         manager.createNotificationChannel(channel);
     }
 
@@ -783,12 +824,16 @@ public class SettingsActivity extends Activity {
 
         builder.setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("DMZ Ranked test notification")
-                .setContentText("Notifications are working on this device.")
+                .setContentText("Heads-up notifications are working on this device.")
                 .setStyle(new Notification.BigTextStyle()
-                        .bigText("Notifications are working on this device. This is a local app test."))
+                        .bigText("Heads-up notifications are working on this device. This is a local app test."))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setColor(getColor(R.color.dmz_gold));
+                .setColor(getColor(R.color.dmz_gold))
+                .setCategory(Notification.CATEGORY_EVENT)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setDefaults(Notification.DEFAULT_ALL);
 
         try {
             Bitmap logo = BitmapFactory.decodeResource(getResources(), R.drawable.dmz_ranked_logo);
@@ -802,8 +847,15 @@ public class SettingsActivity extends Activity {
 
     private void openNotificationSettings() {
         try {
-            Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            Intent intent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
+                        .putExtra(Settings.EXTRA_CHANNEL_ID, SITE_NOTIFICATION_CHANNEL);
+            } else {
+                intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            }
             startActivity(intent);
         } catch (Throwable error) {
             Toast.makeText(this, "Could not open Android notification settings.", Toast.LENGTH_SHORT).show();
