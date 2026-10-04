@@ -52,10 +52,6 @@ public class SettingsActivity extends Activity {
     private static final String PREF_OPERATOR_PROTECTED = "website_operator_protected";
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
-    private static final String PREF_SITE_LOCAL_COUNT = "website_local_storage_count";
-    private static final String PREF_SITE_SESSION_COUNT = "website_session_storage_count";
-    private static final String PREF_SITE_INDEXEDDB_AVAILABLE = "website_indexeddb_available";
-    private static final String PREF_SITE_STORAGE_SYNC_MS = "website_storage_sync_ms";
 
     public static final String EXTRA_ACTION = "settings_action";
     public static final String ACTION_RELOAD = "reload";
@@ -123,7 +119,6 @@ public class SettingsActivity extends Activity {
         setupCollapsible(R.id.creditsHeader, R.id.creditsContent, R.id.creditsArrow, false);
 
         renderWebsiteOperatorInfo();
-        renderWebsiteDataInfo();
 
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
@@ -133,7 +128,6 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         renderWebsiteOperatorInfo();
-        renderWebsiteDataInfo();
     }
 
     private void renderWebsiteOperatorInfo() {
@@ -179,59 +173,6 @@ public class SettingsActivity extends Activity {
             syncText.setText(syncMs > 0
                     ? "Last checked: " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(new Date(syncMs))
                     : "Last checked: not yet");
-        }
-    }
-
-    private void renderWebsiteDataInfo() {
-        TextView cookieStatus = findViewById(R.id.webDataCookieStatusText);
-        TextView siteStorageStatus = findViewById(R.id.webDataSiteStorageStatusText);
-        TextView storagePath = findViewById(R.id.webDataStoragePathText);
-
-        try {
-            String cookies = CookieManager.getInstance().getCookie("https://dmzranked.com/");
-            boolean hasCookies = cookies != null && !cookies.trim().isEmpty();
-            if (cookieStatus != null) {
-                cookieStatus.setText(hasCookies
-                        ? "Cookies: stored for dmzranked.com (values hidden)"
-                        : "Cookies: none currently stored for dmzranked.com");
-            }
-        } catch (Throwable error) {
-            if (cookieStatus != null) cookieStatus.setText("Cookies: status unavailable");
-        }
-
-        int localCount = preferences == null ? 0 : preferences.getInt(PREF_SITE_LOCAL_COUNT, 0);
-        int sessionCount = preferences == null ? 0 : preferences.getInt(PREF_SITE_SESSION_COUNT, 0);
-        boolean indexedDbAvailable = preferences != null
-                && preferences.getBoolean(PREF_SITE_INDEXEDDB_AVAILABLE, false);
-        long storageSyncMs = preferences == null ? 0L
-                : preferences.getLong(PREF_SITE_STORAGE_SYNC_MS, 0L);
-
-        if (siteStorageStatus != null) {
-            if (storageSyncMs <= 0L) {
-                siteStorageStatus.setText("Site storage: open DMZ Ranked once to inspect it.");
-            } else {
-                StringBuilder status = new StringBuilder("Site storage: ")
-                        .append(localCount).append(" localStorage item")
-                        .append(localCount == 1 ? "" : "s")
-                        .append(" • ")
-                        .append(sessionCount).append(" sessionStorage item")
-                        .append(sessionCount == 1 ? "" : "s");
-                if (indexedDbAvailable) {
-                    status.append(" • IndexedDB available");
-                }
-                siteStorageStatus.setText(status.toString());
-            }
-        }
-
-        try {
-            String dataDir = getApplicationInfo().dataDir;
-            if (storagePath != null) {
-                storagePath.setText(dataDir + "/app_webview/");
-            }
-        } catch (Throwable error) {
-            if (storagePath != null) {
-                storagePath.setText("App-private Android WebView storage");
-            }
         }
     }
 
@@ -313,15 +254,11 @@ public class SettingsActivity extends Activity {
                     .remove(PREF_OPERATOR_PROTECTED)
                     .remove(PREF_OPERATOR_SOURCE)
                     .remove(PREF_OPERATOR_SYNC_MS)
-                    .remove(PREF_SITE_LOCAL_COUNT)
-                    .remove(PREF_SITE_SESSION_COUNT)
-                    .remove(PREF_SITE_INDEXEDDB_AVAILABLE)
-                    .remove(PREF_SITE_STORAGE_SYNC_MS)
+
                     .apply();
             renderWebsiteOperatorInfo();
             CookieManager.getInstance().removeAllCookies(value -> runOnUiThread(() -> {
                 CookieManager.getInstance().flush();
-                renderWebsiteDataInfo();
                 Toast.makeText(SettingsActivity.this,
                         "Web cache, cookies, and site storage cleared.",
                         Toast.LENGTH_SHORT).show();
@@ -367,7 +304,7 @@ public class SettingsActivity extends Activity {
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
                 connection.setRequestProperty("User-Agent",
-                        "DMZRankedApp/1.0.23 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
+                        "DMZRankedApp/1.0.24 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
