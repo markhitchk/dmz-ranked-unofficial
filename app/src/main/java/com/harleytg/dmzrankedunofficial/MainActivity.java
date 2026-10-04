@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -58,7 +59,7 @@ public class MainActivity extends Activity {
     private static final int FILE_REQUEST = 2001;
     private static final int SETTINGS_REQUEST = 2002;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2003;
-    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
+    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
 
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_DESKTOP = "desktop_site";
@@ -220,9 +221,15 @@ public class MainActivity extends Activity {
     private String mobileUserAgent;
     private boolean handlingBack;
     private boolean desktopModeBeforeSettings;
+    private String contentSizeBeforeSettings = "standard";
     private float pullRefreshStartY;
     private boolean pullRefreshTracking;
     private boolean pullRefreshTriggered;
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(AppUiScale.wrap(newBase));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -230,6 +237,7 @@ public class MainActivity extends Activity {
 
         try {
             preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            boolean importedProductionData = importProductionDataIfBeta();
             setContentView(R.layout.activity_main);
             configureSystemBars();
 
@@ -271,9 +279,70 @@ public class MainActivity extends Activity {
                 }
                 webView.loadUrl(initialUrl);
             }
+
+            if (importedProductionData
+                    && !"standard".equals(preferences.getString(PREF_CONTENT_SIZE, "standard"))) {
+                View root = findViewById(R.id.rootContainer);
+                if (root != null) root.post(this::recreate);
+            }
         } catch (Throwable error) {
             Log.e(TAG, "Startup failure", error);
             showStartupRecovery(error);
+        }
+    }
+
+    private boolean importProductionDataIfBeta() {
+        if (!"com.harleytg.dmzranked.beta".equals(getPackageName()) || preferences == null
+                || preferences.getBoolean("production_migration_v1", false)) {
+            return false;
+        }
+
+        Cursor cursor = null;
+        try {
+            Uri uri = Uri.parse("content://com.harleytg.dmzranked.migration/export");
+            cursor = getContentResolver().query(uri, new String[]{"payload"}, null, null, null);
+            if (cursor == null || !cursor.moveToFirst()) return false;
+            int column = cursor.getColumnIndex("payload");
+            if (column < 0) return false;
+
+            String raw = cursor.getString(column);
+            if (raw == null || raw.trim().isEmpty()) return false;
+            JSONObject payload = new JSONObject(raw);
+            JSONObject importedPrefs = payload.optJSONObject("preferences");
+
+            SharedPreferences.Editor editor = preferences.edit();
+            if (importedPrefs != null) {
+                Iterator<String> keys = importedPrefs.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    Object value = importedPrefs.opt(key);
+                    if (value instanceof Boolean) {
+                        editor.putBoolean(key, (Boolean) value);
+                    } else if (value instanceof Number) {
+                        editor.putLong(key, ((Number) value).longValue());
+                    } else if (value instanceof String) {
+                        editor.putString(key, (String) value);
+                    }
+                }
+            }
+
+            int importedOperators = OperatorBackupStore.importJson(
+                    this, payload.optString("operatorBackups", "{}"));
+            editor.putBoolean("production_migration_v1", true).apply();
+            Toast.makeText(this,
+                    importedOperators > 0
+                            ? "Imported app settings and operator backups from DMZ Ranked."
+                            : "Imported app settings from DMZ Ranked.",
+                    Toast.LENGTH_LONG).show();
+            return true;
+        } catch (SecurityException denied) {
+            Log.d(TAG, "Production app migration is not available yet", denied);
+            return false;
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not import production app data", error);
+            return false;
+        } finally {
+            if (cursor != null) cursor.close();
         }
     }
 
@@ -895,9 +964,13 @@ public class MainActivity extends Activity {
 
         NotificationChannel channel = new NotificationChannel(
                 SITE_NOTIFICATION_CHANNEL,
-                "DMZ Ranked website notifications",
-                NotificationManager.IMPORTANCE_DEFAULT);
-        channel.setDescription("Notifications mirrored from dmzranked.com while the app is running.");
+                "DMZ Ranked live alerts",
+                NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription("Heads-up raid, review, website, season, and update alerts from DMZ Ranked.");
+        channel.enableVibration(true);
+        channel.enableLights(true);
+        channel.setShowBadge(true);
+        channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         manager.createNotificationChannel(channel);
     }
 
@@ -1042,9 +1115,12 @@ public class MainActivity extends Activity {
                 .setStyle(new Notification.BigTextStyle().bigText(body))
                 .setContentIntent(contentIntent)
                 .setAutoCancel(true)
-                .setOnlyAlertOnce(true)
+                .setOnlyAlertOnce(false)
                 .setColor(getColor(R.color.dmz_gold))
-                .setCategory(Notification.CATEGORY_STATUS);
+                .setCategory(Notification.CATEGORY_EVENT)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setDefaults(Notification.DEFAULT_ALL);
 
         try {
             Bitmap logo = BitmapFactory.decodeResource(getResources(), R.drawable.dmz_ranked_logo);
@@ -1216,6 +1292,7 @@ public class MainActivity extends Activity {
     private void showSettings() {
         try {
             desktopModeBeforeSettings = preferences.getBoolean(PREF_DESKTOP, false);
+            contentSizeBeforeSettings = preferences.getString(PREF_CONTENT_SIZE, "standard");
             openSettingsActivity();
         } catch (Throwable error) {
             Log.e(TAG, "Settings failure", error);
@@ -1464,7 +1541,14 @@ public class MainActivity extends Activity {
 
             boolean desktopNow = preferences.getBoolean(PREF_DESKTOP, false);
             boolean desktopChanged = desktopNow != desktopModeBeforeSettings;
+            String contentSizeNow = preferences.getString(PREF_CONTENT_SIZE, "standard");
+            boolean contentSizeChanged = !contentSizeNow.equals(contentSizeBeforeSettings);
             String action = data == null ? null : data.getStringExtra(SettingsActivity.EXTRA_ACTION);
+
+            if (contentSizeChanged) {
+                recreate();
+                return;
+            }
             boolean reloadRequested = SettingsActivity.ACTION_RELOAD.equals(action);
             boolean saveOperatorRequested = SettingsActivity.ACTION_SAVE_OPERATOR.equals(action);
             boolean restoreOperatorRequested = SettingsActivity.ACTION_RESTORE_OPERATOR.equals(action);
