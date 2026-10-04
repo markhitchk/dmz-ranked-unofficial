@@ -276,6 +276,14 @@ public class SettingsActivity extends Activity {
     }
 
     @Override
+    public void finish() {
+        super.finish();
+        if (preferences == null || preferences.getBoolean(PREF_APP_ANIMATIONS, true)) {
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        }
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
         if (appUpdateManager != null && installStateUpdatedListener != null) {
