@@ -3,26 +3,18 @@ plugins {
 }
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
+def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
 
 tasks.register("generateDmzLogo") {
-    inputs.files(fileTree("src/main/logo/png") { include "part-*.txt" })
+    inputs.file(sourceLogoFile)
     outputs.dir(generatedLogoResDir)
 
     doLast {
-        def parts = fileTree("src/main/logo/png") {
-            include "part-*.txt"
-        }.files.sort { a, b -> a.name <=> b.name }
-
-        if (parts.size() != 17) {
-            throw new GradleException("Expected 17 transparent PNG logo parts, found " + parts.size())
+        if (!sourceLogoFile.exists()) {
+            throw new GradleException("Missing DMZ logo PNG: " + sourceLogoFile)
         }
 
-        def encoded = new StringBuilder()
-        parts.each { part ->
-            encoded.append(part.getText("UTF-8").replaceAll("\\s+", ""))
-        }
-
-        def sourceBytes = java.util.Base64.decoder.decode(encoded.toString())
+        def sourceBytes = sourceLogoFile.bytes
         if (sourceBytes.length < 8 ||
                 sourceBytes[0] != (byte)0x89 ||
                 sourceBytes[1] != (byte)0x50 ||
