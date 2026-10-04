@@ -367,7 +367,7 @@ public class SettingsActivity extends Activity {
                 connection.setReadTimeout(5000);
                 connection.setInstanceFollowRedirects(true);
                 connection.setRequestProperty("User-Agent",
-                        "DMZRankedApp/1.0.22 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
+                        "DMZRankedApp/1.0.23 (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
                 input = connection.getInputStream();
                 Bitmap avatar = BitmapFactory.decodeStream(input);
                 if (avatar != null && !isFinishing()) {
