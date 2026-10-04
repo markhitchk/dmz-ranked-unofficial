@@ -14,7 +14,7 @@ import java.util.Locale;
 final class OperatorBackupStore {
     private static final String PREFS = "dmz_operator_backups";
     private static final String KEY_BACKUPS = "backups_v1";
-    private static final int MAX_OPERATORS = 12;
+    private static final int MAX_OPERATORS = 2;
     private static final int MAX_SNAPSHOT_CHARS = 1_500_000;
 
     private OperatorBackupStore() {
@@ -96,6 +96,34 @@ final class OperatorBackupStore {
         }
     }
 
+    static String[] operatorNames(Context context) {
+        if (context == null) return new String[0];
+        try {
+            JSONObject root = loadRoot(context);
+            ArrayList<JSONObject> records = new ArrayList<>();
+            Iterator<String> keys = root.keys();
+            while (keys.hasNext()) {
+                JSONObject record = root.optJSONObject(keys.next());
+                if (record != null) records.add(record);
+            }
+            Collections.sort(records, new Comparator<JSONObject>() {
+                @Override
+                public int compare(JSONObject left, JSONObject right) {
+                    return Long.compare(savedAt(right), savedAt(left));
+                }
+            });
+            ArrayList<String> names = new ArrayList<>();
+            for (JSONObject record : records) {
+                String name = operatorName(record);
+                if (!name.isEmpty()) names.add(name);
+                if (names.size() >= MAX_OPERATORS) break;
+            }
+            return names.toArray(new String[0]);
+        } catch (Throwable ignored) {
+            return new String[0];
+        }
+    }
+
     static String operatorName(JSONObject record) {
         return record == null ? "" : cleanName(record.optString("operator", ""));
     }
@@ -150,7 +178,14 @@ final class OperatorBackupStore {
     private static JSONObject loadRoot(Context context) {
         try {
             String raw = prefs(context).getString(KEY_BACKUPS, "{}");
-            return new JSONObject(raw == null ? "{}" : raw);
+            JSONObject root = new JSONObject(raw == null ? "{}" : raw);
+            // Enforce the two-operator cap for existing installs too, not only after the next save.
+            int before = root.length();
+            prune(root);
+            if (root.length() != before) {
+                prefs(context).edit().putString(KEY_BACKUPS, root.toString()).apply();
+            }
+            return root;
         } catch (Throwable ignored) {
             return new JSONObject();
         }

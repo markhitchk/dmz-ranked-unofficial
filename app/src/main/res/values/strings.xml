@@ -21,7 +21,7 @@
     <string name="verbose_loading_summary">Show live loading status and percentage underneath the loading bar.</string>
 
     <string name="site_notifications">Website notifications</string>
-    <string name="site_notifications_summary">Mirror supported dmzranked.com alerts as Android notifications while this app is running.</string>
+    <string name="site_notifications_summary">Mirror raid results, review holds, website banners, season notices, and update alerts from dmzranked.com while this app is running.</string>
     <string name="notification_settings">Android notification settings</string>
     <string name="notification_settings_summary">Review Android permission, sound, vibration, and notification controls for this app.</string>
     <string name="test_notification">Test notification</string>

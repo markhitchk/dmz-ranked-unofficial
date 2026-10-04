@@ -75,6 +75,8 @@ public class MainActivity extends Activity {
     private static final String PREF_OPERATOR_SOURCE = "website_operator_source";
     private static final String PREF_OPERATOR_SYNC_MS = "website_operator_sync_ms";
     private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
+    private static final String PREF_CONTENT_SIZE = "content_size";
+    private static final String PREF_APP_ANIMATIONS = "app_animations";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -139,17 +141,63 @@ public class MainActivity extends Activity {
             "return JSON.stringify({origin:String(location.origin||''),storage:storage,count:count,protected:protectedFlag,verified:verified});" +
             "}catch(e){return JSON.stringify({origin:'',storage:{},count:0,error:String(e&&e.message||e)});}})()";
 
+    /*
+     * Native website-event bridge.
+     *
+     * The supplied dmzranked.com leaderboard.js exposes the real user-facing event
+     * points as showResult(), showHoldNotice(), showBanner(), showSeasonPopup(),
+     * buildChangelogPopup() and showMsg(). Hooking those functions is more reliable
+     * than guessing at generic ".notification" classes that the site does not use.
+     *
+     * We intentionally use evaluateJavascript polling instead of addJavascriptInterface
+     * so the website never receives a Java object/native capability.
+     */
+    private static final String INSTALL_SITE_EVENT_BRIDGE_SCRIPT =
+            "(function(){try{" +
+            "if(!window.__dmzNativeEvents)window.__dmzNativeEvents=[];" +
+            "if(!window.__dmzNativeSeen)window.__dmzNativeSeen={};" +
+            "function clean(v){var d=document.createElement('div');d.innerHTML=String(v==null?'':v);return String(d.textContent||d.innerText||'').replace(/\\s+/g,' ').trim();}" +
+            "function emit(prefix,text,key){text=clean(text);if(!text||text.length<3)return;var k=String(key||prefix+'|'+text);var now=Date.now(),last=window.__dmzNativeSeen[k]||0;if(now-last<2500)return;window.__dmzNativeSeen[k]=now;window.__dmzNativeEvents.push(prefix+text);if(window.__dmzNativeEvents.length>40)window.__dmzNativeEvents.splice(0,window.__dmzNativeEvents.length-40);}" +
+            "function wrap(name,after){var fn=window[name];if(typeof fn!=='function'||fn.__dmzNativeWrapped)return false;var w=function(){var args=arguments,out=fn.apply(this,args);try{after.apply(this,args);}catch(e){}return out;};try{Object.keys(fn).forEach(function(k){w[k]=fn[k];});}catch(e){}w.__dmzNativeWrapped=true;w.__dmzNativeOriginal=fn;window[name]=w;return true;}" +
+            "window.__dmzInstallNativeHooks=function(){" +
+            "wrap('showResult',function(d){d=d||{};var delta=(Number(d.afterSR)||0)-(Number(d.beforeSR)||0),sign=delta>0?'+':'';emit('[RAID]','Raid logged for '+(d.name||'operator')+' • '+sign+delta+' SR • New total '+(Number(d.afterSR)||0).toLocaleString()+' SR'+(d.place?(' • #'+d.place+(d.total?' of '+d.total:'')):'') ,'raid:'+String(d.name||'')+':'+String(d.afterSR||'')+':'+String(d.place||''));});" +
+            "wrap('showHoldNotice',function(reason){emit('[REVIEW]','Raid submitted and is under review'+(reason?' • '+reason:''),'review:'+String(reason||''));});" +
+            "wrap('showBanner',function(kind,html){emit('[WEBSITE]',clean(html),'banner:'+clean(html));});" +
+            "wrap('showSeasonPopup',function(s){s=s||{};emit('[SEASON]','New season: '+(s.name||'DMZ Ranked season'),'season:'+String(s.start||s.name||''));});" +
+            "wrap('buildChangelogPopup',function(entries){var e=(entries&&entries.length)?entries[0]:null;emit('[UPDATE]',e&&e.title?('Website update: '+e.title):'DMZ Ranked website update available','update:'+(e&&e.v!=null?e.v:clean(e&&e.title||'')));});" +
+            "wrap('showMsg',function(id,kind,text){text=String(text||'');if(id==='logMsg'&&kind==='ok'&&/^Logged for /i.test(text))return;emit('[WEBSITE]',text,'msg:'+id+':'+kind+':'+text);});" +
+            "return true;};" +
+            "window.__dmzInstallNativeHooks();" +
+            "if(!window.__dmzNativeObserver){" +
+            "window.__dmzNativeObserver=new MutationObserver(function(){" +
+            "try{window.__dmzInstallNativeHooks();" +
+            "var b=document.getElementById('banner');if(b&&/\\bshow\\b/.test(b.className||'')){var bt=clean(b.innerText||b.textContent||'');if(bt)emit('[WEBSITE]',bt,'dom:banner:'+bt);}" +
+            "var u=document.getElementById('updatesDot');if(u&&getComputedStyle(u).display!=='none'){emit('[UPDATE]','New DMZ Ranked website update is available.','dom:updates');}" +
+            "}catch(e){}" +
+            "});" +
+            "window.__dmzNativeObserver.observe(document.documentElement||document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});" +
+            "}" +
+            "return 'installed';" +
+            "}catch(e){return 'error:'+String(e&&e.message||e);}})()";
+
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
             "(function(){try{" +
+            "if(window.__dmzInstallNativeHooks)try{window.__dmzInstallNativeHooks();}catch(e){}" +
+            "var out=[];if(Array.isArray(window.__dmzNativeEvents)&&window.__dmzNativeEvents.length){out=window.__dmzNativeEvents.splice(0,20);}" +
             "function clean(v){return String(v||'').replace(/\\s+/g,' ').trim();}" +
             "function visible(el){try{var st=getComputedStyle(el),r=el.getBoundingClientRect();return st.display!=='none'&&st.visibility!=='hidden'&&r.width>0&&r.height>0;}catch(e){return true;}}" +
-            "var q='[role=alert],.toast,.notification,[class*=toast],[class*=notification],[data-notification]';" +
-            "var nodes=[].slice.call(document.querySelectorAll(q)),seen={},out=[];" +
-            "for(var i=0;i<nodes.length;i++){var el=nodes[i];if(!visible(el))continue;var t=clean(el.innerText||el.textContent||'');" +
-            "if(t.length<4||t.length>320||/^notifications?$/i.test(t)||/^no notifications/i.test(t))continue;" +
-            "if(!seen[t]){seen[t]=1;out.push(t);}if(out.length>=12)break;}" +
-            "return JSON.stringify(out);" +
+            "function add(prefix,el,key){if(!el||!visible(el))return;var t=clean(el.innerText||el.textContent||'');if(t.length<4||t.length>420)return;var full=prefix+t;if(out.indexOf(full)<0)out.push(full);}" +
+            "if(!window.__dmzNativeBridgeInstalled){" +
+            "add('[WEBSITE]',document.querySelector('#banner.banner.show'),'fallback:banner');" +
+            "add('[WEBSITE]',document.querySelector('#logMsg.msg.show'),'fallback:log');" +
+            "add('[RAID]',document.querySelector('#resultCard.rcard.show, #resultCard[style*=flex], #resultCard[style*=block]'),'fallback:result');" +
+            "add('[SEASON]',document.querySelector('#seasonPop'),'fallback:season');" +
+            "add('[UPDATE]',document.querySelector('#clOverlay'),'fallback:change');" +
+            "}" +
+            "window.__dmzNativeBridgeInstalled=true;" +
+            "return JSON.stringify(out.slice(0,20));" +
             "}catch(e){return '[]';}})()";
+
 
     private SharedPreferences preferences;
     private WebView webView;
@@ -202,6 +250,7 @@ public class MainActivity extends Activity {
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
 
             configureWebView();
+            applyAppearancePreferences();
             ensureSiteNotificationChannel();
             requestSiteNotificationPermissionIfNeeded();
             applyKeepAwakePreference();
@@ -312,6 +361,7 @@ public class MainActivity extends Activity {
                         saveLastPageIfNeeded(url);
                         applyDesktopViewportIfNeeded(view);
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
+                        view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
@@ -869,7 +919,15 @@ public class MainActivity extends Activity {
             return;
         }
         int token = ++siteNotificationMonitorToken;
-        pollSiteNotifications(token);
+        try {
+            webView.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, ignored -> {
+                if (!isFinishing() && token == siteNotificationMonitorToken) {
+                    pollSiteNotifications(token);
+                }
+            });
+        } catch (Throwable error) {
+            pollSiteNotifications(token);
+        }
     }
 
     private void pollSiteNotifications(int token) {
@@ -955,6 +1013,23 @@ public class MainActivity extends Activity {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         String body = message.trim();
+        String title = "DMZ Ranked";
+        if (body.startsWith("[RAID]")) {
+            title = "Raid submitted";
+            body = body.substring(6).trim();
+        } else if (body.startsWith("[REVIEW]")) {
+            title = "Raid under review";
+            body = body.substring(8).trim();
+        } else if (body.startsWith("[UPDATE]")) {
+            title = "DMZ Ranked update";
+            body = body.substring(8).trim();
+        } else if (body.startsWith("[SEASON]")) {
+            title = "Season update";
+            body = body.substring(8).trim();
+        } else if (body.startsWith("[WEBSITE]")) {
+            title = "DMZ Ranked website";
+            body = body.substring(9).trim();
+        }
         if (body.length() > 320) body = body.substring(0, 319) + "…";
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
@@ -962,7 +1037,7 @@ public class MainActivity extends Activity {
                 : new Notification.Builder(this);
 
         builder.setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("DMZ Ranked")
+                .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new Notification.BigTextStyle().bigText(body))
                 .setContentIntent(contentIntent)
@@ -994,9 +1069,24 @@ public class MainActivity extends Activity {
         if (loadingProgressBar != null) loadingProgressBar.setProgress(100);
         if (loadingOverlay != null) {
             loadingOverlay.postDelayed(() -> {
-                if (!isFinishing() && loadingOverlay != null) {
+                if (isFinishing() || loadingOverlay == null) return;
+                boolean animate = preferences == null
+                        || preferences.getBoolean(PREF_APP_ANIMATIONS, true);
+                if (!animate) {
+                    loadingOverlay.setAlpha(1f);
                     loadingOverlay.setVisibility(View.GONE);
+                    return;
                 }
+                loadingOverlay.animate()
+                        .alpha(0f)
+                        .setDuration(180L)
+                        .withEndAction(() -> {
+                            if (loadingOverlay != null) {
+                                loadingOverlay.setVisibility(View.GONE);
+                                loadingOverlay.setAlpha(1f);
+                            }
+                        })
+                        .start();
             }, delayMs);
         }
     }
@@ -1018,8 +1108,27 @@ public class MainActivity extends Activity {
 
     private void showLoadingScreen(String status, int progress) {
         if (loadingProgressBar != null) loadingProgressBar.setProgress(progress);
-        if (loadingOverlay != null) loadingOverlay.setVisibility(View.VISIBLE);
+        if (loadingOverlay != null) {
+            loadingOverlay.animate().cancel();
+            loadingOverlay.setAlpha(1f);
+            loadingOverlay.setVisibility(View.VISIBLE);
+        }
         updateLoadingVerbose(status);
+    }
+
+    private void applyAppearancePreferences() {
+        if (webView == null) return;
+        String size = preferences == null
+                ? "standard"
+                : preferences.getString(PREF_CONTENT_SIZE, "standard");
+        int zoom = 100;
+        if ("compact".equals(size)) zoom = 90;
+        else if ("large".equals(size)) zoom = 115;
+        try {
+            webView.getSettings().setTextZoom(zoom);
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not apply content size", error);
+        }
     }
 
     private void hideLoadingScreen() {
@@ -1117,6 +1226,9 @@ public class MainActivity extends Activity {
     private void openSettingsActivity() {
         try {
             startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_REQUEST);
+            if (preferences == null || preferences.getBoolean(PREF_APP_ANIMATIONS, true)) {
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            }
         } catch (Throwable error) {
             Log.e(TAG, "Settings failure", error);
             Toast.makeText(this, "Settings could not open: " + safeMessage(error), Toast.LENGTH_LONG).show();
@@ -1339,6 +1451,7 @@ public class MainActivity extends Activity {
 
         if (requestCode == SETTINGS_REQUEST) {
             applyKeepAwakePreference();
+            applyAppearancePreferences();
             applyWebViewDebuggingPreference();
             requestSiteNotificationPermissionIfNeeded();
             if (preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
