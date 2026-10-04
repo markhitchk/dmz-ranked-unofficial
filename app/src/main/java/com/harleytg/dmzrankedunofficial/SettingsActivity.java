@@ -439,7 +439,7 @@ public class SettingsActivity extends Activity {
         boolean aboutMatch = showIfMatches(
                 R.id.aboutCard,
                 q,
-                "dmz ranked about version build credits creator creators yolando dchinz harley studios paypal unofficial");
+                "dmz ranked about version build credits creator creators yolando dchinz harley studios harleytg harley-the-gamer gamer paypal unofficial");
         if (searching && aboutMatch
                 && containsAny(q, "credit", "creator", "yolando", "dchinz", "harley", "paypal")) {
             creditsExpanded = true;
