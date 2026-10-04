@@ -229,6 +229,16 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/webDataSiteStorageStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Site storage: checking…"
+                    android:textColor="@color/dmz_gold_soft"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="7dp"
