@@ -269,7 +269,7 @@ public class FeedbackActivity extends Activity {
             connection.setRequestProperty(
                     "User-Agent",
                     "DMZRankedApp/" + getVersionName()
-                            + " (HarleysStudios; AndroidClient; com.harleytg.dmzranked)");
+                            + " (HarleysStudios; AndroidClient; " + getPackageName() + ")");
 
             String device = Build.MANUFACTURER + " " + Build.MODEL
                     + " • Android " + Build.VERSION.RELEASE
@@ -295,7 +295,7 @@ public class FeedbackActivity extends Activity {
                     + "{\"name\":\"Scope\",\"value\":\"Android app only\",\"inline\":true},"
                     + "{\"name\":\"App Version\",\"value\":\"" + escape(getVersionName())
                     + " (" + versionCode + ")\",\"inline\":true},"
-                    + "{\"name\":\"Package\",\"value\":\"``com.harleytg.dmzranked``\",\"inline\":true},"
+                    + "{\"name\":\"Package\",\"value\":\"``" + escape(getPackageName()) + "``\",\"inline\":true},"
                     + "{\"name\":\"Contact\",\"value\":\"" + escape(contactText) + "\",\"inline\":true},"
                     + "{\"name\":\"Device / OS\",\"value\":\"" + escape(device) + "\",\"inline\":false},"
                     + "{\"name\":\"Routing\",\"value\":\"App bugs and app features → Harley's Studios\\nWebsite/server issues → Main DMZ Ranked Discord\",\"inline\":false}"
