@@ -11,6 +11,8 @@
     <string name="keep_screen_awake_summary">Prevent the screen from sleeping while this app is open.</string>
     <string name="verbose_loading">Verbose loading details</string>
     <string name="verbose_loading_summary">Show live loading status and percentage underneath the loading bar.</string>
+    <string name="site_notifications">Website notifications</string>
+    <string name="site_notifications_summary">Mirror new dmzranked.com alerts as Android notifications while this app is running.</string>
     <string name="credits">Credits</string>
     <string name="app_development_title">APP DEVELOPMENT</string>
     <string name="app_development_name">Harley\'s Studios</string>
