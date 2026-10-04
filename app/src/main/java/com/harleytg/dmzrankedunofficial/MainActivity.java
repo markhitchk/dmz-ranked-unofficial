@@ -130,9 +130,12 @@ public class MainActivity extends Activity {
             "if(host!=='dmzranked.com'&&!host.endsWith('.dmzranked.com')){return JSON.stringify({origin:'',storage:{},count:0,error:'origin'});}" +
             "function blockedKey(k){return /pin|pass(word|code)?|token|auth|session|secret|cookie|credential|jwt|bearer|csrf|oauth|api[_.-]?key/i.test(String(k||''));}" +
             "function blockedValue(v){v=String(v||'');if(/eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}/.test(v))return true;return /[\\\"'](?:access_?token|refresh_?token|password|passcode|session|secret|authorization|oauth|jwt|api_?key)[\\\"']?\\s*[:=]/i.test(v);}" +
+            "var body=String((document.body&&document.body.innerText)||'');" +
+            "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
+            "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
             "var storage={},count=0,total=0;" +
             "for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||'';if(!k||blockedKey(k))continue;var v=localStorage.getItem(k);if(v==null||blockedValue(v)||v.length>300000)continue;var next=total+k.length+v.length;if(next>1000000)break;storage[k]=v;count++;total=next;}" +
-            "return JSON.stringify({origin:String(location.origin||''),storage:storage,count:count});" +
+            "return JSON.stringify({origin:String(location.origin||''),storage:storage,count:count,protected:protectedFlag,verified:verified});" +
             "}catch(e){return JSON.stringify({origin:'',storage:{},count:0,error:String(e&&e.message||e)});}})()";
 
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
@@ -668,8 +671,9 @@ public class MainActivity extends Activity {
             return;
         }
 
-        String operatorName = OperatorBackupStore.operatorName(backup);
-        String script = OperatorBackupStore.buildRestoreScript(backup);
+        final JSONObject finalBackup = backup;
+        final String operatorName = OperatorBackupStore.operatorName(backup);
+        final String script = OperatorBackupStore.buildRestoreScript(backup);
         if (script == null) {
             Toast.makeText(this, "The saved operator backup has no restorable website data.",
                     Toast.LENGTH_LONG).show();
@@ -677,7 +681,52 @@ public class MainActivity extends Activity {
         }
 
         try {
-            final JSONObject finalBackup = backup;
+            webView.evaluateJavascript(READ_CURRENT_OPERATOR_SCRIPT, statusResult -> {
+                try {
+                    String decoded = decodeJavascriptString(statusResult);
+                    JSONObject currentState = new JSONObject(decoded);
+                    String liveName = currentState.optString("name", "").trim();
+                    boolean liveVerified = currentState.optBoolean("verified", false);
+                    boolean liveProtected = currentState.optBoolean("protected", false);
+                    boolean sameOperator = !liveName.isEmpty()
+                            && liveName.equalsIgnoreCase(operatorName);
+
+                    if (!liveName.isEmpty() && !sameOperator) {
+                        Toast.makeText(MainActivity.this,
+                                "Switch DMZ Ranked to " + operatorName
+                                        + " before restoring this operator.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    boolean pinRequired = OperatorBackupStore.isProtected(finalBackup)
+                            || (sameOperator && liveProtected);
+                    if (pinRequired && (!sameOperator || !liveVerified)) {
+                        Toast.makeText(MainActivity.this,
+                                operatorName + " is PIN protected. Select that operator on DMZ Ranked "
+                                        + "and enter its PIN first.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    applyOperatorBackup(finalBackup, operatorName, script);
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not verify operator protection before restore", error);
+                    Toast.makeText(MainActivity.this,
+                            "Could not verify this operator. Restore was blocked for safety.",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read operator protection state", error);
+            Toast.makeText(this,
+                    "Could not verify this operator. Restore was blocked for safety.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void applyOperatorBackup(JSONObject backup, String operatorName, String script) {
+        try {
             webView.evaluateJavascript(script, result -> {
                 String clean = decodeJavascriptString(result);
                 if (clean.startsWith("restored:")) {
@@ -695,7 +744,7 @@ public class MainActivity extends Activity {
                     webView.reload();
                 } else {
                     Log.d(TAG, "Operator restore result: " + clean
-                            + " backup=" + OperatorBackupStore.entryCount(finalBackup));
+                            + " backup=" + OperatorBackupStore.entryCount(backup));
                     Toast.makeText(MainActivity.this,
                             "DMZ Ranked could not restore the saved operator data.",
                             Toast.LENGTH_LONG).show();
