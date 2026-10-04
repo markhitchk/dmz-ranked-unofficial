@@ -79,9 +79,32 @@ tasks.register("generateDmzLogo") {
                 throw new GradleException("Decoded About logo is not a valid PNG: " + encodedSource)
             }
 
+            def decodedImage = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(pngBytes))
+            if (decodedImage == null) {
+                throw new GradleException("Could not decode About PNG: " + encodedSource)
+            }
+
+            // Re-encode as a plain Android-safe ARGB PNG. This strips embedded
+            // profiles/metadata that can make AAPT2 crash while preserving alpha.
+            def normalizedImage = new java.awt.image.BufferedImage(
+                    decodedImage.getWidth(),
+                    decodedImage.getHeight(),
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB
+            )
+            def graphics = normalizedImage.createGraphics()
+            try {
+                graphics.drawImage(decodedImage, 0, 0, null)
+            } finally {
+                graphics.dispose()
+            }
+
             def destination = new File(outputDir, outputName)
-            destination.bytes = pngBytes
-            println("Generated About PNG: " + destination + " (" + destination.length() + " bytes)")
+            if (!javax.imageio.ImageIO.write(normalizedImage, "png", destination)) {
+                throw new GradleException("Could not write normalized About PNG: " + destination)
+            }
+            println("Generated normalized About PNG: " + destination
+                    + " (" + normalizedImage.getWidth() + "x" + normalizedImage.getHeight()
+                    + ", " + destination.length() + " bytes)")
         }
 
         decodeAboutPng(sourceHarleysStudiosAboutBase64, "harleys_studios_about.png")
