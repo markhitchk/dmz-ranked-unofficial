@@ -39,6 +39,7 @@ final class OperatorBackupStore {
             record.put("origin", snapshot.optString("origin", "https://dmzranked.com"));
             record.put("storage", storage);
             record.put("entryCount", storage.length());
+            record.put("protected", snapshot.optBoolean("protected", false));
 
             root.put(normalize(name), record);
             prune(root);
@@ -103,6 +104,10 @@ final class OperatorBackupStore {
         if (record == null) return 0;
         JSONObject storage = record.optJSONObject("storage");
         return storage == null ? 0 : storage.length();
+    }
+
+    static boolean isProtected(JSONObject record) {
+        return record != null && record.optBoolean("protected", false);
     }
 
     static String buildRestoreScript(JSONObject record) {
