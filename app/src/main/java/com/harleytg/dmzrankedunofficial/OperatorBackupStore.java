@@ -32,6 +32,10 @@ final class OperatorBackupStore {
             JSONObject storage = snapshot.optJSONObject("storage");
             if (storage == null) return false;
 
+            // dmzranked.com restores the local operator from this exact key. Keep it
+            // tied to the backup record even if the site had a stale value when captured.
+            storage.put("dmz_myname", name);
+
             JSONObject root = loadRoot(context);
             JSONObject record = new JSONObject();
             record.put("operator", name);
@@ -127,6 +131,13 @@ final class OperatorBackupStore {
                     .append(",")
                     .append(JSONObject.quote(value))
                     .append(");restored++;");
+        }
+        String operator = operatorName(record);
+        if (!operator.isEmpty()) {
+            // Apply this last so an older snapshot can never restore a different operator.
+            script.append("localStorage.setItem('dmz_myname',")
+                    .append(JSONObject.quote(operator))
+                    .append(");");
         }
         script.append("return 'restored:'+restored;}catch(e){return 'error:'+String(e&&e.message||e);}})()");
         return script.toString();

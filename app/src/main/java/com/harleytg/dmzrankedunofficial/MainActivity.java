@@ -105,24 +105,25 @@ public class MainActivity extends Activity {
             "function clean(v){return String(v==null?'':v).replace(/\\s+/g,' ').trim();}" +
             "function badLabel(v){return !v||/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR|YOUR OPERATOR NAME|CHANGE PIN|OPERATOR KILLS/i.test(v);}" +
             "function valid(v){v=clean(v);return v.length>0&&v.length<=80&&!badLabel(v)&&!/[\\r\\n]/.test(v);}" +
+            "var name='',source='',remembered='';" +
+            "try{remembered=clean(localStorage.getItem('dmz_myname')||'');}catch(e){}" +
+            "var input=document.getElementById('playerName');var pick=document.getElementById('playerPick');" +
+            "var typed='';try{typed=clean(input&&(input.value||input.getAttribute('value'))||'');}catch(e){}" +
+            "var picked='';try{if(pick&&pick.selectedIndex>0){picked=clean(pick.value||(pick.options[pick.selectedIndex]&&(pick.options[pick.selectedIndex].value||pick.options[pick.selectedIndex].textContent))||'');}}catch(e){}" +
+            "if(valid(picked)&&(!valid(typed)||typed.toLowerCase()===picked.toLowerCase())){name=picked;source='#playerPick';}" +
+            "else if(valid(typed)){name=typed;source='#playerName';}" +
+            "else if(valid(remembered)){name=remembered;source='localStorage dmz_myname';}" +
             "function ctx(el){var out='',n=el;for(var i=0;i<6&&n;i++,n=n.parentElement){try{out+=' '+clean((n.getAttribute&&((n.getAttribute('aria-label')||'')+' '+(n.getAttribute('placeholder')||'')+' '+(n.getAttribute('data-label')||'')+' '+(n.getAttribute('title')||'')))+' '+(n.id||'')+' '+(n.name||'')+' '+((n.tagName==='LABEL'||i>0)?(n.innerText||''):''));}catch(e){}}return out;}" +
-            "var name='',source='';" +
-            "var inputs=[].slice.call(document.querySelectorAll('input:not([type=hidden]):not([type=password]),textarea'));" +
-            "for(var i=0;i<inputs.length&&!name;i++){var el=inputs[i],c=ctx(el);if(!/OPERATOR NAME|YOUR OPERATOR|RETURNING OPERATOR/i.test(c)){continue;}var v=clean(el.value||el.getAttribute('value')||'');if(valid(v)){name=v;source='Operator name field';}}" +
-            "var selects=[].slice.call(document.querySelectorAll('select'));" +
-            "for(var j=0;j<selects.length&&!name;j++){var sel=selects[j],sc=ctx(sel);if(!/RETURNING OPERATOR|PICK YOUR NAME|SELECT EXISTING OPERATOR/i.test(sc)){continue;}try{if(sel.selectedIndex>=0){var sv=clean(sel.options[sel.selectedIndex].textContent||sel.options[sel.selectedIndex].value||'');if(valid(sv)){name=sv;source='Returning operator';}}}catch(e){}}" +
-            "function safeKey(k){return /operator|player.?name|user.?name|callsign|display.?name/i.test(k)&&!/pin|pass|token|auth|session|secret|key/i.test(k);}" +
+            "function safeKey(k){return /operator|player.?name|user.?name|my.?name|callsign|display.?name/i.test(k)&&!/pin|pass|token|auth|session|secret|key/i.test(k);}" +
             "function fromObject(obj,depth){if(!obj||depth>4)return '';if(typeof obj==='string'){return valid(obj)?clean(obj):'';}if(typeof obj!=='object')return '';for(var k in obj){if(!Object.prototype.hasOwnProperty.call(obj,k)||!safeKey(k))continue;var vv=obj[k];if(typeof vv==='string'&&valid(vv))return clean(vv);if(vv&&typeof vv==='object'){var nested=fromObject(vv,depth+1);if(nested)return nested;}}for(var k2 in obj){if(!Object.prototype.hasOwnProperty.call(obj,k2))continue;var child=obj[k2];if(child&&typeof child==='object'){var nested2=fromObject(child,depth+1);if(nested2)return nested2;}}return '';}" +
             "function fromStorage(st,label){try{for(var x=0;x<st.length;x++){var k=st.key(x)||'';if(!safeKey(k))continue;var raw=st.getItem(k)||'';if(valid(raw))return {n:clean(raw),s:label+' '+k};try{var parsed=JSON.parse(raw);var found=fromObject(parsed,0);if(found)return {n:found,s:label+' '+k};}catch(e){}}}catch(e){}return null;}" +
             "if(!name){var a=fromStorage(window.localStorage,'localStorage');if(a){name=a.n;source=a.s;}}" +
             "if(!name){var b=fromStorage(window.sessionStorage,'sessionStorage');if(b){name=b.n;source=b.s;}}" +
-            "if(!name){try{var cookies=String(document.cookie||'').split(';');for(var cidx=0;cidx<cookies.length&&!name;cidx++){var p=cookies[cidx].split('='),ck=clean(p.shift()||'');if(!safeKey(ck))continue;var cv='';try{cv=decodeURIComponent(p.join('='));}catch(e){cv=p.join('=');}if(valid(cv)){name=clean(cv);source='cookie '+ck;}}}catch(e){}}" +
-            "var body=clean((document.body&&document.body.innerText)||'');" +
-            "var statusVisible=/VERIFIED ON THIS DEVICE|CHANGE PIN|PROTECTED/i.test(body);" +
-            "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
-            "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
-            "return JSON.stringify({name:name,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
-            "}catch(e){return JSON.stringify({name:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
+            "var sec=document.getElementById('nameSec');var secText='';try{secText=clean(sec&&(sec.textContent||sec.innerText)||'');}catch(e){}" +
+            "var statusVisible=!!sec&&sec.style.display!=='none'&&!!secText;var verified=statusVisible&&/VERIFIED ON THIS DEVICE/i.test(secText);" +
+            "var protectedFlag=statusVisible&&/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
+            "return JSON.stringify({name:name,rememberedName:remembered,verified:verified,protected:protectedFlag,statusVisible:statusVisible,source:source});" +
+            "}catch(e){return JSON.stringify({name:'',rememberedName:'',verified:false,protected:false,statusVisible:false,source:''});}})()";
 
     private static final String READ_OPERATOR_BACKUP_SCRIPT =
             "(function(){try{" +
@@ -130,9 +131,9 @@ public class MainActivity extends Activity {
             "if(host!=='dmzranked.com'&&!host.endsWith('.dmzranked.com')){return JSON.stringify({origin:'',storage:{},count:0,error:'origin'});}" +
             "function blockedKey(k){return /pin|pass(word|code)?|token|auth|session|secret|cookie|credential|jwt|bearer|csrf|oauth|api[_.-]?key/i.test(String(k||''));}" +
             "function blockedValue(v){v=String(v||'');if(/eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}/.test(v))return true;return /[\\\"'](?:access_?token|refresh_?token|password|passcode|session|secret|authorization|oauth|jwt|api_?key)[\\\"']?\\s*[:=]/i.test(v);}" +
-            "var body=String((document.body&&document.body.innerText)||'');" +
-            "var verified=/VERIFIED ON THIS DEVICE/i.test(body);" +
-            "var protectedFlag=/PROTECTED/i.test(body)&&/CHANGE PIN|VERIFIED ON THIS DEVICE/i.test(body);" +
+            "var sec=document.getElementById('nameSec');var secText='';try{secText=String(sec&&(sec.textContent||sec.innerText)||'').replace(/\\s+/g,' ').trim();}catch(e){}" +
+            "var secVisible=!!sec&&sec.style.display!=='none'&&!!secText;var verified=secVisible&&/VERIFIED ON THIS DEVICE/i.test(secText);" +
+            "var protectedFlag=secVisible&&/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText);" +
             "var storage={},count=0,total=0;" +
             "for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||'';if(!k||blockedKey(k))continue;var v=localStorage.getItem(k);if(v==null||blockedValue(v)||v.length>300000)continue;var next=total+k.length+v.length;if(next>1000000)break;storage[k]=v;count++;total=next;}" +
             "return JSON.stringify({origin:String(location.origin||''),storage:storage,count:count,protected:protectedFlag,verified:verified});" +
@@ -540,6 +541,9 @@ public class MainActivity extends Activity {
                         boolean statusVisible = payload.optBoolean("statusVisible", false);
                         String source = payload.optString("source", "").trim();
                         if (!name.isEmpty()) {
+                            String previousName = preferences.getString(PREF_SELECTED_OPERATOR, "");
+                            boolean operatorChanged = previousName == null
+                                    || !previousName.trim().equalsIgnoreCase(name);
                             SharedPreferences.Editor editor = preferences.edit()
                                     .putString(PREF_SELECTED_OPERATOR, name)
                                     .putString(PREF_OPERATOR_SOURCE, source)
@@ -548,6 +552,11 @@ public class MainActivity extends Activity {
                             if (statusVisible) {
                                 editor.putBoolean(PREF_OPERATOR_VERIFIED, payload.optBoolean("verified", false))
                                         .putBoolean(PREF_OPERATOR_PROTECTED, payload.optBoolean("protected", false));
+                            } else if (operatorChanged) {
+                                // Never carry operator A's PIN state over to operator B while the
+                                // site is still refreshing #nameSec for the new selection.
+                                editor.putBoolean(PREF_OPERATOR_VERIFIED, false)
+                                        .putBoolean(PREF_OPERATOR_PROTECTED, false);
                             }
                             editor.apply();
                             if (preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
@@ -608,6 +617,16 @@ public class MainActivity extends Activity {
                 try {
                     String decoded = decodeJavascriptString(result);
                     JSONObject payload = new JSONObject(decoded);
+                    JSONObject storage = payload.optJSONObject("storage");
+                    if (storage != null) {
+                        // The website only writes dmz_myname after a raid is submitted. If the user
+                        // merely picked a returning operator, that key can still point at the old
+                        // operator. Normalize the snapshot to the operator the app actually detected.
+                        storage.put("dmz_myname", cleanName);
+                        payload.put("storage", storage);
+                        payload.put("count", storage.length());
+                        decoded = payload.toString();
+                    }
                     int count = payload.optInt("count", 0);
                     if (count <= 0) {
                         if (userRequested) {
