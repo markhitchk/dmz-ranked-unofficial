@@ -52,6 +52,11 @@ public class FeedbackActivity extends Activity {
     private Button sendButton;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(AppUiScale.wrap(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(buildUi());
