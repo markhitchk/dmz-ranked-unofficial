@@ -315,6 +315,7 @@ public class MainActivity extends Activity {
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
+                        applySavedOperatorToWebsite(0);
                         startSiteNotificationMonitor();
                         startOperatorMonitor();
                         return;
@@ -496,6 +497,71 @@ public class MainActivity extends Activity {
 
             if (loadingOverlay != null) {
                 loadingOverlay.postDelayed(() -> readLiveSiteStatus(token, attempt + 1), 250);
+            }
+        });
+    }
+
+    private void applySavedOperatorToWebsite(int attempt) {
+        if (webView == null || isFinishing() || preferences == null) return;
+
+        String savedName = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        if (savedName == null || savedName.trim().isEmpty()) return;
+        savedName = savedName.trim();
+
+        Uri current;
+        try {
+            String url = webView.getUrl();
+            current = url == null ? null : Uri.parse(url);
+        } catch (Throwable ignored) {
+            current = null;
+        }
+        if (!isDmzUrl(current)) return;
+
+        String quotedName = JSONObject.quote(savedName);
+        String script =
+                "(function(){try{" +
+                "var name=" + quotedName + ";" +
+                "var input=document.getElementById('playerName');" +
+                "var pick=document.getElementById('playerPick');" +
+                "if(!window.__dmzAndroidOperatorGuard){" +
+                "window.__dmzAndroidOperatorGuard=true;" +
+                "function touched(e){if(e&&e.isTrusted){window.__dmzAndroidOperatorTouched=true;}}" +
+                "if(input){input.addEventListener('input',touched,true);input.addEventListener('change',touched,true);}" +
+                "if(pick){pick.addEventListener('change',touched,true);}" +
+                "}" +
+                "if(window.__dmzAndroidOperatorTouched){return 'user';}" +
+                "if(!input&&!pick){return 'wait';}" +
+                "var target=name.toLowerCase(),pickMatched=false;" +
+                "if(pick){" +
+                "for(var i=1;i<pick.options.length;i++){" +
+                "var o=pick.options[i];var v=String(o.value||o.textContent||'').trim();" +
+                "if(v.toLowerCase()===target){" +
+                "pickMatched=true;" +
+                "if(pick.selectedIndex!==i){pick.selectedIndex=i;pick.dispatchEvent(new Event('change',{bubbles:true}));}" +
+                "break;" +
+                "}" +
+                "}" +
+                "}" +
+                "if(input){" +
+                "var cur=String(input.value||'').trim();" +
+                "if(cur.toLowerCase()!==target){" +
+                "input.value=name;" +
+                "input.dispatchEvent(new Event('input',{bubbles:true}));" +
+                "input.dispatchEvent(new Event('change',{bubbles:true}));" +
+                "}" +
+                "}" +
+                "try{localStorage.setItem('dmz_myname',name);}catch(e){}" +
+                "return (input?'ready':'wait')+'|'+(pickMatched?'pick':'nopick');" +
+                "}catch(e){return 'error';}})()";
+
+        final int nextAttempt = attempt + 1;
+        webView.evaluateJavascript(script, result -> {
+            String decoded = decodeJavascriptString(result);
+            if ("user".equals(decoded)) return;
+
+            boolean needsRetry = decoded.startsWith("wait") || decoded.endsWith("|nopick");
+            if (needsRetry && nextAttempt < 16 && webView != null && !isFinishing()) {
+                webView.postDelayed(() -> applySavedOperatorToWebsite(nextAttempt), 500);
             }
         });
     }
