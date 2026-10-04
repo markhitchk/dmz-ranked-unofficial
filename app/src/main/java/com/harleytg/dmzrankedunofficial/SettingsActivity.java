@@ -40,6 +40,15 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.appupdate.AppUpdateOptions;
+import com.google.android.play.core.install.InstallStateUpdatedListener;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.InstallStatus;
+import com.google.android.play.core.install.model.UpdateAvailability;
+
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -80,6 +89,7 @@ public class SettingsActivity extends Activity {
 
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_notifications";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
+    private static final int PLAY_UPDATE_REQUEST = 2005;
 
     // Developer tools are intentionally hidden from normal Settings. Five taps on
     // Harley's Studios in Credits opens the PIN gate. The PIN itself is never stored
@@ -100,6 +110,9 @@ public class SettingsActivity extends Activity {
     public static final String ACTION_RESTORE_OPERATOR = "restore_operator";
 
     private SharedPreferences preferences;
+    private AppUpdateManager appUpdateManager;
+    private InstallStateUpdatedListener installStateUpdatedListener;
+    private boolean updateReadyDialogShown;
     private boolean pendingTestNotification;
     private boolean creditsExpanded;
     private boolean developerUnlocked;
@@ -114,6 +127,13 @@ public class SettingsActivity extends Activity {
         preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         setContentView(R.layout.activity_settings);
         configureSystemBars();
+
+        appUpdateManager = AppUpdateManagerFactory.create(this);
+        installStateUpdatedListener = state -> runOnUiThread(() ->
+                handlePlayInstallState(
+                        state.installStatus(),
+                        state.bytesDownloaded(),
+                        state.totalBytesToDownload()));
 
         applyBrandLogo(findViewById(R.id.settingsLogo));
         applyBrandLogo(findViewById(R.id.aboutLogo));
@@ -135,7 +155,7 @@ public class SettingsActivity extends Activity {
         buildText.setText(versionCode >= 0 ? "Build " + versionCode : "Build unknown");
         updateVersionText.setText("Installed: " + versionName
                 + (versionCode >= 0 ? " (" + versionCode + ")" : "")
-                + " • Open Google Play to check for an update.");
+                + " • Checking Google Play…");
 
         Switch desktopSite = findViewById(R.id.desktopSiteSwitch);
         Switch keepAwake = findViewById(R.id.keepAwakeSwitch);
@@ -203,7 +223,7 @@ public class SettingsActivity extends Activity {
         });
         findViewById(R.id.notificationSettingsCard).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
-        findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> openPlayStore());
+        findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> checkForPlayUpdate(true));
         findViewById(R.id.playStoreCard).setOnClickListener(v -> openPlayStore());
         findViewById(R.id.copyDiagnosticsCard).setOnClickListener(v -> {
             if (developerUnlocked) copyDiagnostics();
@@ -241,11 +261,28 @@ public class SettingsActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (appUpdateManager != null && installStateUpdatedListener != null) {
+            appUpdateManager.registerListener(installStateUpdatedListener);
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         updateNotificationStatus();
         updateOperatorBackupStatus();
+        checkForPlayUpdate(false);
         if (developerUnlocked) updateDiagnosticsSummary();
+    }
+
+    @Override
+    protected void onStop() {
+        if (appUpdateManager != null && installStateUpdatedListener != null) {
+            appUpdateManager.unregisterListener(installStateUpdatedListener);
+        }
+        super.onStop();
     }
 
     private void handleDeveloperUnlockTap() {
@@ -676,6 +713,213 @@ public class SettingsActivity extends Activity {
             startActivity(intent);
         } catch (Throwable error) {
             Toast.makeText(this, "Could not open Android notification settings.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void checkForPlayUpdate(boolean userRequested) {
+        TextView status = findViewById(R.id.updateVersionText);
+        if (appUpdateManager == null) {
+            if (status != null) {
+                status.setText("Google Play update service is unavailable • Open Google Play.");
+            }
+            if (userRequested) openPlayStore();
+            return;
+        }
+
+        if (status != null) {
+            status.setText(installedVersionLabel() + " • Checking Google Play…");
+        }
+
+        appUpdateManager.getAppUpdateInfo()
+                .addOnSuccessListener(info -> handlePlayUpdateInfo(info, userRequested))
+                .addOnFailureListener(error -> {
+                    Log.w(TAG, "Google Play update check failed", error);
+                    if (status != null) {
+                        status.setText(installedVersionLabel()
+                                + " • Google Play check unavailable on this install.");
+                    }
+                    if (userRequested) {
+                        Toast.makeText(this,
+                                "Could not check in-app. Opening Google Play instead.",
+                                Toast.LENGTH_SHORT).show();
+                        openPlayStore();
+                    }
+                });
+    }
+
+    private void handlePlayUpdateInfo(AppUpdateInfo info, boolean userRequested) {
+        TextView status = findViewById(R.id.updateVersionText);
+        if (info == null) {
+            if (status != null) status.setText(installedVersionLabel() + " • Update status unavailable.");
+            if (userRequested) openPlayStore();
+            return;
+        }
+
+        if (info.installStatus() == InstallStatus.DOWNLOADED) {
+            if (status != null) {
+                status.setText("Update downloaded from Google Play • Ready to install.");
+            }
+            showCompleteUpdateDialog();
+            return;
+        }
+
+        int availability = info.updateAvailability();
+        if (availability == UpdateAvailability.UPDATE_AVAILABLE) {
+            long availableBuild = info.availableVersionCode();
+            if (status != null) {
+                status.setText("Update available on Google Play • Build "
+                        + availableBuild + " • Tap CHECK to update.");
+            }
+
+            if (userRequested) {
+                startFlexiblePlayUpdate(info);
+            }
+            return;
+        }
+
+        if (availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
+            if (status != null) {
+                status.setText("A Google Play update is already in progress.");
+            }
+            return;
+        }
+
+        if (availability == UpdateAvailability.UPDATE_NOT_AVAILABLE) {
+            if (status != null) {
+                status.setText("Up to date • " + installedVersionLabel());
+            }
+            if (userRequested) {
+                Toast.makeText(this, "DMZ Ranked is up to date.", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        if (status != null) {
+            status.setText(installedVersionLabel()
+                    + " • Google Play could not determine update availability.");
+        }
+        if (userRequested) {
+            Toast.makeText(this,
+                    "Update status is unavailable. Opening Google Play.",
+                    Toast.LENGTH_SHORT).show();
+            openPlayStore();
+        }
+    }
+
+    private void startFlexiblePlayUpdate(AppUpdateInfo info) {
+        if (appUpdateManager == null || info == null) return;
+
+        AppUpdateOptions options = AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build();
+        if (!info.isUpdateTypeAllowed(options)) {
+            Toast.makeText(this,
+                    "In-app update is not available for this release. Opening Google Play.",
+                    Toast.LENGTH_LONG).show();
+            openPlayStore();
+            return;
+        }
+
+        try {
+            boolean started = appUpdateManager.startUpdateFlowForResult(
+                    info,
+                    this,
+                    options,
+                    PLAY_UPDATE_REQUEST);
+            if (!started) {
+                Toast.makeText(this,
+                        "Google Play could not start the update. Opening the Play Store.",
+                        Toast.LENGTH_LONG).show();
+                openPlayStore();
+            }
+        } catch (Throwable error) {
+            Log.e(TAG, "Could not start Google Play update flow", error);
+            Toast.makeText(this,
+                    "Could not start the in-app update. Opening Google Play.",
+                    Toast.LENGTH_LONG).show();
+            openPlayStore();
+        }
+    }
+
+    private void handlePlayInstallState(int installStatus, long bytesDownloaded, long totalBytes) {
+        TextView status = findViewById(R.id.updateVersionText);
+        if (status == null) return;
+
+        if (installStatus == InstallStatus.DOWNLOADING) {
+            if (totalBytes > 0L) {
+                long percent = Math.min(100L, Math.max(0L, (bytesDownloaded * 100L) / totalBytes));
+                status.setText("Downloading update from Google Play… " + percent + "%");
+            } else {
+                status.setText("Downloading update from Google Play…");
+            }
+        } else if (installStatus == InstallStatus.DOWNLOADED) {
+            status.setText("Update downloaded from Google Play • Ready to install.");
+            showCompleteUpdateDialog();
+        } else if (installStatus == InstallStatus.INSTALLING) {
+            status.setText("Installing Google Play update…");
+        } else if (installStatus == InstallStatus.INSTALLED) {
+            status.setText("Update installed.");
+        } else if (installStatus == InstallStatus.FAILED) {
+            status.setText("Google Play update failed • Tap CHECK to retry.");
+        } else if (installStatus == InstallStatus.CANCELED) {
+            status.setText("Update canceled • Tap CHECK to retry.");
+        } else if (installStatus == InstallStatus.PENDING) {
+            status.setText("Preparing Google Play update…");
+        }
+    }
+
+    private void showCompleteUpdateDialog() {
+        if (appUpdateManager == null || updateReadyDialogShown || isFinishing()) return;
+        updateReadyDialogShown = true;
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Update ready")
+                .setMessage("Google Play finished downloading the DMZ Ranked update. Install it now and restart the app?")
+                .setNegativeButton("Later", null)
+                .setPositiveButton("Install & restart", (d, which) -> {
+                    TextView status = findViewById(R.id.updateVersionText);
+                    if (status != null) status.setText("Installing Google Play update…");
+                    appUpdateManager.completeUpdate()
+                            .addOnFailureListener(error -> {
+                                Log.e(TAG, "Could not complete Google Play update", error);
+                                Toast.makeText(this,
+                                        "Could not install the update. Tap CHECK to retry.",
+                                        Toast.LENGTH_LONG).show();
+                                if (status != null) {
+                                    status.setText("Install failed • Tap CHECK to retry.");
+                                }
+                            });
+                })
+                .create();
+
+        dialog.setOnDismissListener(ignored -> updateReadyDialogShown = false);
+        dialog.show();
+    }
+
+    private String installedVersionLabel() {
+        PackageInfo packageInfo = getPackageInfoSafe();
+        if (packageInfo == null) return "Installed version unknown";
+
+        String versionName = packageInfo.versionName == null ? "Unknown" : packageInfo.versionName;
+        long versionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? packageInfo.getLongVersionCode()
+                : packageInfo.versionCode;
+        return "Installed " + versionName + " (" + versionCode + ")";
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PLAY_UPDATE_REQUEST) return;
+
+        if (resultCode == RESULT_OK) {
+            TextView status = findViewById(R.id.updateVersionText);
+            if (status != null) {
+                status.setText("Google Play accepted the update • Downloading…");
+            }
+        } else {
+            TextView status = findViewById(R.id.updateVersionText);
+            if (status != null) {
+                status.setText("Update canceled or could not start • Tap CHECK to retry.");
+            }
         }
     }
 

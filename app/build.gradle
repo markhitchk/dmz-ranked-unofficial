@@ -184,8 +184,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 129
-        versionName '1.0.27'
+        versionCode 130
+        versionName '1.0.28'
     }
 
     sourceSets {
@@ -217,4 +217,9 @@ android {
 
 tasks.named("preBuild").configure {
     dependsOn("generateDmzLogo")
+}
+
+
+dependencies {
+    implementation 'com.google.android.play:app-update:2.1.0'
 }
