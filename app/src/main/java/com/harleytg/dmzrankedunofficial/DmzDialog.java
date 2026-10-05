@@ -231,36 +231,12 @@ public final class DmzDialog {
             String negativeLabel,
             ChoiceCallback onChoice) {
         LinearLayout card = buildCard(activity, "PROFILE SELECTION", title, message, false);
-
-        FrameLayout pickerHeader = new FrameLayout(activity);
-        GradientDrawable pickerHeaderBackground = new GradientDrawable();
-        pickerHeaderBackground.setColor(activity.getColor(R.color.dmz_gold));
-        pickerHeaderBackground.setCornerRadius(dp(activity, 9));
-        pickerHeader.setBackground(pickerHeaderBackground);
-
-        TextView pickerHeaderLabel = new TextView(activity);
-        pickerHeaderLabel.setText("OPERATOR PICKER  •  DMZ RANKED");
-        pickerHeaderLabel.setTextColor(activity.getColor(R.color.dmz_black));
-        pickerHeaderLabel.setTextSize(10.5f);
-        pickerHeaderLabel.setTypeface(Typeface.DEFAULT_BOLD);
-        pickerHeaderLabel.setLetterSpacing(0.10f);
-        pickerHeaderLabel.setGravity(Gravity.CENTER);
-        pickerHeaderLabel.setPadding(
-                dp(activity, 12),
-                dp(activity, 8),
-                dp(activity, 12),
-                dp(activity, 8));
-
-        pickerHeader.addView(pickerHeaderLabel, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER));
-
-        LinearLayout.LayoutParams pickerHeaderParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        pickerHeaderParams.bottomMargin = dp(activity, 14);
-        card.addView(pickerHeader, 0, pickerHeaderParams);
+        addTapeHeader(
+                activity,
+                card,
+                activity.getColor(R.color.dmz_gold),
+                "OPERATOR PICKER  •  DMZ RANKED",
+                false);
 
         LinearLayout choices = new LinearLayout(activity);
         choices.setOrientation(LinearLayout.VERTICAL);
@@ -329,35 +305,12 @@ public final class DmzDialog {
                 : R.drawable.dmz_dialog_background);
 
         if (danger) {
-            FrameLayout cautionHeader = new FrameLayout(activity);
-            DangerTapeView cautionTape = new DangerTapeView(activity);
-            cautionHeader.addView(cautionTape, new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    dp(activity, 36)));
-
-            TextView cautionLabel = new TextView(activity);
-            cautionLabel.setText("⚠  DANGER ZONE  •  CAUTION");
-            cautionLabel.setTextColor(activity.getColor(R.color.dmz_white));
-            cautionLabel.setTextSize(10.5f);
-            cautionLabel.setTypeface(Typeface.DEFAULT_BOLD);
-            cautionLabel.setLetterSpacing(0.10f);
-            cautionLabel.setGravity(Gravity.CENTER);
-            cautionLabel.setPadding(
-                    dp(activity, 10),
-                    dp(activity, 4),
-                    dp(activity, 10),
-                    dp(activity, 4));
-            cautionLabel.setBackgroundColor(0xCC080A09);
-
-            FrameLayout.LayoutParams labelParams = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER);
-            cautionHeader.addView(cautionLabel, labelParams);
-
-            card.addView(cautionHeader, new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(activity, 36)));
+            addTapeHeader(
+                    activity,
+                    card,
+                    activity.getColor(R.color.dmz_red),
+                    "⚠  DANGER ZONE  •  CAUTION",
+                    true);
         }
 
         TextView eyebrow = new TextView(activity);
@@ -496,14 +449,61 @@ public final class DmzDialog {
         return dialog;
     }
 
-    private static final class DangerTapeView extends View {
+    private static void addTapeHeader(
+            Activity activity,
+            LinearLayout card,
+            int baseColor,
+            String label,
+            boolean dangerSpacing) {
+        FrameLayout header = new FrameLayout(activity);
+        TapeView tape = new TapeView(activity, baseColor);
+        header.addView(tape, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dp(activity, 36)));
+
+        TextView headerLabel = new TextView(activity);
+        headerLabel.setText(label);
+        headerLabel.setTextColor(activity.getColor(R.color.dmz_white));
+        headerLabel.setTextSize(10.5f);
+        headerLabel.setTypeface(Typeface.DEFAULT_BOLD);
+        headerLabel.setLetterSpacing(0.10f);
+        headerLabel.setGravity(Gravity.CENTER);
+        headerLabel.setPadding(
+                dp(activity, 10),
+                dp(activity, 4),
+                dp(activity, 10),
+                dp(activity, 4));
+        headerLabel.setBackgroundColor(0xCC080A09);
+
+        FrameLayout.LayoutParams labelParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER);
+        header.addView(headerLabel, labelParams);
+
+        card.addView(header, 0, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(activity, 36)));
+
+        if (!dangerSpacing && card.getChildCount() > 1) {
+            View eyebrow = card.getChildAt(1);
+            if (eyebrow.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams eyebrowParams =
+                        (LinearLayout.LayoutParams) eyebrow.getLayoutParams();
+                eyebrowParams.topMargin = dp(activity, 14);
+                eyebrow.setLayoutParams(eyebrowParams);
+            }
+        }
+    }
+
+    private static final class TapeView extends View {
         private final Paint basePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint stripePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final float stripeWidth;
 
-        DangerTapeView(Activity activity) {
+        TapeView(Activity activity, int baseColor) {
             super(activity);
-            basePaint.setColor(activity.getColor(R.color.dmz_red));
+            basePaint.setColor(baseColor);
             stripePaint.setColor(activity.getColor(R.color.dmz_black));
             stripePaint.setAlpha(92);
             stripeWidth = dp(activity, 12);
