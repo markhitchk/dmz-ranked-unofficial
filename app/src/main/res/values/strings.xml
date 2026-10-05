@@ -27,8 +27,8 @@
     <string name="test_notification">Test notification</string>
     <string name="test_notification_summary">Send a local DMZ Ranked test notification to verify Android notifications work.</string>
 
-    <string name="check_updates">Check for updates</string>
-    <string name="check_updates_summary">Ask Google Play for the latest eligible version and install it without leaving the app.</string>
+    <string name="check_updates">Live Google Play updates</string>
+    <string name="check_updates_summary">Automatically checks Google Play while this screen is open and tracks download/install progress live.</string>
     <string name="open_google_play">Open in Google Play</string>
     <string name="open_google_play_summary">Open the official Play Store listing for this Android app.</string>
 
