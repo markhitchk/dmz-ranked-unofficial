@@ -308,6 +308,9 @@ public class MainActivity extends Activity {
             applyAppearancePreferences();
             ensureSiteNotificationChannel();
             requestSiteNotificationPermissionIfNeeded();
+            NotificationSync.setAppForeground(this, true);
+            NotificationSync.configure(this);
+            NotificationSync.primeBaseline(this);
             applyKeepAwakePreference();
             showLoadingScreen("Starting DMZ Ranked…", 0);
 
@@ -1249,6 +1252,7 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
         }
 
+        NotificationSync.recordForegroundNotification(this, title, body);
         manager.notify(12000 + Math.abs(body.hashCode() % 8000), builder.build());
     }
 
@@ -1957,6 +1961,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        NotificationSync.setAppForeground(this, true);
+        NotificationSync.configure(this);
+        NotificationSync.primeBaseline(this);
         startTitleMetaRotation();
         checkPlayUpdateOnForeground();
         if (webView != null) {
@@ -1973,6 +1980,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        NotificationSync.setAppForeground(this, false);
+        NotificationSync.scheduleBackgroundKick(this);
         operatorMonitorToken++;
         siteNotificationMonitorToken++;
         stopTitleMetaRotation();
