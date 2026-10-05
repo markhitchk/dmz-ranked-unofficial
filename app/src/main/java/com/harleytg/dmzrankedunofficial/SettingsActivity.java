@@ -102,6 +102,13 @@ public class SettingsActivity extends Activity {
     private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
     private static final String PREF_CONTENT_SIZE = "content_size";
     private static final String PREF_APP_ANIMATIONS = "app_animations";
+    private static final String PREF_WIDGET_SIZE_MODE = "widget_size_mode";
+    private static final String PREF_WIDGET_SHOW_BADGE = "widget_show_badge";
+    private static final String PREF_WIDGET_SHOW_STATUS = "widget_show_status";
+    private static final String PREF_WIDGET_SHOW_PROGRESS = "widget_show_progress";
+    private static final String PREF_WIDGET_SHOW_SEASON = "widget_show_season";
+    private static final String PREF_WIDGET_SHOW_BRANDING = "widget_show_branding";
+    private static final String PREF_WIDGET_SHOW_REFRESH = "widget_show_refresh";
 
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
@@ -227,6 +234,12 @@ public class SettingsActivity extends Activity {
         Switch operatorAutoSave = findViewById(R.id.operatorAutoSaveSwitch);
         Switch appAnimations = findViewById(R.id.appAnimationsSwitch);
         Switch webviewDebug = findViewById(R.id.webviewDebugSwitch);
+        Switch widgetBadge = findViewById(R.id.widgetBadgeSwitch);
+        Switch widgetStatus = findViewById(R.id.widgetStatusSwitch);
+        Switch widgetProgress = findViewById(R.id.widgetProgressSwitch);
+        Switch widgetSeason = findViewById(R.id.widgetSeasonSwitch);
+        Switch widgetBranding = findViewById(R.id.widgetBrandingSwitch);
+        Switch widgetRefresh = findViewById(R.id.widgetRefreshSwitch);
 
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
         keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
@@ -237,6 +250,12 @@ public class SettingsActivity extends Activity {
         operatorAutoSave.setChecked(preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true));
         appAnimations.setChecked(preferences.getBoolean(PREF_APP_ANIMATIONS, true));
         webviewDebug.setChecked(preferences.getBoolean(PREF_WEBVIEW_DEBUG, false));
+        widgetBadge.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_BADGE, true));
+        widgetStatus.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_STATUS, true));
+        widgetProgress.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_PROGRESS, true));
+        widgetSeason.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_SEASON, true));
+        widgetBranding.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_BRANDING, true));
+        widgetRefresh.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_REFRESH, true));
 
         desktopSite.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_DESKTOP, checked).apply());
@@ -264,6 +283,18 @@ public class SettingsActivity extends Activity {
         });
         webviewDebug.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_WEBVIEW_DEBUG, checked).apply());
+        widgetBadge.setOnCheckedChangeListener((buttonView, checked) ->
+                setWidgetBooleanPreference(PREF_WIDGET_SHOW_BADGE, checked));
+        widgetStatus.setOnCheckedChangeListener((buttonView, checked) ->
+                setWidgetBooleanPreference(PREF_WIDGET_SHOW_STATUS, checked));
+        widgetProgress.setOnCheckedChangeListener((buttonView, checked) ->
+                setWidgetBooleanPreference(PREF_WIDGET_SHOW_PROGRESS, checked));
+        widgetSeason.setOnCheckedChangeListener((buttonView, checked) ->
+                setWidgetBooleanPreference(PREF_WIDGET_SHOW_SEASON, checked));
+        widgetBranding.setOnCheckedChangeListener((buttonView, checked) ->
+                setWidgetBooleanPreference(PREF_WIDGET_SHOW_BRANDING, checked));
+        widgetRefresh.setOnCheckedChangeListener((buttonView, checked) ->
+                setWidgetBooleanPreference(PREF_WIDGET_SHOW_REFRESH, checked));
 
         bindToggleCard(R.id.desktopSiteCard, desktopSite);
         bindToggleCard(R.id.keepAwakeCard, keepAwake);
@@ -274,11 +305,23 @@ public class SettingsActivity extends Activity {
         bindToggleCard(R.id.operatorAutoSaveCard, operatorAutoSave);
         bindToggleCard(R.id.appAnimationsCard, appAnimations);
         bindToggleCard(R.id.webviewDebugCard, webviewDebug);
+        bindToggleCard(R.id.widgetBadgeCard, widgetBadge);
+        bindToggleCard(R.id.widgetStatusCard, widgetStatus);
+        bindToggleCard(R.id.widgetProgressCard, widgetProgress);
+        bindToggleCard(R.id.widgetSeasonCard, widgetSeason);
+        bindToggleCard(R.id.widgetBrandingCard, widgetBranding);
+        bindToggleCard(R.id.widgetRefreshCard, widgetRefresh);
 
         findViewById(R.id.contentSizeCompactButton).setOnClickListener(v -> setContentSize("compact"));
         findViewById(R.id.contentSizeStandardButton).setOnClickListener(v -> setContentSize("standard"));
         findViewById(R.id.contentSizeLargeButton).setOnClickListener(v -> setContentSize("large"));
         updateContentSizeUi();
+
+        findViewById(R.id.widgetSizeAutoButton).setOnClickListener(v -> setWidgetSizeMode("auto"));
+        findViewById(R.id.widgetSizeCompactButton).setOnClickListener(v -> setWidgetSizeMode("compact"));
+        findViewById(R.id.widgetSizeStandardButton).setOnClickListener(v -> setWidgetSizeMode("standard"));
+        findViewById(R.id.widgetSizeLargeButton).setOnClickListener(v -> setWidgetSizeMode("large"));
+        updateWidgetSettingsUi();
 
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
         findViewById(R.id.creditsButton).setOnClickListener(v -> toggleCredits());
@@ -375,6 +418,7 @@ public class SettingsActivity extends Activity {
         updateOperatorBackupStatus();
         updatePeerImportUi();
         updateWidgetSummary();
+        updateWidgetSettingsUi();
         startLivePlayUpdateMonitoring();
         if (developerUnlocked) updateDiagnosticsSummary();
     }
@@ -616,7 +660,21 @@ public class SettingsActivity extends Activity {
 
         boolean widgetMatch =
                 showIfMatches(R.id.homeWidgetCard, q,
-                        "widget home screen launcher live stats rank sr standings operator dmz ranked");
+                        "widget home screen launcher live stats rank sr standings operator dmz ranked")
+                | showIfMatches(R.id.widgetSizeCard, q,
+                        "widget size mode auto compact standard large resize layout appearance")
+                | showIfMatches(R.id.widgetBadgeCard, q,
+                        "widget badge emblem rank bronze silver gold platinum diamond crimson iridescent top 3")
+                | showIfMatches(R.id.widgetStatusCard, q,
+                        "widget status live cached offline tag")
+                | showIfMatches(R.id.widgetProgressCard, q,
+                        "widget progress bar rank division")
+                | showIfMatches(R.id.widgetSeasonCard, q,
+                        "widget season label source")
+                | showIfMatches(R.id.widgetBrandingCard, q,
+                        "widget branding made by harleys studios")
+                | showIfMatches(R.id.widgetRefreshCard, q,
+                        "widget refresh button manual reload");
         findViewById(R.id.widgetSection).setVisibility(widgetMatch ? View.VISIBLE : View.GONE);
 
         boolean operatorMatch =
@@ -946,12 +1004,93 @@ public class SettingsActivity extends Activity {
                 ? ""
                 : preferences.getString(PREF_SELECTED_OPERATOR, "");
         selected = selected == null ? "" : selected.trim();
+        String mode = preferences == null
+                ? "auto"
+                : preferences.getString(PREF_WIDGET_SIZE_MODE, "auto");
+        mode = mode == null ? "auto" : mode.trim().toLowerCase(Locale.US);
+        String modeLabel = mode.isEmpty()
+                ? "Auto"
+                : mode.substring(0, 1).toUpperCase(Locale.US) + mode.substring(1);
+
         if (selected.isEmpty()) {
-            summary.setText("Add a native live-stats widget. Select a website operator first, or add it now and choose one later.");
+            summary.setText("Add a native live-stats widget • " + modeLabel
+                    + " size • Select an operator to populate it.");
         } else {
-            summary.setText("Uses " + selected
-                    + " • Live SR, rank, leaderboard position, and last-raid change from dmzranked.com.");
+            summary.setText("Uses " + selected + " • " + modeLabel
+                    + " size • Live SR, rank, standing, and last-raid change.");
         }
+    }
+
+    private void setWidgetSizeMode(String requested) {
+        if (preferences == null) return;
+        String mode = requested == null ? "auto" : requested.trim().toLowerCase(Locale.US);
+        if (!"compact".equals(mode)
+                && !"standard".equals(mode)
+                && !"large".equals(mode)) {
+            mode = "auto";
+        }
+
+        preferences.edit().putString(PREF_WIDGET_SIZE_MODE, mode).apply();
+        updateWidgetSettingsUi();
+        updateWidgetSummary();
+        DmzRankedWidgetProvider.requestUpdateAll(this);
+    }
+
+    private void setWidgetBooleanPreference(String key, boolean enabled) {
+        if (preferences == null || key == null) return;
+        preferences.edit().putBoolean(key, enabled).apply();
+        DmzRankedWidgetProvider.requestUpdateAll(this);
+    }
+
+    private void updateWidgetSettingsUi() {
+        if (preferences == null) return;
+
+        String mode = preferences.getString(PREF_WIDGET_SIZE_MODE, "auto");
+        mode = mode == null ? "auto" : mode.trim().toLowerCase(Locale.US);
+        if (!"compact".equals(mode)
+                && !"standard".equals(mode)
+                && !"large".equals(mode)) {
+            mode = "auto";
+        }
+
+        TextView auto = findViewById(R.id.widgetSizeAutoButton);
+        TextView compact = findViewById(R.id.widgetSizeCompactButton);
+        TextView standard = findViewById(R.id.widgetSizeStandardButton);
+        TextView large = findViewById(R.id.widgetSizeLargeButton);
+        TextView summary = findViewById(R.id.widgetSizeSummary);
+
+        int active = getColor(R.color.dmz_gold);
+        int inactive = getColor(R.color.dmz_muted);
+        if (auto != null) auto.setTextColor("auto".equals(mode) ? active : inactive);
+        if (compact != null) compact.setTextColor("compact".equals(mode) ? active : inactive);
+        if (standard != null) standard.setTextColor("standard".equals(mode) ? active : inactive);
+        if (large != null) large.setTextColor("large".equals(mode) ? active : inactive);
+
+        if (summary != null) {
+            if ("compact".equals(mode)) {
+                summary.setText("Compact • force the dense one-row widget layout at any launcher size.");
+            } else if ("standard".equals(mode)) {
+                summary.setText("Standard • force the regular DMZ Ranked card layout.");
+            } else if ("large".equals(mode)) {
+                summary.setText("Large • bigger rank badge, operator name, SR, and controls.");
+            } else {
+                summary.setText("Auto • switches between Compact, Standard, and Large as you resize the widget.");
+            }
+        }
+
+        Switch badge = findViewById(R.id.widgetBadgeSwitch);
+        Switch status = findViewById(R.id.widgetStatusSwitch);
+        Switch progress = findViewById(R.id.widgetProgressSwitch);
+        Switch season = findViewById(R.id.widgetSeasonSwitch);
+        Switch branding = findViewById(R.id.widgetBrandingSwitch);
+        Switch refresh = findViewById(R.id.widgetRefreshSwitch);
+
+        if (badge != null) badge.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_BADGE, true));
+        if (status != null) status.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_STATUS, true));
+        if (progress != null) progress.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_PROGRESS, true));
+        if (season != null) season.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_SEASON, true));
+        if (branding != null) branding.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_BRANDING, true));
+        if (refresh != null) refresh.setChecked(preferences.getBoolean(PREF_WIDGET_SHOW_REFRESH, true));
     }
 
     private void showOperatorPicker() {
