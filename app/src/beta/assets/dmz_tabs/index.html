@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DMZ Ranked Beta Tabs</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="tabs" role="tablist" aria-label="DMZ Ranked sections">
+    <button type="button" role="tab" data-tab="board" aria-selected="true" class="active">Leaderboard</button>
+    <button type="button" role="tab" data-tab="howto" aria-selected="false">How to Play</button>
+    <button type="button" role="tab" data-tab="log" aria-selected="false">Log a Raid</button>
+    <button type="button" role="tab" data-tab="community" aria-selected="false">Community</button>
+    <button type="button" role="tab" data-tab="championship" aria-selected="false">Championship</button>
+    <button type="button" role="tab" data-tab="history" aria-selected="false">History</button>
+    <button type="button" role="tab" data-tab="rules" aria-selected="false">Rules</button>
+    <button type="button" role="tab" data-tab="updates" aria-selected="false">Updates</button>
+    <button type="button" role="tab" data-tab="overlays" aria-selected="false">Overlays</button>
+    <button type="button" role="tab" data-tab="contact" aria-selected="false">Contact</button>
+    <button type="button" role="tab" data-tab="app" aria-selected="false" class="hs-app-tab">App</button>
+  </nav>
+
+  <main>
+    <section id="board" class="tab-section active" role="tabpanel">Leaderboard</section>
+    <section id="howto" class="tab-section" role="tabpanel">How to Play</section>
+    <section id="log" class="tab-section" role="tabpanel">Log a Raid</section>
+
+    <section id="community" class="tab-section" role="tabpanel">
+      <nav class="subtabs" role="tablist" aria-label="Community sections">
+        <button type="button" role="tab" data-sub="overview" aria-selected="true" class="active">Overview</button>
+        <button type="button" role="tab" data-sub="discord" aria-selected="false">Discord</button>
+        <button type="button" role="tab" data-sub="support" aria-selected="false">Support</button>
+      </nav>
+      <div id="sub-overview" class="subpanel active">Community overview</div>
+      <div id="sub-discord" class="subpanel">Discord community</div>
+      <div id="sub-support" class="subpanel">Community support</div>
+    </section>
+
+    <section id="championship" class="tab-section" role="tabpanel">Championship</section>
+    <section id="history" class="tab-section" role="tabpanel">History</section>
+    <section id="rules" class="tab-section" role="tabpanel">Rules</section>
+    <section id="updates" class="tab-section" role="tabpanel">Updates</section>
+    <section id="overlays" class="tab-section" role="tabpanel">Overlays</section>
+    <section id="contact" class="tab-section" role="tabpanel">Contact</section>
+
+    <section id="app" class="tab-section hs-app-panel" role="tabpanel">
+      <div class="hs-app-card">
+        <div class="hs-app-kicker">Harley's Studios • Beta Test</div>
+        <h2 id="hs-app-welcome">Welcome, Guest!</h2>
+        <p>Thank you for using Harley's Studios DMZ Ranked Unofficial App.</p>
+        <p class="hs-app-note">This tab is added only by the Android Beta app. It does not modify or affect the dmzranked.com website.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
