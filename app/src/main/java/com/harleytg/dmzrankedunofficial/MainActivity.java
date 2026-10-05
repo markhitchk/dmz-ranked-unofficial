@@ -1175,7 +1175,6 @@ public class MainActivity extends Activity {
                     Log.d(TAG, "Could not parse site notifications", error);
                 }
 
-                pollSelectedOperatorAlertState(token);
 
                 if (webView != null && !isFinishing() && token == siteNotificationMonitorToken) {
                     webView.postDelayed(() -> pollSiteNotifications(token), 1800);
@@ -1183,7 +1182,6 @@ public class MainActivity extends Activity {
             });
         } catch (Throwable error) {
             Log.d(TAG, "Could not read site notifications", error);
-            pollSelectedOperatorAlertState(token);
             if (webView != null && !isFinishing() && token == siteNotificationMonitorToken) {
                 webView.postDelayed(() -> pollSiteNotifications(token), 1800);
             }
