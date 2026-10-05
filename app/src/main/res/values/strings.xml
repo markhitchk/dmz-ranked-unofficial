@@ -56,6 +56,10 @@
     <string name="reset_app_settings">Reset app settings</string>
     <string name="reset_app_settings_summary">Restore Android app settings to defaults without deleting website cookies or site storage.</string>
 
+    <string name="home_widget">Home-screen stats widget</string>
+    <string name="home_widget_summary">Add a native widget that follows your selected DMZ Ranked operator and reads live standings from dmzranked.com.</string>
+    <string name="widget_description">Live DMZ Ranked operator rank, SR, leaderboard position, and last-raid change.</string>
+
     <string name="website">Website: dmzranked.com</string>
     <string name="unofficial_notice">Unofficial client. DMZ Ranked website content and third-party trademarks belong to their respective owners.</string>
 </resources>
