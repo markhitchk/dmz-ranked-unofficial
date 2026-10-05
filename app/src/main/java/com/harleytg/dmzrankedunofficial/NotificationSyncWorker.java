@@ -47,14 +47,23 @@ public class NotificationSyncWorker extends Worker {
 
             String selected = clean(
                     prefs.getString(NotificationSync.PREF_SELECTED_OPERATOR, ""));
-            if (selected.isEmpty()) return Result.success();
+            if (selected.isEmpty()) {
+                markSync(prefs, "OK • no operator selected");
+                return Result.success();
+            }
 
             JSONArray players = root.optJSONArray("players");
             JSONArray raids = root.optJSONArray("raids");
-            if (players == null || raids == null) return Result.retry();
+            if (players == null || raids == null) {
+                markSync(prefs, "ERROR • invalid public state");
+                return Result.retry();
+            }
 
             JSONObject player = findPlayer(players, selected);
-            if (player == null) return Result.success();
+            if (player == null) {
+                markSync(prefs, "OK • selected operator not found");
+                return Result.success();
+            }
 
             String playerId = clean(player.optString("id", ""));
             String canonicalName = clean(player.optString("name", selected));
@@ -70,7 +79,7 @@ public class NotificationSyncWorker extends Worker {
                     prefs.getString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, "");
 
             if (!baselineReady || !operatorKey.equals(previousOperatorKey)) {
-                saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+                NotificationSync.saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
                 return Result.success();
             }
 
@@ -86,6 +95,13 @@ public class NotificationSyncWorker extends Worker {
 
             boolean appForeground =
                     prefs.getBoolean(NotificationSync.PREF_APP_FOREGROUND, false);
+
+            // The active WebView owns the baseline while visible so the worker
+            // cannot silently consume a report/review change before the UI sees it.
+            if (appForeground) {
+                markSync(prefs, "OK • app active");
+                return Result.success();
+            }
 
             if (nextPlayerReports > previousPlayerReports
                     && !appForeground
@@ -155,11 +171,14 @@ public class NotificationSyncWorker extends Worker {
                 }
             }
 
-            saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+            NotificationSync.saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+            markSync(prefs, "OK");
             return Result.success();
         } catch (IOException | JSONException error) {
+            markSync(prefs, "ERROR • " + shorten(error.getMessage(), 120));
             return Result.retry();
-        } catch (Throwable ignored) {
+        } catch (Throwable error) {
+            markSync(prefs, "ERROR • " + shorten(error.getMessage(), 120));
             return Result.retry();
         }
     }
@@ -238,19 +257,6 @@ public class NotificationSyncWorker extends Worker {
         return out;
     }
 
-    private static void saveBaseline(
-            SharedPreferences prefs,
-            String operatorKey,
-            int playerReports,
-            JSONObject raids) {
-        prefs.edit()
-                .putBoolean(NotificationSync.PREF_BASELINE_READY, true)
-                .putString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, operatorKey)
-                .putInt(NotificationSync.PREF_BASELINE_PLAYER_REPORTS, playerReports)
-                .putString(NotificationSync.PREF_BASELINE_RAIDS, raids.toString())
-                .apply();
-    }
-
     private static JSONObject fetchPublicState()
             throws IOException, JSONException {
         HttpURLConnection connection = null;
@@ -265,7 +271,9 @@ public class NotificationSyncWorker extends Worker {
             connection.setRequestProperty("Cache-Control", "no-cache");
             connection.setRequestProperty(
                     "User-Agent",
-                    "DMZ-Ranked-Android/1.0.35");
+                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.42");
+            connection.setRequestProperty("Referer", "https://dmzranked.com/");
+            connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
 
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) {
@@ -293,6 +301,15 @@ public class NotificationSyncWorker extends Worker {
         } finally {
             if (connection != null) connection.disconnect();
         }
+    }
+
+    private static void markSync(SharedPreferences prefs, String result) {
+        if (prefs == null) return;
+        prefs.edit()
+                .putLong(NotificationSync.PREF_LAST_SYNC_MS, System.currentTimeMillis())
+                .putString(NotificationSync.PREF_LAST_SYNC_RESULT,
+                        result == null || result.trim().isEmpty() ? "OK" : result.trim())
+                .apply();
     }
 
     private static String clean(String value) {
