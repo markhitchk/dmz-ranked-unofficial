@@ -5,8 +5,8 @@ Unofficial Android wrapper for **https://dmzranked.com/**.
 ## Credits
 
 - **Built by Harley's Studios**
-- **Made by Yolando & dCHINZ**
-- Yolando: YouTube **@itsyolando** and Twitch creator
+- **Made by YoLando & dCHINZ**
+- YoLando: YouTube **@itsyolando** and Twitch creator
 
 ## App features
 
@@ -15,7 +15,7 @@ Unofficial Android wrapper for **https://dmzranked.com/**.
 - Loading progress bar with optional **verbose loading details**.
 - Settings for desktop mode, keeping the screen awake, and verbose loading.
 - Reload and clear web cache/cookies controls.
-- Creator credits with Yolando and dCHINZ profile images.
+- Creator credits with YoLando and dCHINZ profile images.
 - JavaScript, DOM storage, cookies, file uploads, and DMZ Ranked section back-navigation support.
 - External navigation is blocked except for the approved PayPal support link.
 - Offline/error page when the website cannot load.
