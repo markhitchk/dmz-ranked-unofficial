@@ -36,13 +36,6 @@ public class NotificationSyncWorker extends Worker {
         Context context = getApplicationContext();
         SharedPreferences prefs =
                 context.getSharedPreferences(NotificationSync.PREFS, Context.MODE_PRIVATE);
-        long heartbeat =
-                prefs.getLong(NotificationSync.PREF_LIVE_SERVICE_HEARTBEAT_MS, 0L);
-        if (heartbeat > 0L
-                && System.currentTimeMillis() - heartbeat < 30000L) {
-            markSync(prefs, "OK • live service active");
-            return Result.success();
-        }
         return syncNow(context, true);
     }
 
@@ -288,7 +281,7 @@ public class NotificationSyncWorker extends Worker {
             connection.setRequestProperty("Cache-Control", "no-cache");
             connection.setRequestProperty(
                     "User-Agent",
-                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.45");
+                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.48");
             connection.setRequestProperty("Referer", "https://dmzranked.com/");
             connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
 
