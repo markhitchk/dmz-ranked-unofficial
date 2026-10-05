@@ -50,6 +50,15 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.appupdate.AppUpdateOptions;
+import com.google.android.play.core.install.InstallStateUpdatedListener;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.InstallStatus;
+import com.google.android.play.core.install.model.UpdateAvailability;
+
 public class MainActivity extends Activity {
     private static final String TAG = "DMZRanked";
     private static final String HOME_URL = "https://dmzranked.com/";
@@ -60,6 +69,7 @@ public class MainActivity extends Activity {
     private static final int FILE_REQUEST = 2001;
     private static final int SETTINGS_REQUEST = 2002;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2003;
+    private static final int PLAY_UPDATE_REQUEST = 2004;
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
 
     private static final String PREFS = "dmz_ranked_settings";
@@ -235,6 +245,11 @@ public class MainActivity extends Activity {
     private float pullRefreshStartY;
     private boolean pullRefreshTracking;
     private boolean pullRefreshTriggered;
+    private AppUpdateManager playUpdateManager;
+    private InstallStateUpdatedListener playInstallStateListener;
+    private boolean playUpdateCheckInFlight;
+    private boolean updateReadyDialogShown;
+    private long foregroundAnnouncedUpdateBuild = -1L;
 
     private final Runnable titleMetaRotator = new Runnable() {
         @Override
@@ -257,6 +272,9 @@ public class MainActivity extends Activity {
 
         try {
             preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            playUpdateManager = AppUpdateManagerFactory.create(this);
+            playInstallStateListener = state -> runOnUiThread(() ->
+                    handleForegroundPlayInstallState(state.installStatus()));
             boolean importedProductionData = importProductionDataIfBeta();
             setContentView(R.layout.activity_main);
             configureSystemBars();
@@ -1801,6 +1819,136 @@ public class MainActivity extends Activity {
         return error.getMessage();
     }
 
+    private void checkPlayUpdateOnForeground() {
+        if (playUpdateManager == null || playUpdateCheckInFlight || isFinishing()) return;
+
+        playUpdateCheckInFlight = true;
+        playUpdateManager.getAppUpdateInfo()
+                .addOnSuccessListener(info -> {
+                    playUpdateCheckInFlight = false;
+                    if (info == null || isFinishing()) return;
+
+                    if (info.installStatus() == InstallStatus.DOWNLOADED) {
+                        showForegroundUpdateReadyDialog();
+                        return;
+                    }
+
+                    if (info.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE) return;
+
+                    long availableBuild = info.availableVersionCode();
+                    if (availableBuild == foregroundAnnouncedUpdateBuild) return;
+                    foregroundAnnouncedUpdateBuild = availableBuild;
+
+                    AppUpdateOptions options =
+                            AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build();
+                    boolean canUpdateInApp = info.isUpdateTypeAllowed(options);
+
+                    DmzDialog.confirm(
+                            this,
+                            "UPDATE AVAILABLE",
+                            "Google Play has DMZ Ranked build " + availableBuild
+                                    + " ready for this device."
+                                    + (canUpdateInApp
+                                    ? " You can download it now without leaving the app."
+                                    : " Open Google Play to install it."),
+                            canUpdateInApp ? "UPDATE NOW" : "OPEN GOOGLE PLAY",
+                            "LATER",
+                            false,
+                            () -> {
+                                if (canUpdateInApp) {
+                                    startForegroundFlexiblePlayUpdate(info);
+                                } else {
+                                    openPlayStoreListing();
+                                }
+                            });
+                })
+                .addOnFailureListener(error -> {
+                    playUpdateCheckInFlight = false;
+                    Log.d(TAG, "Foreground Google Play update check unavailable", error);
+                });
+    }
+
+    private void startForegroundFlexiblePlayUpdate(AppUpdateInfo info) {
+        if (playUpdateManager == null || info == null) return;
+        try {
+            AppUpdateOptions options =
+                    AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build();
+            boolean started = playUpdateManager.startUpdateFlowForResult(
+                    info,
+                    this,
+                    options,
+                    PLAY_UPDATE_REQUEST);
+            if (!started) {
+                Toast.makeText(this,
+                        "Google Play could not start the update. Opening the Play Store.",
+                        Toast.LENGTH_LONG).show();
+                openPlayStoreListing();
+            }
+        } catch (Throwable error) {
+            Log.e(TAG, "Could not start foreground Google Play update", error);
+            openPlayStoreListing();
+        }
+    }
+
+    private void handleForegroundPlayInstallState(int installStatus) {
+        if (installStatus == InstallStatus.DOWNLOADED) {
+            showForegroundUpdateReadyDialog();
+        } else if (installStatus == InstallStatus.FAILED) {
+            Toast.makeText(this,
+                    "Google Play update failed. You can retry from App Settings.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showForegroundUpdateReadyDialog() {
+        if (playUpdateManager == null || updateReadyDialogShown || isFinishing()) return;
+        updateReadyDialogShown = true;
+
+        android.app.AlertDialog dialog = DmzDialog.confirm(
+                this,
+                "UPDATE READY",
+                "The DMZ Ranked update finished downloading from Google Play and is ready to install.",
+                "INSTALL & RESTART",
+                "LATER",
+                false,
+                () -> playUpdateManager.completeUpdate()
+                        .addOnFailureListener(error -> Toast.makeText(
+                                this,
+                                "Could not install the downloaded update. Try again from App Settings.",
+                                Toast.LENGTH_LONG).show()));
+
+        dialog.setOnDismissListener(ignored -> updateReadyDialogShown = false);
+    }
+
+    private void openPlayStoreListing() {
+        try {
+            Intent market = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("market://details?id=" + getPackageName()));
+            market.setPackage("com.android.vending");
+            startActivity(market);
+        } catch (Throwable ignored) {
+            openExternal(Uri.parse(
+                    "https://play.google.com/store/apps/details?id=" + getPackageName()));
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (playUpdateManager != null && playInstallStateListener != null) {
+            playUpdateManager.registerListener(playInstallStateListener);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        if (playUpdateManager != null && playInstallStateListener != null) {
+            playUpdateManager.unregisterListener(playInstallStateListener);
+        }
+        super.onStop();
+    }
+
     @Override
     @Deprecated
     public void onBackPressed() {
@@ -1811,6 +1959,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         startTitleMetaRotation();
+        checkPlayUpdateOnForeground();
         if (webView != null) {
             try {
                 String url = webView.getUrl();
@@ -1919,6 +2068,19 @@ public class MainActivity extends Activity {
             if ((desktopChanged || reloadRequested) && webView != null && webView.getUrl() != null) {
                 showLoadingScreen(desktopChanged ? "Applying display mode…" : "Reloading DMZ Ranked…", 0);
                 webView.reload();
+            }
+            return;
+        }
+
+        if (requestCode == PLAY_UPDATE_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(this,
+                        "Google Play update accepted • downloading in the background.",
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this,
+                        "Google Play update was canceled or could not start.",
+                        Toast.LENGTH_SHORT).show();
             }
             return;
         }
