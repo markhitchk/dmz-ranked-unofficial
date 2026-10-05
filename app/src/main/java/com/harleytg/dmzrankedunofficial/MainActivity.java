@@ -211,12 +211,15 @@ public class MainActivity extends Activity {
     private TextView loadingSyncedText;
     private TextView loadingPlayersText;
     private TextView loadingLiveDot;
+    private TextView titleTextView;
     private TextView titleMetaText;
-    private TextView websiteStatusChip;
     private TextView betaBadge;
-    private String titleBaseMeta = "Made by Harley's Studios";
+    private ImageView titleLogoView;
+    private ImageView loadingLogoView;
+    private String[] titleMetaMessages = new String[]{"Made by Harley's Studios"};
+    private int lastTitleMetaIndex = -1;
+    private boolean loadingAnimationsRunning;
     private int loadingStatusPollToken;
-    private int headerStatusPollToken;
     private int siteNotificationMonitorToken;
     private boolean siteNotificationBaselineReady;
     private final LinkedHashSet<String> seenSiteNotifications = new LinkedHashSet<>();
@@ -230,6 +233,16 @@ public class MainActivity extends Activity {
     private float pullRefreshStartY;
     private boolean pullRefreshTracking;
     private boolean pullRefreshTriggered;
+
+    private final Runnable titleMetaRotator = new Runnable() {
+        @Override
+        public void run() {
+            rotateTitleMetaText();
+            if (titleMetaText != null && !isFinishing()) {
+                titleMetaText.postDelayed(this, 4200L);
+            }
+        }
+    };
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -256,12 +269,14 @@ public class MainActivity extends Activity {
             loadingSyncedText = findViewById(R.id.loadingSyncedText);
             loadingPlayersText = findViewById(R.id.loadingPlayersText);
             loadingLiveDot = findViewById(R.id.loadingLiveDot);
+            titleTextView = findViewById(R.id.titleText);
             titleMetaText = findViewById(R.id.titleMetaText);
-            websiteStatusChip = findViewById(R.id.websiteStatusChip);
             betaBadge = findViewById(R.id.betaBadge);
+            titleLogoView = findViewById(R.id.titleLogo);
+            loadingLogoView = findViewById(R.id.loadingLogo);
 
-            applyBrandLogo(findViewById(R.id.titleLogo));
-            applyBrandLogo(findViewById(R.id.loadingLogo));
+            applyBrandLogo(titleLogoView);
+            applyBrandLogo(loadingLogoView);
             updateLoadingIdentity();
 
             updateTitleBarIdentity();
@@ -424,13 +439,11 @@ public class MainActivity extends Activity {
                 super.onPageStarted(view, url, favicon);
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     loadingStatusPollToken++;
-                    headerStatusPollToken++;
                     operatorMonitorToken++;
                     siteNotificationMonitorToken++;
                     siteNotificationBaselineReady = false;
                     seenSiteNotifications.clear();
                     resetLoadingSiteStatus();
-                    updateWebsiteHeader("CONNECTING", "", "");
                     showLoadingScreen("Connecting to dmzranked.com…", 5);
                 }
             }
@@ -450,7 +463,6 @@ public class MainActivity extends Activity {
                         applySavedOperatorToWebsite(0);
                         startSiteNotificationMonitor();
                         startOperatorMonitor();
-                        startHeaderStatusMonitor();
                         return;
                     }
                 } catch (Throwable ignored) {
@@ -462,8 +474,6 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
                 if (request != null && request.isForMainFrame()) {
-                    headerStatusPollToken++;
-                    updateWebsiteHeader("OFFLINE", "", "");
                     hideLoadingScreen();
                     showOfflinePage();
                 }
@@ -618,13 +628,9 @@ public class MainActivity extends Activity {
             if (hasLive) {
                 if (loadingConnectionText != null) loadingConnectionText.setText("LIVE");
                 if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_green));
-                updateWebsiteHeader("LIVE", synced, players);
             } else if (attempt >= 12) {
                 if (loadingConnectionText != null) loadingConnectionText.setText("CONNECTED");
                 if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_green));
-                updateWebsiteHeader("ONLINE", synced, players);
-            } else {
-                updateWebsiteHeader("CONNECTING", synced, players);
             }
 
             if (hasSynced && loadingSyncedText != null) loadingSyncedText.setText(synced);
@@ -1175,6 +1181,7 @@ public class MainActivity extends Activity {
                 if (!animate) {
                     loadingOverlay.setAlpha(1f);
                     loadingOverlay.setVisibility(View.GONE);
+                    stopLoadingAnimations();
                     setMainChromeVisible(true);
                     return;
                 }
@@ -1186,6 +1193,7 @@ public class MainActivity extends Activity {
                                 loadingOverlay.setVisibility(View.GONE);
                                 loadingOverlay.setAlpha(1f);
                             }
+                            stopLoadingAnimations();
                             setMainChromeVisible(true);
                         })
                         .start();
@@ -1209,119 +1217,167 @@ public class MainActivity extends Activity {
     }
 
     private void updateTitleBarIdentity() {
-        TextView titleText = findViewById(R.id.titleText);
         boolean beta = getPackageName().endsWith(".beta");
 
-        if (titleText != null) {
-            titleText.setText("DMZ Ranked");
+        if (titleTextView != null) {
+            titleTextView.setText("DMZ Ranked");
         }
         if (betaBadge != null) {
             betaBadge.setVisibility(beta ? View.VISIBLE : View.GONE);
         }
 
-        String versionName = "";
+        String versionName = "Unknown";
+        long versionCode = -1L;
         try {
             PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            if (packageInfo != null && packageInfo.versionName != null) {
-                versionName = packageInfo.versionName.trim();
+            if (packageInfo != null) {
+                if (packageInfo.versionName != null && !packageInfo.versionName.trim().isEmpty()) {
+                    versionName = packageInfo.versionName.trim();
+                }
+                versionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                        ? packageInfo.getLongVersionCode()
+                        : packageInfo.versionCode;
             }
         } catch (Throwable error) {
             Log.d(TAG, "Could not read title bar version", error);
         }
 
-        titleBaseMeta = "Made by Harley's Studios"
-                + (versionName.isEmpty() ? "" : " • v" + versionName);
+        String build = versionCode >= 0 ? String.valueOf(versionCode) : "Unknown";
+        titleMetaMessages = new String[]{
+                "Made by Harley's Studios",
+                "Version " + versionName + " • Build " + build,
+                "Harley's Studios • Build " + build,
+                "Harley's Studios • v" + versionName
+        };
+
+        lastTitleMetaIndex = -1;
+        startTitleMetaRotation();
+    }
+
+    private void startTitleMetaRotation() {
+        if (titleMetaText == null) return;
+        titleMetaText.removeCallbacks(titleMetaRotator);
+        rotateTitleMetaText();
+        titleMetaText.postDelayed(titleMetaRotator, 4200L);
+    }
+
+    private void stopTitleMetaRotation() {
         if (titleMetaText != null) {
-            titleMetaText.setText(titleBaseMeta);
-        }
-        updateWebsiteHeader("CONNECTING", "", "");
-    }
-
-    private void updateWebsiteHeader(String state, String synced, String players) {
-        if (websiteStatusChip != null) {
-            String normalized = state == null ? "" : state.trim().toUpperCase(Locale.US);
-            String label;
-            int color;
-
-            switch (normalized) {
-                case "LIVE":
-                    label = "● LIVE";
-                    color = getColor(R.color.dmz_green);
-                    break;
-                case "ONLINE":
-                case "CONNECTED":
-                    label = "● ONLINE";
-                    color = getColor(R.color.dmz_green);
-                    break;
-                case "OFFLINE":
-                    label = "● OFFLINE";
-                    color = getColor(R.color.dmz_red);
-                    break;
-                default:
-                    label = "● CONNECT";
-                    color = getColor(R.color.dmz_gold);
-                    break;
-            }
-
-            websiteStatusChip.setText(label);
-            websiteStatusChip.setTextColor(color);
-        }
-
-        if (titleMetaText != null) {
-            StringBuilder meta = new StringBuilder(titleBaseMeta);
-            String cleanPlayers = players == null ? "" : players.trim();
-            String cleanSynced = synced == null ? "" : synced.trim();
-
-            if (!cleanPlayers.isEmpty()) {
-                meta.append(" • ").append(cleanPlayers);
-            } else if (!cleanSynced.isEmpty()) {
-                meta.append(" • ").append(cleanSynced);
-            }
-            titleMetaText.setText(meta.toString());
+            titleMetaText.removeCallbacks(titleMetaRotator);
+            titleMetaText.animate().cancel();
+            titleMetaText.setAlpha(1f);
         }
     }
 
-    private void startHeaderStatusMonitor() {
-        if (webView == null || isFinishing()) return;
-        int token = ++headerStatusPollToken;
-        pollHeaderStatus(token, 0);
+    private void rotateTitleMetaText() {
+        if (titleMetaText == null || titleMetaMessages == null || titleMetaMessages.length == 0) return;
+
+        int next = (int) (Math.random() * titleMetaMessages.length);
+        if (titleMetaMessages.length > 1 && next == lastTitleMetaIndex) {
+            next = (next + 1) % titleMetaMessages.length;
+        }
+        lastTitleMetaIndex = next;
+        final String nextText = titleMetaMessages[next];
+
+        boolean animate = preferences == null
+                || preferences.getBoolean(PREF_APP_ANIMATIONS, true);
+        if (!animate) {
+            titleMetaText.setText(nextText);
+            titleMetaText.setAlpha(1f);
+            return;
+        }
+
+        titleMetaText.animate().cancel();
+        titleMetaText.animate()
+                .alpha(0.25f)
+                .setDuration(130L)
+                .withEndAction(() -> {
+                    if (titleMetaText == null) return;
+                    titleMetaText.setText(nextText);
+                    titleMetaText.animate()
+                            .alpha(1f)
+                            .setDuration(190L)
+                            .start();
+                })
+                .start();
     }
 
-    private void pollHeaderStatus(int token, int attempt) {
-        if (webView == null || isFinishing() || token != headerStatusPollToken) return;
+    private void startLoadingAnimations() {
+        boolean animate = preferences == null
+                || preferences.getBoolean(PREF_APP_ANIMATIONS, true);
+        if (!animate || loadingAnimationsRunning) return;
+        loadingAnimationsRunning = true;
+        animateTitleLoadingLogo();
+        animateLoadingScreenLogo();
+        animateTitleLoadingText();
+    }
 
-        Uri current;
-        try {
-            String rawUrl = webView.getUrl();
-            current = rawUrl == null ? null : Uri.parse(rawUrl);
-        } catch (Throwable ignored) {
-            current = null;
+    private void animateTitleLoadingLogo() {
+        if (!loadingAnimationsRunning || titleLogoView == null) return;
+        titleLogoView.animate().cancel();
+        titleLogoView.animate()
+                .rotationBy(360f)
+                .setDuration(1100L)
+                .setInterpolator(new android.view.animation.LinearInterpolator())
+                .withEndAction(this::animateTitleLoadingLogo)
+                .start();
+    }
+
+    private void animateLoadingScreenLogo() {
+        if (!loadingAnimationsRunning || loadingLogoView == null) return;
+        loadingLogoView.animate().cancel();
+        loadingLogoView.animate()
+                .scaleX(1.06f)
+                .scaleY(1.06f)
+                .alpha(0.78f)
+                .setDuration(620L)
+                .withEndAction(() -> {
+                    if (!loadingAnimationsRunning || loadingLogoView == null) return;
+                    loadingLogoView.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .alpha(1f)
+                            .setDuration(620L)
+                            .withEndAction(this::animateLoadingScreenLogo)
+                            .start();
+                })
+                .start();
+    }
+
+    private void animateTitleLoadingText() {
+        if (!loadingAnimationsRunning || titleTextView == null) return;
+        titleTextView.animate().cancel();
+        titleTextView.animate()
+                .alpha(0.62f)
+                .setDuration(520L)
+                .withEndAction(() -> {
+                    if (!loadingAnimationsRunning || titleTextView == null) return;
+                    titleTextView.animate()
+                            .alpha(1f)
+                            .setDuration(520L)
+                            .withEndAction(this::animateTitleLoadingText)
+                            .start();
+                })
+                .start();
+    }
+
+    private void stopLoadingAnimations() {
+        loadingAnimationsRunning = false;
+
+        if (titleLogoView != null) {
+            titleLogoView.animate().cancel();
+            titleLogoView.setRotation(0f);
+            titleLogoView.setAlpha(1f);
         }
-        if (!isDmzUrl(current)) return;
-
-        try {
-            webView.evaluateJavascript(READ_SITE_STATUS_SCRIPT, result -> {
-                if (isFinishing() || token != headerStatusPollToken) return;
-
-                String decoded = decodeJavascriptString(result);
-                String[] parts = decoded.split("\\|\\|\\|", -1);
-                String live = parts.length > 0 ? parts[0].trim() : "";
-                String synced = parts.length > 1 ? parts[1].trim() : "";
-                String players = parts.length > 2 ? parts[2].trim() : "";
-
-                boolean hasLive = "LIVE".equalsIgnoreCase(live);
-                boolean hasSiteData = !synced.isEmpty() || !players.isEmpty();
-                updateWebsiteHeader(
-                        hasLive ? "LIVE" : (hasSiteData || attempt > 0 ? "ONLINE" : "CONNECTING"),
-                        synced,
-                        players);
-
-                if (webView != null && !isFinishing() && token == headerStatusPollToken) {
-                    webView.postDelayed(() -> pollHeaderStatus(token, attempt + 1), 10000);
-                }
-            });
-        } catch (Throwable error) {
-            updateWebsiteHeader("OFFLINE", "", "");
+        if (loadingLogoView != null) {
+            loadingLogoView.animate().cancel();
+            loadingLogoView.setScaleX(1f);
+            loadingLogoView.setScaleY(1f);
+            loadingLogoView.setAlpha(1f);
+        }
+        if (titleTextView != null) {
+            titleTextView.animate().cancel();
+            titleTextView.setAlpha(1f);
         }
     }
 
@@ -1367,7 +1423,8 @@ public class MainActivity extends Activity {
     }
 
     private void showLoadingScreen(String status, int progress) {
-        setMainChromeVisible(false);
+        setMainChromeVisible(true);
+        startLoadingAnimations();
         if (loadingProgressBar != null) loadingProgressBar.setProgress(progress);
         if (loadingOverlay != null) {
             loadingOverlay.animate().cancel();
@@ -1680,13 +1737,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        startTitleMetaRotation();
         if (webView != null) {
             try {
                 String url = webView.getUrl();
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     startSiteNotificationMonitor();
                     startOperatorMonitor();
-                    startHeaderStatusMonitor();
                 }
             } catch (Throwable ignored) {
             }
@@ -1697,7 +1754,8 @@ public class MainActivity extends Activity {
     protected void onPause() {
         operatorMonitorToken++;
         siteNotificationMonitorToken++;
-        headerStatusPollToken++;
+        stopTitleMetaRotation();
+        stopLoadingAnimations();
         super.onPause();
     }
 
@@ -1774,7 +1832,8 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         operatorMonitorToken++;
         siteNotificationMonitorToken++;
-        headerStatusPollToken++;
+        stopTitleMetaRotation();
+        stopLoadingAnimations();
         try {
             if (webView != null) {
                 webView.stopLoading();
