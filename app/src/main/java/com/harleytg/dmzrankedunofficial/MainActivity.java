@@ -196,15 +196,39 @@ public class MainActivity extends Activity {
             "(function(){try{" +
             "var host=String(location.hostname||'').toLowerCase();" +
             "if(host!=='dmzranked.com'&&!host.endsWith('.dmzranked.com'))return 'skip-origin';" +
+            "function clean(v){return String(v==null?'':v).replace(/\\s+/g,' ').trim();}" +
+            "function bad(v){return !v||/SELECT EXISTING OPERATOR|PICK YOUR NAME|RETURNING OPERATOR|YOUR OPERATOR NAME|CHANGE PIN|OPERATOR KILLS/i.test(v);}" +
+            "function valid(v){v=clean(v);return v.length>0&&v.length<=80&&!bad(v)&&!/[\\r\\n]/.test(v);}" +
+            "function getName(){" +
+            "var input=document.getElementById('playerName'),pick=document.getElementById('playerPick'),typed='',picked='',saved='';" +
+            "try{typed=clean(input&&(input.value||input.getAttribute('value'))||'');}catch(e){}" +
+            "try{if(pick&&pick.selectedIndex>0){picked=clean(pick.value||(pick.options[pick.selectedIndex]&&(pick.options[pick.selectedIndex].value||pick.options[pick.selectedIndex].textContent))||'');}}catch(e){}" +
+            "try{saved=clean(localStorage.getItem('dmz_myname')||'');}catch(e){}" +
+            "if(valid(picked)&&(!valid(typed)||typed.toLowerCase()===picked.toLowerCase()))return picked;" +
+            "if(valid(typed))return typed;" +
+            "if(valid(saved))return saved;" +
+            "return '';" +
+            "}" +
             "var styleId='dmz-harleys-studios-app-style';" +
             "if(!document.getElementById(styleId)){" +
             "var st=document.createElement('style');st.id=styleId;" +
-            "st.textContent='#dmz-harleys-studios-app-message{box-sizing:border-box;width:calc(100% - 28px);max-width:760px;margin:22px auto calc(24px + env(safe-area-inset-bottom));padding:13px 16px;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;font-family:inherit;font-size:13px;line-height:1.45;font-weight:700;letter-spacing:.01em;color:#e9eee9;background:linear-gradient(135deg,rgba(20,25,29,.97),rgba(10,14,12,.97));border:1px solid rgba(246,196,83,.46);border-left:4px solid #f6c453;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.28)}#dmz-harleys-studios-app-message .dmz-hs-accent{color:#f6c453;font-weight:900}#dmz-harleys-studios-app-message .dmz-hs-dot{color:#55d582;font-size:12px}@media(max-width:520px){#dmz-harleys-studios-app-message{width:calc(100% - 20px);margin-top:16px;padding:12px 13px;font-size:12.5px}}';" +
+            "st.textContent='#dmz-harleys-studios-app-message{box-sizing:border-box;width:calc(100% - 20px);max-width:900px;margin:10px auto 14px;padding:12px 14px;position:relative;z-index:2147480000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;font-family:inherit;line-height:1.4;color:#e9eee9;background:linear-gradient(135deg,rgba(20,25,29,.98),rgba(8,12,10,.98));border:1px solid rgba(246,196,83,.52);border-left:4px solid #f6c453;border-radius:11px;box-shadow:0 6px 20px rgba(0,0,0,.28)}#dmz-harleys-studios-app-message .dmz-hs-welcome{font-size:14px;font-weight:900;color:#f7f8f7}#dmz-harleys-studios-app-message .dmz-hs-name{color:#f6c453}#dmz-harleys-studios-app-message .dmz-hs-copy{font-size:12.5px;font-weight:700;color:#c8ceca}#dmz-harleys-studios-app-message .dmz-hs-note{font-size:11.5px;font-weight:600;color:#8f9792}#dmz-harleys-studios-app-message .dmz-hs-dot{color:#55d582;margin-right:5px}@media(max-width:520px){#dmz-harleys-studios-app-message{width:calc(100% - 12px);margin:6px auto 10px;padding:10px 11px;border-radius:9px}#dmz-harleys-studios-app-message .dmz-hs-welcome{font-size:13px}#dmz-harleys-studios-app-message .dmz-hs-copy{font-size:12px}#dmz-harleys-studios-app-message .dmz-hs-note{font-size:11px}}';" +
             "(document.head||document.documentElement).appendChild(st);" +
             "}" +
             "var id='dmz-harleys-studios-app-message',msg=document.getElementById(id);" +
-            "if(!msg){msg=document.createElement('div');msg.id=id;msg.setAttribute('role','note');msg.setAttribute('aria-label','Harley\\'s Studios DMZ Ranked Unofficial App');msg.innerHTML='<span class=\\'dmz-hs-dot\\'>●</span><span>Thank you for using <span class=\\'dmz-hs-accent\\'>Harley\\'s Studios</span> DMZ Ranked Unofficial App</span>';(document.body||document.documentElement).appendChild(msg);}" +
-            "return 'installed';" +
+            "if(!msg){" +
+            "msg=document.createElement('div');msg.id=id;msg.setAttribute('role','note');msg.setAttribute('aria-label','Harley\\'s Studios DMZ Ranked Unofficial App message');" +
+            "var welcome=document.createElement('div');welcome.className='dmz-hs-welcome';welcome.id='dmz-hs-welcome';" +
+            "var copy=document.createElement('div');copy.className='dmz-hs-copy';copy.innerHTML='<span class=\\'dmz-hs-dot\\'>●</span>Thank you for using <span class=\\'dmz-hs-name\\'>Harley\\'s Studios</span> DMZ Ranked Unofficial App';" +
+            "var note=document.createElement('div');note.className='dmz-hs-note';note.textContent='App-only display override — this does not modify or affect the dmzranked.com website.';" +
+            "msg.appendChild(welcome);msg.appendChild(copy);msg.appendChild(note);" +
+            "var header=document.querySelector('header,.site-header,#header,.header,.topbar');" +
+            "if(header&&header.parentNode){header.insertAdjacentElement('afterend',msg);}else{var body=document.body||document.documentElement;if(body.firstChild)body.insertBefore(msg,body.firstChild);else body.appendChild(msg);}" +
+            "}" +
+            "window.__dmzHsUpdateMessage=function(){try{var n=getName();var w=document.getElementById('dmz-hs-welcome');if(!w)return;while(w.firstChild)w.removeChild(w.firstChild);var prefix=document.createTextNode(n?'Welcome back, ':'Welcome, Guest!');w.appendChild(prefix);if(n){var sp=document.createElement('span');sp.className='dmz-hs-name';sp.textContent=n;w.appendChild(sp);w.appendChild(document.createTextNode('!'));}}catch(e){}};" +
+            "window.__dmzHsUpdateMessage();" +
+            "if(!window.__dmzHsMessageTimer){window.__dmzHsMessageTimer=setInterval(function(){try{window.__dmzHsUpdateMessage();}catch(e){}},1500);}" +
+            "return 'installed-top';" +
             "}catch(e){return 'error:'+String(e&&e.message||e);}})()";
 
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
