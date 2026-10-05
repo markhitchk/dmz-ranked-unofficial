@@ -1411,7 +1411,7 @@ public class SettingsActivity extends Activity {
                 action);
     }
 
-    private int dp(int value)    private int dp(int value) {
+    private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
