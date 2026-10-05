@@ -1114,7 +1114,7 @@ public class MainActivity extends Activity {
                 ? new Notification.Builder(this, SITE_NOTIFICATION_CHANNEL)
                 : new Notification.Builder(this);
 
-        builder.setSmallIcon(R.drawable.ic_notification)
+        builder.setSmallIcon(R.drawable.ic_notification_dmz)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new Notification.BigTextStyle().bigText(body))
