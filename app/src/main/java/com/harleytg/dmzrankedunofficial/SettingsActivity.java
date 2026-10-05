@@ -70,6 +70,7 @@ import org.json.JSONObject;
 public class SettingsActivity extends Activity {
     private static final String TAG = "DMZRankedSettings";
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
+    private static final String HARLEYS_STUDIOS_KOFI_URL = "https://ko-fi.com/harleytg_#checkoutModal";
     private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
     private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
@@ -300,6 +301,8 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.lockDeveloperToolsCard).setOnClickListener(v -> lockDeveloperTools());
         findViewById(R.id.resetSettingsCard).setOnClickListener(v -> confirmResetSettings());
         findViewById(R.id.paypalCard).setOnClickListener(v -> openExternal(PAYPAL_SHARE_URL));
+        findViewById(R.id.harleysStudiosSupportCard).setOnClickListener(
+                v -> openExternal(HARLEYS_STUDIOS_KOFI_URL));
         findViewById(R.id.feedbackCard).setOnClickListener(v ->
                 startActivity(new Intent(this, FeedbackActivity.class)));
         findViewById(R.id.appSupportDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
@@ -564,9 +567,9 @@ public class SettingsActivity extends Activity {
         boolean aboutMatch = showIfMatches(
                 R.id.aboutCard,
                 q,
-                "dmz ranked about version build credits creator creators yolando dchinz harley studios harleytg harley-the-gamer gamer paypal unofficial");
+                "dmz ranked about version build credits creator creators yolando dchinz harley studios harleytg harley-the-gamer gamer paypal ko-fi kofi support donate donation unofficial");
         if (searching && aboutMatch
-                && containsAny(q, "credit", "creator", "yolando", "dchinz", "harley", "paypal")) {
+                && containsAny(q, "credit", "creator", "yolando", "dchinz", "harley", "paypal", "ko-fi", "kofi", "support", "donat")) {
             creditsExpanded = true;
             findViewById(R.id.creditsContent).setVisibility(View.VISIBLE);
             ((TextView) findViewById(R.id.creditsButton)).setText("HIDE CREDITS");
