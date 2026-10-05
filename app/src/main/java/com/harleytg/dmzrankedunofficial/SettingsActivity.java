@@ -112,9 +112,11 @@ public class SettingsActivity extends Activity {
             "af237b066602cebf2ea25843fdab831639173b894205a21192b15c6ac242c23d";
 
     public static final String EXTRA_ACTION = "settings_action";
+    public static final String EXTRA_OPERATOR_NAME = "operator_name";
     public static final String ACTION_RELOAD = "reload";
     public static final String ACTION_SAVE_OPERATOR = "save_operator";
     public static final String ACTION_RESTORE_OPERATOR = "restore_operator";
+    public static final String ACTION_SELECT_OPERATOR = "select_operator";
 
     private SharedPreferences preferences;
     private AppUpdateManager appUpdateManager;
@@ -264,6 +266,8 @@ public class SettingsActivity extends Activity {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_RESTORE_OPERATOR));
             finish();
         });
+        findViewById(R.id.operatorPickerCard).setOnClickListener(v -> showOperatorPicker());
+        findViewById(R.id.operatorListText).setOnClickListener(v -> showOperatorPicker());
         findViewById(R.id.peerImportCard).setOnClickListener(v -> confirmPeerImport());
         findViewById(R.id.notificationSettingsCard).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
@@ -822,6 +826,61 @@ public class SettingsActivity extends Activity {
         }
     }
 
+    private void showOperatorPicker() {
+        if (preferences == null) return;
+
+        String[] names = OperatorBackupStore.operatorNames(this);
+        if (names.length == 0) {
+            Toast.makeText(this,
+                    "No imported operators yet. Use an operator on DMZRanked.com, then refresh the list.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String current = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        current = current == null ? "" : current.trim();
+        int checked = -1;
+        for (int i = 0; i < names.length; i++) {
+            if (names[i].equalsIgnoreCase(current)) {
+                checked = i;
+                break;
+            }
+        }
+
+        final int currentChecked = checked;
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Choose operator")
+                .setSingleChoiceItems(names, currentChecked, (picker, which) -> {
+                    if (which < 0 || which >= names.length) return;
+
+                    String selected = names[which];
+                    JSONObject backup = OperatorBackupStore.get(this, selected);
+                    boolean protectedFlag = OperatorBackupStore.isProtected(backup);
+
+                    preferences.edit()
+                            .putString(PREF_SELECTED_OPERATOR, selected)
+                            .putBoolean(PREF_OPERATOR_VERIFIED, false)
+                            .putBoolean(PREF_OPERATOR_PROTECTED, protectedFlag)
+                            .putString(PREF_OPERATOR_SOURCE, "App operator picker")
+                            .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
+                            .apply();
+
+                    Intent result = new Intent()
+                            .putExtra(EXTRA_ACTION, ACTION_SELECT_OPERATOR)
+                            .putExtra(EXTRA_OPERATOR_NAME, selected);
+                    setResult(RESULT_OK, result);
+
+                    Toast.makeText(this,
+                            "Selected " + selected + ". Applying it to DMZ Ranked…",
+                            Toast.LENGTH_SHORT).show();
+                    picker.dismiss();
+                    finish();
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.show();
+    }
+
     private void updateOperatorBackupStatus() {
         TextView status = findViewById(R.id.operatorStatusText);
         TextView list = findViewById(R.id.operatorListText);
@@ -869,7 +928,18 @@ public class SettingsActivity extends Activity {
         String[] names = OperatorBackupStore.operatorNames(this);
         if (count != null) count.setText(names.length + " / 2 imported");
 
+        TextView picker = findViewById(R.id.operatorPickerCard);
+        if (picker != null) {
+            boolean available = names.length > 0;
+            picker.setEnabled(available);
+            picker.setAlpha(available ? 1f : 0.45f);
+            picker.setText(available
+                    ? "▾  CHOOSE OPERATOR"
+                    : "▾  NO OPERATORS TO CHOOSE");
+        }
         if (list != null) {
+            list.setClickable(names.length > 0);
+            list.setFocusable(names.length > 0);
             if (names.length == 0) {
                 list.setText("No imported operators yet.");
                 list.setTextColor(getColor(R.color.dmz_muted));
