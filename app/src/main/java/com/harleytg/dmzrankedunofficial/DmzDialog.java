@@ -140,12 +140,7 @@ public final class DmzDialog {
         AlertDialog dialog = builder(activity)
                 .setTitle(title)
                 .setMessage(message)
-                .setView(
-                        input,
-                        dp(activity, 24),
-                        dp(activity, 8),
-                        dp(activity, 24),
-                        0)
+                .setView(input)
                 .setPositiveButton(
                         positiveLabel == null || positiveLabel.trim().isEmpty()
                                 ? "OK"
