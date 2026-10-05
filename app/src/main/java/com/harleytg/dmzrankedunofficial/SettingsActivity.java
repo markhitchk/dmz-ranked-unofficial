@@ -177,11 +177,6 @@ public class SettingsActivity extends Activity {
         boolean betaBuild = getPackageName().endsWith(".beta");
         TextView settingsSubtitle = findViewById(R.id.settingsSubtitle);
         TextView aboutTitle = findViewById(R.id.aboutTitle);
-        if (settingsSubtitle != null) {
-            settingsSubtitle.setText(betaBuild
-                    ? "DMZ RANKED [BETA] • ANDROID"
-                    : "DMZ RANKED • ANDROID");
-        }
         if (aboutTitle != null) {
             aboutTitle.setText(betaBuild ? "DMZ RANKED [BETA]" : "DMZ RANKED");
         }
@@ -199,6 +194,12 @@ public class SettingsActivity extends Activity {
         TextView versionText = findViewById(R.id.versionText);
         TextView buildText = findViewById(R.id.buildText);
         TextView updateVersionText = findViewById(R.id.updateVersionText);
+        if (settingsSubtitle != null) {
+            settingsSubtitle.setText(
+                    "Version " + versionName
+                            + " • Build "
+                            + (versionCode >= 0 ? versionCode : "Unknown"));
+        }
         versionText.setText("Version " + versionName);
         buildText.setText(versionCode >= 0 ? "Build " + versionCode : "Build unknown");
         updateVersionText.setText("Installed: " + versionName
