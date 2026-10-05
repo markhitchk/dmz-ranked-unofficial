@@ -21,6 +21,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,6 +32,7 @@ import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
@@ -38,6 +40,7 @@ import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -1359,12 +1362,11 @@ public class SettingsActivity extends Activity {
     }
 
     private void confirmClearWebData() {
-        new AlertDialog.Builder(this)
-                .setTitle("Clear website data?")
-                .setMessage("This clears WebView cache, cookies, and site storage. You may be signed out of DMZ Ranked. App-managed operator backups are kept so they can be restored afterward.")
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Clear data", (dialog, which) -> clearWebData())
-                .show();
+        showDangerConfirmation(
+                "CLEAR WEBSITE DATA",
+                "This removes WebView cache, cookies, and website storage. You may be signed out of DMZ Ranked. App-managed operator backups are kept.",
+                "CLEAR DATA",
+                this::clearWebData);
     }
 
     private void clearWebData() {
@@ -1397,16 +1399,149 @@ public class SettingsActivity extends Activity {
     }
 
     private void confirmResetSettings() {
-        new AlertDialog.Builder(this)
-                .setTitle("Reset app settings?")
-                .setMessage("This restores Android app settings to defaults. Website cookies, site storage, and saved operator backups are not deleted.")
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Reset", (dialog, which) -> {
+        showDangerConfirmation(
+                "RESET APP SETTINGS",
+                "This restores Android app settings to their defaults. Website cookies, site storage, and saved operator backups are not deleted.",
+                "RESET SETTINGS",
+                () -> {
                     preferences.edit().clear().apply();
                     Toast.makeText(this, "App settings reset to defaults.", Toast.LENGTH_SHORT).show();
                     recreate();
-                })
-                .show();
+                });
+    }
+
+    private void showDangerConfirmation(
+            String title,
+            String message,
+            String confirmLabel,
+            Runnable action) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(22), dp(20), dp(22), dp(18));
+        card.setBackgroundResource(R.drawable.danger_dialog_background);
+
+        TextView eyebrow = new TextView(this);
+        eyebrow.setText("DANGER ZONE");
+        eyebrow.setTextColor(getColor(R.color.dmz_red));
+        eyebrow.setTextSize(11f);
+        eyebrow.setTypeface(Typeface.DEFAULT_BOLD);
+        eyebrow.setLetterSpacing(0.16f);
+        card.addView(eyebrow, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView heading = new TextView(this);
+        heading.setText(title);
+        heading.setTextColor(getColor(R.color.dmz_white));
+        heading.setTextSize(22f);
+        heading.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+        LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        headingParams.topMargin = dp(7);
+        card.addView(heading, headingParams);
+
+        TextView body = new TextView(this);
+        body.setText(message);
+        body.setTextColor(getColor(R.color.dmz_muted));
+        body.setTextSize(13.5f);
+        body.setLineSpacing(0f, 1.12f);
+        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        bodyParams.topMargin = dp(10);
+        card.addView(body, bodyParams);
+
+        TextView warning = new TextView(this);
+        warning.setText("This action cannot be automatically undone.");
+        warning.setTextColor(getColor(R.color.dmz_red));
+        warning.setTextSize(11.5f);
+        warning.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout.LayoutParams warningParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        warningParams.topMargin = dp(12);
+        card.addView(warning, warningParams);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams actionRowParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        actionRowParams.topMargin = dp(18);
+        card.addView(actions, actionRowParams);
+
+        TextView cancel = buildDialogAction("CANCEL", false);
+        TextView confirm = buildDialogAction(confirmLabel, true);
+
+        LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        LinearLayout.LayoutParams confirmParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        confirmParams.leftMargin = dp(10);
+        actions.addView(cancel, cancelParams);
+        actions.addView(confirm, confirmParams);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(card)
+                .create();
+
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        confirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (action != null) action.run();
+        });
+
+        dialog.setOnShowListener(ignored -> {
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                int width = Math.min(
+                        getResources().getDisplayMetrics().widthPixels - dp(32),
+                        dp(460));
+                dialog.getWindow().setLayout(
+                        width,
+                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            }
+
+            boolean animate = preferences == null
+                    || preferences.getBoolean(PREF_APP_ANIMATIONS, true);
+            if (animate) {
+                card.setAlpha(0f);
+                card.setScaleX(0.96f);
+                card.setScaleY(0.96f);
+                card.animate()
+                        .alpha(1f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(180L)
+                        .start();
+            }
+        });
+
+        dialog.show();
+    }
+
+    private TextView buildDialogAction(String label, boolean danger) {
+        TextView action = new TextView(this);
+        action.setText(label);
+        action.setGravity(Gravity.CENTER);
+        action.setPadding(dp(12), dp(11), dp(12), dp(11));
+        action.setTextSize(11f);
+        action.setTypeface(Typeface.DEFAULT_BOLD);
+        action.setTextColor(danger
+                ? getColor(R.color.dmz_white)
+                : getColor(R.color.dmz_muted));
+        action.setBackgroundResource(danger
+                ? R.drawable.settings_danger_button_background
+                : R.drawable.settings_action_background);
+        action.setClickable(true);
+        action.setFocusable(true);
+        return action;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void updateDiagnosticsSummary() {
