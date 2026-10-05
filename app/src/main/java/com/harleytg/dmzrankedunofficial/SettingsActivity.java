@@ -101,7 +101,7 @@ public class SettingsActivity extends Activity {
     private static final String PREF_CONTENT_SIZE = "content_size";
     private static final String PREF_APP_ANIMATIONS = "app_animations";
 
-    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
+    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v3_heads_up";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
     private static final int PLAY_UPDATE_REQUEST = 2005;
     private static final long LIVE_PLAY_UPDATE_POLL_MS = 30_000L;
@@ -1125,10 +1125,11 @@ public class SettingsActivity extends Activity {
         if (manager == null) return;
         NotificationChannel channel = new NotificationChannel(
                 SITE_NOTIFICATION_CHANNEL,
-                "DMZ Ranked live alerts",
+                "DMZ Ranked pop-up alerts",
                 NotificationManager.IMPORTANCE_HIGH);
-        channel.setDescription("Heads-up raid, review, website, season, update, and test alerts.");
+        channel.setDescription("Heads-up reports, reviews, approvals, system, update, website, season, and test alerts.");
         channel.enableVibration(true);
+        channel.setVibrationPattern(new long[]{0L, 180L, 90L, 220L});
         channel.enableLights(true);
         channel.setShowBadge(true);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
@@ -1163,12 +1164,13 @@ public class SettingsActivity extends Activity {
                 : new Notification.Builder(this);
 
         builder.setSmallIcon(R.drawable.ic_notification_dmz)
-                .setContentTitle("DMZ Ranked test notification")
-                .setContentText("Heads-up notifications are working on this device.")
+                .setContentTitle("DMZ Ranked")
+                .setContentText("[System] Test notification • Heads-up notifications are working.")
                 .setStyle(new Notification.BigTextStyle()
-                        .bigText("Heads-up notifications are working on this device. This is a local app test."))
+                        .bigText("[System] Test notification\nHeads-up notifications are working on this device. This is a local app test."))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
+                .setOnlyAlertOnce(false)
                 .setColor(getColor(R.color.dmz_gold))
                 .setCategory(Notification.CATEGORY_EVENT)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -1302,6 +1304,11 @@ public class SettingsActivity extends Activity {
                 startFlexiblePlayUpdate(info);
             } else if (availableBuild != lastAnnouncedUpdateBuild) {
                 lastAnnouncedUpdateBuild = availableBuild;
+                NotificationSync.postNotification(
+                        this,
+                        "[System] Update available",
+                        "Google Play has DMZ Ranked build " + availableBuild + " ready to install.",
+                        "play-update:" + availableBuild);
                 Toast.makeText(this,
                         "Google Play update available • Build " + availableBuild + ".",
                         Toast.LENGTH_LONG).show();
