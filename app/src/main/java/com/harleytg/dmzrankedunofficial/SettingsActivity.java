@@ -857,16 +857,37 @@ public class SettingsActivity extends Activity {
             int importedOperators = OperatorBackupStore.importJson(
                     this, payload.optString("operatorBackups", "{}"));
 
+            String importedSelectedOperator = preferences.getString(PREF_SELECTED_OPERATOR, "");
+            importedSelectedOperator = importedSelectedOperator == null
+                    ? ""
+                    : importedSelectedOperator.trim();
+
             Toast.makeText(
                     this,
                     "Imported " + importedSettings + " app setting"
                             + (importedSettings == 1 ? "" : "s")
                             + " and " + importedOperators + " operator backup"
                             + (importedOperators == 1 ? "" : "s")
-                            + " from " + peerAppLabel() + ".",
+                            + " from " + peerAppLabel()
+                            + (importedSelectedOperator.isEmpty()
+                                    ? "."
+                                    : ". Switching to " + importedSelectedOperator + "…"),
                     Toast.LENGTH_LONG).show();
 
             updateOperatorBackupStatus();
+            updateWidgetSummary();
+
+            if (!importedSelectedOperator.isEmpty()) {
+                // Return the imported active operator to MainActivity immediately so it can
+                // reset the WebView's old operator guard and perform a clean reload.
+                Intent result = new Intent()
+                        .putExtra(EXTRA_ACTION, ACTION_SELECT_OPERATOR)
+                        .putExtra(EXTRA_OPERATOR_NAME, importedSelectedOperator);
+                setResult(RESULT_OK, result);
+                finish();
+                return;
+            }
+
             recreate();
         } catch (SecurityException denied) {
             Log.w(TAG, "Peer app import was denied", denied);
