@@ -46,6 +46,8 @@
     <string name="co_creator">DMZ Ranked co-creator</string>
     <string name="paypal_support">Support DMZ Ranked creators via PayPal</string>
     <string name="paypal_support_summary">Opens the DMZ Ranked creators\' PayPal support link. Payments are not for Harley\'s Studios.</string>
+    <string name="kofi_support">Support Harley\'s Studios on Ko-fi</string>
+    <string name="kofi_support_summary">Support development and maintenance of the unofficial DMZ Ranked Android app.</string>
 
     <string name="webview_debugging">WebView debugging</string>
     <string name="webview_debugging_summary">Developer option. Allow WebView inspection over ADB while enabled.</string>
