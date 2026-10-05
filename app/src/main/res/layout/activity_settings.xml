@@ -183,7 +183,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:text="Website by Yolando &amp; dchinz • Android app by Harley's Studios"
+                    android:text="Website by Yolando &amp; dCHINZ • Android app by Harley's Studios"
                     android:textColor="@color/dmz_muted"
                     android:textSize="13sp" />
 
@@ -402,7 +402,7 @@
                             android:id="@+id/dchinzAvatar"
                             android:layout_width="48dp"
                             android:layout_height="48dp"
-                            android:contentDescription="dchinz avatar"
+                            android:contentDescription="dCHINZ avatar"
                             android:scaleType="centerCrop"
                             android:src="@drawable/dmz_ranked_logo" />
 
