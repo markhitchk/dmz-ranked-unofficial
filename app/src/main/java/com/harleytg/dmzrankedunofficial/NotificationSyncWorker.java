@@ -92,22 +92,8 @@ public class NotificationSyncWorker extends Worker {
                     prefs.getString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, "");
 
             if (!baselineReady || !operatorKey.equals(previousOperatorKey)) {
-                JSONArray previousRaidIds = previousRaids.names();
-            if (previousRaidIds != null) {
-                for (int i = 0; i < previousRaidIds.length(); i++) {
-                    String raidId = previousRaidIds.optString(i, "");
-                    if (raidId.isEmpty() || nextRaids.has(raidId)) continue;
-
-                    NotificationSync.postNotification(
-                            context,
-                            "[Raids] Raid removed",
-                            "Hey " + canonicalName
-                                    + " — one of your raids is no longer on the live board.",
-                            "raid-removed:" + raidId);
-                }
-            }
-
-            NotificationSync.saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+                NotificationSync.saveBaseline(
+                        prefs, operatorKey, nextPlayerReports, nextRaids);
                 return Result.success();
             }
 
@@ -187,6 +173,21 @@ public class NotificationSyncWorker extends Worker {
                                         + " — one of your raids was approved and verified",
                                 "raid-verified:" + raidId);
                     }
+                }
+            }
+
+            JSONArray previousRaidIds = previousRaids.names();
+            if (previousRaidIds != null) {
+                for (int i = 0; i < previousRaidIds.length(); i++) {
+                    String raidId = previousRaidIds.optString(i, "");
+                    if (raidId.isEmpty() || nextRaids.has(raidId)) continue;
+
+                    NotificationSync.postNotification(
+                            context,
+                            "[Raids] Raid removed",
+                            "Hey " + canonicalName
+                                    + " — one of your raids is no longer on the live board.",
+                            "raid-removed:" + raidId);
                 }
             }
 
