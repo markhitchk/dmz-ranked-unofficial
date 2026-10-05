@@ -61,7 +61,8 @@
     const welcome = document.getElementById("hs-unofficial-welcome");
     if (!welcome) return;
     const operator = getOperatorName();
-    welcome.textContent = operator ? `Welcome back, ${operator}!` : "Welcome, Guest!";
+    const next = operator ? `Welcome back, ${operator}!` : "Welcome, Guest!";
+    if (welcome.textContent !== next) welcome.textContent = next;
   }
 
   function ensurePage() {
