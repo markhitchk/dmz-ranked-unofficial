@@ -1,0 +1,116 @@
+:root {
+  --muted: #8b9498;
+  --txt: #f0f3f2;
+  --line: #31393d;
+  --gold-b: #f2c35a;
+  --gold-d: #9f6b13;
+  --glow: rgba(242, 195, 90, 0.28);
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.tabs button,
+.subtabs button {
+  border: 1px solid var(--line);
+  padding: 9px 17px;
+  cursor: pointer;
+  color: var(--muted);
+  background: linear-gradient(180deg, #1b2225, #11171a);
+  font-family: "Rajdhani", "Arial Narrow", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  clip-path: polygon(
+    7px 0,
+    100% 0,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    0 100%,
+    0 7px
+  );
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.tabs button:hover,
+.tabs button:focus-visible,
+.subtabs button:hover,
+.subtabs button:focus-visible {
+  color: var(--txt);
+  border-color: color-mix(in srgb, var(--gold-b) 40%, transparent);
+  outline: none;
+}
+
+.tabs button.active,
+.subtabs button.active {
+  color: #0a0e10;
+  background: linear-gradient(180deg, var(--gold-b), var(--gold-d));
+  border-color: var(--gold-d);
+  box-shadow: 0 0 16px var(--glow);
+}
+
+.tab-section,
+.subpanel {
+  display: none;
+}
+
+.tab-section.active,
+.subpanel.active {
+  display: block;
+}
+
+.subtabs {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.hs-app-tab {
+  border-color: rgba(85, 213, 130, 0.5) !important;
+}
+
+.hs-app-panel {
+  box-sizing: border-box;
+  width: min(920px, calc(100% - 20px));
+  margin: 18px auto;
+}
+
+.hs-app-card {
+  padding: 20px;
+  color: var(--txt);
+  background: linear-gradient(145deg, rgba(18, 24, 27, 0.98), rgba(9, 13, 15, 0.98));
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--gold-b);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32);
+}
+
+.hs-app-kicker {
+  margin-bottom: 6px;
+  color: var(--gold-b);
+  font-family: "Rajdhani", "Arial Narrow", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.hs-app-card h2 {
+  margin: 0 0 8px;
+}
+
+.hs-app-card p {
+  margin: 7px 0;
+}
+
+.hs-app-note {
+  color: var(--muted);
+  font-size: 12px;
+}
