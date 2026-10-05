@@ -424,6 +424,7 @@ public class MainActivity extends Activity {
                 super.onPageStarted(view, url, favicon);
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     loadingStatusPollToken++;
+                    headerStatusPollToken++;
                     operatorMonitorToken++;
                     siteNotificationMonitorToken++;
                     siteNotificationBaselineReady = false;
@@ -1204,7 +1205,7 @@ public class MainActivity extends Activity {
                 "</style></head><body><div class='card'><div class='eyebrow'>DMZ RANKED</div><div class='title'>RANKED <span>OFFLINE</span></div>" +
                 "<div class='live'><span class='dot'>●</span> CONNECTION LOST</div><div class='copy'>DMZ Ranked could not load. Check your connection, then reconnect to the leaderboard.</div>" +
                 "<a class='retry' href='" + HOME_URL + "'>RETRY DMZ RANKED</a></div></body></html>";
-        webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", HOME_URL);
+        webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
     }
 
     private void updateTitleBarIdentity() {
