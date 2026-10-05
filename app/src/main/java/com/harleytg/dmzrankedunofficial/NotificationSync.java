@@ -38,6 +38,8 @@ final class NotificationSync {
     static final String PREF_BASELINE_PLAYER_REPORTS = "notification_sync_player_reports";
     static final String PREF_BASELINE_RAIDS = "notification_sync_raids";
     static final String PREF_BASELINE_SEASON = "notification_sync_season";
+    static final String PREF_LAST_SYNC_MS = "notification_sync_last_ms";
+    static final String PREF_LAST_SYNC_RESULT = "notification_sync_last_result";
 
     static final String PREF_HANDLED_RAID_REPORT_MS = "notification_handled_raid_report_ms";
     static final String PREF_HANDLED_OPERATOR_REPORT_MS = "notification_handled_operator_report_ms";
