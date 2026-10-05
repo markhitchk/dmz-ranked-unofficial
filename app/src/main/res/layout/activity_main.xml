@@ -116,6 +116,50 @@
                     android:textColor="@color/dmz_muted"
                     android:textSize="13sp" />
             </LinearLayout>
+
+            <!-- Internal loading-state views retained for the existing loader logic.
+                 This container is never rendered; the visible loading screen above
+                 intentionally shows only logo, app name, and version details. -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone">
+
+                <ProgressBar
+                    android:id="@+id/loadingProgressBar"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+
+                <TextView
+                    android:id="@+id/loadingStageText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+
+                <TextView
+                    android:id="@+id/loadingVerboseText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+
+                <TextView
+                    android:id="@+id/loadingConnectionText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+
+                <TextView
+                    android:id="@+id/loadingSyncedText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+
+                <TextView
+                    android:id="@+id/loadingPlayersText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+
+                <TextView
+                    android:id="@+id/loadingLiveDot"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+            </LinearLayout>
         </FrameLayout>
     </FrameLayout>
 </LinearLayout>
