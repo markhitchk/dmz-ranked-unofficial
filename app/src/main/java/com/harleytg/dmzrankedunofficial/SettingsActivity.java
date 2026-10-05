@@ -43,7 +43,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
@@ -429,31 +428,16 @@ public class SettingsActivity extends Activity {
             return;
         }
 
-        EditText pinInput = new EditText(this);
-        pinInput.setSingleLine(true);
-        pinInput.setHint("Developer PIN");
-        pinInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        pinInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4)});
-        int horizontalPadding = Math.round(24 * getResources().getDisplayMetrics().density);
-        pinInput.setPadding(horizontalPadding, pinInput.getPaddingTop(),
-                horizontalPadding, pinInput.getPaddingBottom());
-        pinInput.setTextColor(getColor(R.color.dmz_white));
-        pinInput.setHintTextColor(getColor(R.color.dmz_muted));
-        pinInput.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.dmz_gold)));
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Developer access")
-                .setMessage("Enter the 4-digit developer PIN.")
-                .setView(pinInput)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Unlock", null)
-                .create();
-
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    String entered = pinInput.getText() == null
-                            ? ""
-                            : pinInput.getText().toString();
+        DmzDialog.input(
+                this,
+                "DEVELOPER ACCESS",
+                "Enter the 4-digit developer PIN.",
+                "Developer PIN",
+                InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD,
+                4,
+                "UNLOCK",
+                "CANCEL",
+                (entered, pinInput) -> {
                     if (verifyDeveloperPin(entered)) {
                         developerPinFailures = 0;
                         developerPinLockoutUntil = 0L;
@@ -463,8 +447,7 @@ public class SettingsActivity extends Activity {
                         EditText search = findViewById(R.id.settingsSearch);
                         if (search != null) applySearch(search.getText().toString());
                         Toast.makeText(this, "Developer tools unlocked.", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                        return;
+                        return true;
                     }
 
                     developerPinFailures++;
@@ -475,13 +458,14 @@ public class SettingsActivity extends Activity {
                         developerPinFailures = 0;
                         developerPinLockoutUntil =
                                 SystemClock.elapsedRealtime() + DEV_PIN_LOCKOUT_MS;
-                        dialog.dismiss();
                         Toast.makeText(this,
                                 "Too many incorrect PIN attempts. Developer access locked for 30 seconds.",
                                 Toast.LENGTH_LONG).show();
+                        return true;
                     }
-                }));
-        dialog.show();
+                    return false;
+                },
+                null);
     }
 
     private boolean verifyDeveloperPin(String pin) {
@@ -743,14 +727,16 @@ public class SettingsActivity extends Activity {
             return;
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Import from " + peerAppLabel() + "?")
-                .setMessage("This copies supported Android app settings and up to 2 app-managed operator backups. "
+        DmzDialog.confirm(
+                this,
+                "IMPORT FROM " + peerAppLabel().toUpperCase(Locale.US) + "?",
+                "This copies supported Android app settings and up to 2 app-managed operator backups. "
                         + "Website cookies, sign-in sessions, passwords, and PINs are not copied. "
-                        + "Matching settings in this app will be replaced.")
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Import", (dialog, which) -> importFromPeerApp())
-                .show();
+                        + "Matching settings in this app will be replaced.",
+                "IMPORT",
+                "CANCEL",
+                false,
+                this::importFromPeerApp);
     }
 
     private void importFromPeerApp() {
@@ -850,13 +836,16 @@ public class SettingsActivity extends Activity {
             }
         }
 
-        final int currentChecked = checked;
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Choose operator")
-                .setSingleChoiceItems(names, currentChecked, (picker, which) -> {
+        DmzDialog.singleChoice(
+                this,
+                "CHOOSE OPERATOR",
+                "Select the operator profile this app should use on DMZ Ranked.",
+                names,
+                checked,
+                "CANCEL",
+                (which, selected) -> {
                     if (which < 0 || which >= names.length) return;
 
-                    String selected = names[which];
                     JSONObject backup = OperatorBackupStore.get(this, selected);
                     boolean protectedFlag = OperatorBackupStore.isProtected(backup);
 
@@ -876,12 +865,8 @@ public class SettingsActivity extends Activity {
                     Toast.makeText(this,
                             "Selected " + selected + ". Applying it to DMZ Ranked…",
                             Toast.LENGTH_SHORT).show();
-                    picker.dismiss();
                     finish();
-                })
-                .setNegativeButton("Cancel", null)
-                .create();
-        dialog.show();
+                });
     }
 
     private void updateOperatorBackupStatus() {
@@ -1283,11 +1268,14 @@ public class SettingsActivity extends Activity {
         if (appUpdateManager == null || updateReadyDialogShown || isFinishing()) return;
         updateReadyDialogShown = true;
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Update ready")
-                .setMessage("Google Play finished downloading the DMZ Ranked update. Install it now and restart the app?")
-                .setNegativeButton("Later", null)
-                .setPositiveButton("Install & restart", (d, which) -> {
+        AlertDialog dialog = DmzDialog.confirm(
+                this,
+                "UPDATE READY",
+                "Google Play finished downloading the DMZ Ranked update. Install it now and restart the app?",
+                "INSTALL & RESTART",
+                "LATER",
+                false,
+                () -> {
                     TextView status = findViewById(R.id.updateVersionText);
                     if (status != null) status.setText("Installing Google Play update…");
                     appUpdateManager.completeUpdate()
@@ -1300,11 +1288,9 @@ public class SettingsActivity extends Activity {
                                     status.setText("Install failed • Tap CHECK to retry.");
                                 }
                             });
-                })
-                .create();
+                });
 
         dialog.setOnDismissListener(ignored -> updateReadyDialogShown = false);
-        dialog.show();
     }
 
     private String installedVersionLabel() {
@@ -1415,132 +1401,17 @@ public class SettingsActivity extends Activity {
             String message,
             String confirmLabel,
             Runnable action) {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(22), dp(20), dp(22), dp(18));
-        card.setBackgroundResource(R.drawable.danger_dialog_background);
-
-        TextView eyebrow = new TextView(this);
-        eyebrow.setText("DANGER ZONE");
-        eyebrow.setTextColor(getColor(R.color.dmz_red));
-        eyebrow.setTextSize(11f);
-        eyebrow.setTypeface(Typeface.DEFAULT_BOLD);
-        eyebrow.setLetterSpacing(0.16f);
-        card.addView(eyebrow, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        TextView heading = new TextView(this);
-        heading.setText(title);
-        heading.setTextColor(getColor(R.color.dmz_white));
-        heading.setTextSize(22f);
-        heading.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        headingParams.topMargin = dp(7);
-        card.addView(heading, headingParams);
-
-        TextView body = new TextView(this);
-        body.setText(message);
-        body.setTextColor(getColor(R.color.dmz_muted));
-        body.setTextSize(13.5f);
-        body.setLineSpacing(0f, 1.12f);
-        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        bodyParams.topMargin = dp(10);
-        card.addView(body, bodyParams);
-
-        TextView warning = new TextView(this);
-        warning.setText("This action cannot be automatically undone.");
-        warning.setTextColor(getColor(R.color.dmz_red));
-        warning.setTextSize(11.5f);
-        warning.setTypeface(Typeface.DEFAULT_BOLD);
-        LinearLayout.LayoutParams warningParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        warningParams.topMargin = dp(12);
-        card.addView(warning, warningParams);
-
-        LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        actions.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams actionRowParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        actionRowParams.topMargin = dp(18);
-        card.addView(actions, actionRowParams);
-
-        TextView cancel = buildDialogAction("CANCEL", false);
-        TextView confirm = buildDialogAction(confirmLabel, true);
-
-        LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        LinearLayout.LayoutParams confirmParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        confirmParams.leftMargin = dp(10);
-        actions.addView(cancel, cancelParams);
-        actions.addView(confirm, confirmParams);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(card)
-                .create();
-
-        cancel.setOnClickListener(v -> dialog.dismiss());
-        confirm.setOnClickListener(v -> {
-            dialog.dismiss();
-            if (action != null) action.run();
-        });
-
-        dialog.setOnShowListener(ignored -> {
-            if (dialog.getWindow() != null) {
-                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-                int width = Math.min(
-                        getResources().getDisplayMetrics().widthPixels - dp(32),
-                        dp(460));
-                dialog.getWindow().setLayout(
-                        width,
-                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-            }
-
-            boolean animate = preferences == null
-                    || preferences.getBoolean(PREF_APP_ANIMATIONS, true);
-            if (animate) {
-                card.setAlpha(0f);
-                card.setScaleX(0.96f);
-                card.setScaleY(0.96f);
-                card.animate()
-                        .alpha(1f)
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(180L)
-                        .start();
-            }
-        });
-
-        dialog.show();
+        DmzDialog.confirm(
+                this,
+                title,
+                message,
+                confirmLabel,
+                "CANCEL",
+                true,
+                action);
     }
 
-    private TextView buildDialogAction(String label, boolean danger) {
-        TextView action = new TextView(this);
-        action.setText(label);
-        action.setGravity(Gravity.CENTER);
-        action.setPadding(dp(12), dp(11), dp(12), dp(11));
-        action.setTextSize(11f);
-        action.setTypeface(Typeface.DEFAULT_BOLD);
-        action.setTextColor(danger
-                ? getColor(R.color.dmz_white)
-                : getColor(R.color.dmz_muted));
-        action.setBackgroundResource(danger
-                ? R.drawable.settings_danger_button_background
-                : R.drawable.settings_action_background);
-        action.setClickable(true);
-        action.setFocusable(true);
-        return action;
-    }
-
-    private int dp(int value) {
+    private int dp(int value)    private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
