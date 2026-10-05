@@ -252,6 +252,8 @@ public class SettingsActivity extends Activity {
                 ensureNotificationChannel();
                 requestNotificationPermissionIfNeeded(false);
             }
+            NotificationSync.configure(this);
+            if (checked) NotificationSync.primeBaseline(this);
             updateNotificationStatus();
         });
         operatorAutoSave.setOnCheckedChangeListener((buttonView, checked) ->
@@ -367,11 +369,21 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        NotificationSync.setAppForeground(this, true);
+        NotificationSync.configure(this);
+        NotificationSync.primeBaseline(this);
         updateNotificationStatus();
         updateOperatorBackupStatus();
         updatePeerImportUi();
         startLivePlayUpdateMonitoring();
         if (developerUnlocked) updateDiagnosticsSummary();
+    }
+
+    @Override
+    protected void onPause() {
+        NotificationSync.setAppForeground(this, false);
+        NotificationSync.scheduleBackgroundKick(this);
+        super.onPause();
     }
 
     @Override
@@ -1087,7 +1099,7 @@ public class SettingsActivity extends Activity {
             status.setText("Enabled • pop-up alerts disabled by Android");
             status.setTextColor(getColor(R.color.dmz_gold));
         } else {
-            status.setText("Enabled • heads-up pop-up alerts on");
+            status.setText("Enabled • live + background sync on");
             status.setTextColor(getColor(R.color.dmz_green));
         }
     }
