@@ -74,6 +74,8 @@ public class SettingsActivity extends Activity {
     private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
     private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
+    private static final String DMZ_TICKER_BUILDER_URL = "https://dmz-ticker.netlify.app";
+    private static final String DMZ_THEMED_OBS_BUILDER_URL = "https://dmz-themed-obs.netlify.app";
     private static final String PLAY_STORE_HTTPS_PREFIX = "https://play.google.com/store/apps/details?id=";
     private static final String PLAY_STORE_MARKET_PREFIX = "market://details?id=";
     private static final String PRODUCTION_PACKAGE = "com.harleytg.dmzranked";
@@ -318,6 +320,8 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.mainDiscordCard).setOnClickListener(v -> openExternal(MAIN_DISCORD_URL));
         findViewById(R.id.betaGroupCard).setOnClickListener(v -> openExternal(BETA_GROUP_URL));
         findViewById(R.id.betaDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
+        findViewById(R.id.dmzTickerBuilderCard).setOnClickListener(v -> openExternal(DMZ_TICKER_BUILDER_URL));
+        findViewById(R.id.dmzThemedObsBuilderCard).setOnClickListener(v -> openExternal(DMZ_THEMED_OBS_BUILDER_URL));
 
         EditText settingsSearch = findViewById(R.id.settingsSearch);
         settingsSearch.addTextChangedListener(new TextWatcher() {
@@ -646,15 +650,26 @@ public class SettingsActivity extends Activity {
 
         boolean betaProgramMatch = false;
         if (getPackageName().endsWith(".beta")) {
-            betaProgramMatch = showIfMatches(
-                    R.id.betaDiscordCard,
-                    q,
-                    "beta harley harleys studios discord testing early build bug report support");
+            betaProgramMatch =
+                    showIfMatches(
+                            R.id.betaDiscordCard,
+                            q,
+                            "beta harley harleys studios discord testing early build bug report support")
+                    | showIfMatches(
+                            R.id.dmzTickerBuilderCard,
+                            q,
+                            "beta widget extended links ticker builder dmz ticker netlify overlay obs")
+                    | showIfMatches(
+                            R.id.dmzThemedObsBuilderCard,
+                            q,
+                            "beta widget extended links themed obs builder dmz overlay netlify streaming");
             findViewById(R.id.betaProgramSection)
                     .setVisibility(betaProgramMatch ? View.VISIBLE : View.GONE);
         } else {
             findViewById(R.id.betaProgramSection).setVisibility(View.GONE);
             findViewById(R.id.betaDiscordCard).setVisibility(View.GONE);
+            findViewById(R.id.dmzTickerBuilderCard).setVisibility(View.GONE);
+            findViewById(R.id.dmzThemedObsBuilderCard).setVisibility(View.GONE);
         }
 
         boolean helpMatch =
