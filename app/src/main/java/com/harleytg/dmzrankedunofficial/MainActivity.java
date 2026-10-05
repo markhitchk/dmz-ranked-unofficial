@@ -254,6 +254,7 @@ public class MainActivity extends Activity {
 
             applyBrandLogo(findViewById(R.id.titleLogo));
             applyBrandLogo(findViewById(R.id.loadingLogo));
+            updateLoadingIdentity();
 
             TextView titleText = findViewById(R.id.titleText);
             if (titleText != null && getPackageName().endsWith(".beta")) {
@@ -485,7 +486,11 @@ public class MainActivity extends Activity {
             public void onProgressChanged(WebView view, int progress) {
                 if (topProgressBar != null) {
                     topProgressBar.setProgress(progress);
-                    topProgressBar.setVisibility(progress >= 100 ? View.GONE : View.VISIBLE);
+                    boolean loadingVisible = loadingOverlay != null
+                            && loadingOverlay.getVisibility() == View.VISIBLE;
+                    topProgressBar.setVisibility(!loadingVisible && progress < 100
+                            ? View.VISIBLE
+                            : View.GONE);
                 }
                 if (loadingProgressBar != null) {
                     loadingProgressBar.setProgress(progress);
@@ -1156,6 +1161,7 @@ public class MainActivity extends Activity {
                 if (!animate) {
                     loadingOverlay.setAlpha(1f);
                     loadingOverlay.setVisibility(View.GONE);
+                    setMainChromeVisible(true);
                     return;
                 }
                 loadingOverlay.animate()
@@ -1166,6 +1172,7 @@ public class MainActivity extends Activity {
                                 loadingOverlay.setVisibility(View.GONE);
                                 loadingOverlay.setAlpha(1f);
                             }
+                            setMainChromeVisible(true);
                         })
                         .start();
             }, delayMs);
@@ -1187,7 +1194,49 @@ public class MainActivity extends Activity {
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", HOME_URL);
     }
 
+    private void updateLoadingIdentity() {
+        TextView appName = findViewById(R.id.loadingAppName);
+        TextView versionText = findViewById(R.id.loadingVersionText);
+
+        boolean beta = getPackageName().endsWith(".beta");
+        if (appName != null) {
+            appName.setText(beta ? "DMZ Ranked [Beta]" : "DMZ Ranked");
+        }
+
+        String versionName = "Unknown";
+        long versionCode = -1L;
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (packageInfo != null) {
+                if (packageInfo.versionName != null && !packageInfo.versionName.trim().isEmpty()) {
+                    versionName = packageInfo.versionName;
+                }
+                versionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                        ? packageInfo.getLongVersionCode()
+                        : packageInfo.versionCode;
+            }
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read app version for loading screen", error);
+        }
+
+        if (versionText != null) {
+            versionText.setText("Version " + versionName
+                    + (versionCode >= 0 ? " • Build " + versionCode : ""));
+        }
+    }
+
+    private void setMainChromeVisible(boolean visible) {
+        View titleBar = findViewById(R.id.titleBar);
+        if (titleBar != null) {
+            titleBar.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+        if (!visible && topProgressBar != null) {
+            topProgressBar.setVisibility(View.GONE);
+        }
+    }
+
     private void showLoadingScreen(String status, int progress) {
+        setMainChromeVisible(false);
         if (loadingProgressBar != null) loadingProgressBar.setProgress(progress);
         if (loadingOverlay != null) {
             loadingOverlay.animate().cancel();
