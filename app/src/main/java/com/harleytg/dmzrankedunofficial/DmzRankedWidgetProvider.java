@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -234,15 +235,39 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
                 standing = new Standing(raid.playerId, raid.playerName.isEmpty() ? "?" : raid.playerName);
                 byId.put(raid.playerId, standing);
             }
-            int fee = feeFor(standing.sr);
-            int net = gross(raid, season2Scoring) - fee;
-            standing.sr = Math.max(0, standing.sr + net);
-            standing.peak = Math.max(standing.peak, standing.sr);
-            standing.last = net;
+
+            int before = standing.sr;
+            int fee = feeFor(before);
+            int earned = gross(raid, season2Scoring);
+
+            // Match the website exactly: carryover rows affect SR, but they do not
+            // count toward achievement stats and do not replace the displayed last raid.
+            if (!raid.hasCarryover) {
+                standing.raids++;
+                standing.operatorKills += raid.operatorKills;
+                standing.squadKills += raid.squadKills;
+                if (!"none".equals(raid.contract)) standing.contracts++;
+                if (raid.extracted) standing.exfils++;
+                if (raid.finalExfil) standing.finalExfils++;
+                if (raid.weaponCase && raid.extracted) standing.weaponCases++;
+                if (season2Scoring) standing.bossKills += Math.min(raid.bossKills, 2);
+
+                earned += achievementBonus(standing, season2Scoring);
+            }
+
+            int after = Math.max(0, before - fee + earned);
+            standing.sr = after;
+            standing.peak = Math.max(standing.peak, after);
+            if (!raid.hasCarryover) {
+                standing.last = after - before;
+            }
         }
 
         List<Standing> standings = new ArrayList<>(byId.values());
-        Collections.sort(standings, (a, b) -> Integer.compare(b.sr, a.sr));
+        Collections.sort(standings, (a, b) -> {
+            int srOrder = Integer.compare(b.sr, a.sr);
+            return srOrder != 0 ? srOrder : a.name.compareToIgnoreCase(b.name);
+        });
 
         String wanted = operatorName.trim().toLowerCase(Locale.US);
         Standing mine = null;
@@ -272,6 +297,46 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         stats.updatedAt = System.currentTimeMillis();
         stats.fromCache = false;
         return stats;
+    }
+
+    private static int achievementBonus(Standing s, boolean season2Scoring) {
+        int bonus = 0;
+        bonus += awardAchievement(s, "opk", s.operatorKills, new double[] {40, 90, 150, 250});
+        bonus += awardAchievement(s, "exf", s.exfils, new double[] {8, 18, 32, 50});
+        bonus += awardAchievement(s, "sqk", s.squadKills, new double[] {20, 45, 90, 150});
+        bonus += awardAchievement(s, "wc", s.weaponCases, new double[] {4, 9, 18, 30});
+        bonus += awardAchievement(s, "fin", s.finalExfils, new double[] {3, 7, 14, 25});
+        bonus += awardAchievement(s, "con", s.contracts, new double[] {12, 28, 55, 100});
+        bonus += awardAchievement(s, "raids", s.raids, new double[] {10, 22, 40, 65});
+
+        if (season2Scoring) {
+            bonus += awardAchievement(s, "boss", s.bossKills, new double[] {4, 9, 18, 30});
+        }
+
+        if (s.raids >= 10) {
+            double killsPerRaid = s.raids == 0 ? 0.0 : s.operatorKills / (double) s.raids;
+            double exfilRate = s.raids == 0 ? 0.0 : (s.exfils / (double) s.raids) * 100.0;
+            bonus += awardAchievement(s, "kpr", killsPerRaid, new double[] {0.5, 1.5, 4, 6});
+            bonus += awardAchievement(s, "exfr", exfilRate, new double[] {45, 65, 82, 95});
+        }
+        return bonus;
+    }
+
+    private static int awardAchievement(Standing s, String key, double value, double[] thresholds) {
+        int achieved = 0;
+        for (double threshold : thresholds) {
+            if (value >= threshold) achieved++;
+        }
+
+        int previous = s.achievementLevels.containsKey(key)
+                ? s.achievementLevels.get(key)
+                : 0;
+        if (achieved <= previous || previous >= 4) return 0;
+
+        // The site advances at most one star per raid even if one raid crosses
+        // multiple thresholds at once.
+        s.achievementLevels.put(key, previous + 1);
+        return new int[] {25, 50, 100, 200}[previous];
     }
 
     private static int gross(Raid r, boolean season2Scoring) {
@@ -539,9 +604,18 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
     private static final class Standing {
         final String id;
         final String name;
+        final Map<String, Integer> achievementLevels = new HashMap<>();
         int sr;
         int peak;
         int last;
+        int raids;
+        int operatorKills;
+        int squadKills;
+        int exfils;
+        int weaponCases;
+        int finalExfils;
+        int contracts;
+        int bossKills;
 
         Standing(String id, String name) {
             this.id = id;
