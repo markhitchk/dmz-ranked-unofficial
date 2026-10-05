@@ -919,6 +919,393 @@
                         android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetSizeCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-condensed"
+                        android:text="Widget size mode"
+                        android:textColor="@color/dmz_white"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widgetSizeSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Auto follows the launcher size. You can force Compact, Standard, or Large."
+                        android:textColor="@color/dmz_muted"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/widgetSizeAutoButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/settings_action_background"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp"
+                            android:text="AUTO"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <Space android:layout_width="6dp" android:layout_height="1dp" />
+
+                        <TextView
+                            android:id="@+id/widgetSizeCompactButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/settings_action_background"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp"
+                            android:text="COMPACT"
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <Space android:layout_width="6dp" android:layout_height="1dp" />
+
+                        <TextView
+                            android:id="@+id/widgetSizeStandardButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/settings_action_background"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp"
+                            android:text="STANDARD"
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <Space android:layout_width="6dp" android:layout_height="1dp" />
+
+                        <TextView
+                            android:id="@+id/widgetSizeLargeButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/settings_action_background"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="10dp"
+                            android:text="LARGE"
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetBadgeCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Rank badge"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Show the OBS-style Bronze through Iridescent / Top 3 emblem."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/widgetBadgeSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:showText="false"
+                        android:thumbTint="@color/dmz_switch_thumb"
+                        android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetStatusCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="LIVE / CACHED status"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Show the widget status tag in the header."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/widgetStatusSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:showText="false"
+                        android:thumbTint="@color/dmz_switch_thumb"
+                        android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetProgressCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Rank progress bar"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Show progress through the current rank division."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/widgetProgressSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:showText="false"
+                        android:thumbTint="@color/dmz_switch_thumb"
+                        android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetSeasonCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Season label"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Show the current season or DMZ Ranked source label."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/widgetSeasonSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:showText="false"
+                        android:thumbTint="@color/dmz_switch_thumb"
+                        android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetBrandingCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Harley's Studios branding"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Show “Made by Harley's Studios” on the widget."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/widgetBrandingSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:showText="false"
+                        android:thumbTint="@color/dmz_switch_thumb"
+                        android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widgetRefreshCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Refresh button"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Show the manual refresh control on the widget."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/widgetRefreshSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:showText="false"
+                        android:thumbTint="@color/dmz_switch_thumb"
+                        android:trackTint="@color/dmz_switch_track" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
