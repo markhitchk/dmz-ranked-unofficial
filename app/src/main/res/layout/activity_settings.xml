@@ -63,7 +63,7 @@
                 android:fontFamily="sans-serif-condensed"
                 android:letterSpacing="0.01"
                 android:maxLines="1"
-                android:text="DMZ Ranked • Made by Harley's Studios"
+                android:text="Version • Build"
                 android:textColor="@color/dmz_muted"
                 android:textSize="10.5sp" />
         </LinearLayout>
