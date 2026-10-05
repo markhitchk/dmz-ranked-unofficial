@@ -33,7 +33,10 @@ public class NotificationSyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        Context context = getApplicationContext();
+        return syncNow(getApplicationContext(), true);
+    }
+
+    static Result syncNow(Context context, boolean skipWhileAppForeground) {
         SharedPreferences prefs =
                 context.getSharedPreferences(NotificationSync.PREFS, Context.MODE_PRIVATE);
 
@@ -96,9 +99,11 @@ public class NotificationSyncWorker extends Worker {
             boolean appForeground =
                     prefs.getBoolean(NotificationSync.PREF_APP_FOREGROUND, false);
 
-            // The active WebView owns the baseline while visible so the worker
-            // cannot silently consume a report/review change before the UI sees it.
-            if (appForeground) {
+            // WorkManager stays out of the way while the UI is visible, but the
+            // dedicated live-alert foreground service intentionally calls this
+            // method with skipWhileAppForeground=false so it remains the single
+            // authoritative report/review detector both on- and off-app.
+            if (skipWhileAppForeground && appForeground) {
                 markSync(prefs, "OK • app active");
                 return Result.success();
             }
