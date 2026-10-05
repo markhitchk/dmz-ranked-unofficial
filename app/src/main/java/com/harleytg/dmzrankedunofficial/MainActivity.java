@@ -27,6 +27,8 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.JsPromptResult;
+import android.webkit.JsResult;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -39,7 +41,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -502,6 +503,76 @@ public class MainActivity extends Activity {
                     Toast.makeText(MainActivity.this, "No file picker is available.", Toast.LENGTH_SHORT).show();
                     return false;
                 }
+            }
+
+            @Override
+            public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+                DmzDialog.alert(
+                        MainActivity.this,
+                        "WEBSITE ALERT",
+                        message,
+                        "OK",
+                        result::confirm,
+                        result::cancel);
+                return true;
+            }
+
+            @Override
+            public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+                DmzDialog.confirm(
+                        MainActivity.this,
+                        "DMZ RANKED",
+                        "WEBSITE CONFIRMATION",
+                        message,
+                        "CONFIRM",
+                        "CANCEL",
+                        false,
+                        result::confirm,
+                        result::cancel);
+                return true;
+            }
+
+            @Override
+            public boolean onJsPrompt(
+                    WebView view,
+                    String url,
+                    String message,
+                    String defaultValue,
+                    JsPromptResult result) {
+                DmzDialog.input(
+                        MainActivity.this,
+                        "WEBSITE INPUT",
+                        message,
+                        "Enter value",
+                        android.text.InputType.TYPE_CLASS_TEXT,
+                        256,
+                        "SUBMIT",
+                        "CANCEL",
+                        (value, input) -> {
+                            result.confirm(value);
+                            return true;
+                        },
+                        result::cancel);
+                return true;
+            }
+
+            @Override
+            public boolean onJsBeforeUnload(
+                    WebView view,
+                    String url,
+                    String message,
+                    JsResult result) {
+                DmzDialog.confirm(
+                        MainActivity.this,
+                        "DMZ RANKED",
+                        "LEAVE THIS PAGE?",
+                        message,
+                        "LEAVE",
+                        "STAY",
+                        false,
+                        result::confirm,
+                        result::cancel);
+                return true;
             }
 
             @Override
@@ -1246,10 +1317,9 @@ public class MainActivity extends Activity {
 
         String build = versionCode >= 0 ? String.valueOf(versionCode) : "Unknown";
         titleMetaMessages = new String[]{
-                "Made by Harley's Studios",
-                "Version " + versionName + " • Build " + build,
-                "Harley's Studios • Build " + build,
-                "Harley's Studios • v" + versionName
+                "Version " + versionName,
+                "Build " + build,
+                "Made by Harley's Studios"
         };
 
         lastTitleMetaIndex = -1;
