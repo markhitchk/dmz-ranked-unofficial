@@ -48,7 +48,7 @@ final class NotificationSync {
     static final String PREF_HANDLED_VERIFIED_MS = "notification_handled_verified_ms";
     static final String PREF_HANDLED_SEASON_MS = "notification_handled_season_ms";
 
-    static final String CHANNEL_ID = "dmz_site_alerts_v2";
+    static final String CHANNEL_ID = "dmz_site_alerts_v3_heads_up";
     private static final String PERIODIC_WORK = "dmz-ranked-background-notification-sync";
     private static final String PRIME_WORK = "dmz-ranked-notification-prime";
     private static final String BACKGROUND_KICK_WORK = "dmz-ranked-notification-background-kick";
@@ -218,10 +218,21 @@ final class NotificationSync {
                 ? new Notification.Builder(app, CHANNEL_ID)
                 : new Notification.Builder(app);
 
+        String alertLine = title == null || title.trim().isEmpty()
+                ? "[System] Alert"
+                : title.trim();
+        String alertBody = body == null ? "" : body.trim();
+        String preview = alertBody.isEmpty()
+                ? alertLine
+                : alertLine + " • " + alertBody;
+        String expanded = alertBody.isEmpty()
+                ? alertLine
+                : alertLine + "\n" + alertBody;
+
         builder.setSmallIcon(R.drawable.ic_notification_dmz)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new Notification.BigTextStyle().bigText(body))
+                .setContentTitle("DMZ Ranked")
+                .setContentText(preview)
+                .setStyle(new Notification.BigTextStyle().bigText(expanded))
                 .setContentIntent(contentIntent)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(false)
@@ -246,10 +257,12 @@ final class NotificationSync {
         }
 
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, "DMZ Ranked alerts", NotificationManager.IMPORTANCE_HIGH);
-        channel.setDescription("Raid reports, review status, season updates, and website alerts from DMZ Ranked.");
+                CHANNEL_ID, "DMZ Ranked pop-up alerts", NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription("Heads-up reports, reviews, approvals, system, update, website, season, and test alerts.");
         channel.enableVibration(true);
+        channel.setVibrationPattern(new long[]{0L, 180L, 90L, 220L});
         channel.enableLights(true);
+        channel.setShowBadge(true);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         manager.createNotificationChannel(channel);
     }
