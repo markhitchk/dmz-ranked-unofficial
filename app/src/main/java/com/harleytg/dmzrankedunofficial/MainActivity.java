@@ -42,6 +42,9 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -92,7 +95,7 @@ public class MainActivity extends Activity {
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
-            "var labels=['LEADERBOARD','HOW TO PLAY','LOG A RAID','COMMUNITY','CHAMPIONSHIP','HISTORY','RULES','UPDATES','OVERLAYS','CONTACT'];" +
+            "var labels=['LEADERBOARD','HOW TO PLAY','LOG A RAID','COMMUNITY','CHAMPIONSHIP','HISTORY','RULES','UPDATES','OVERLAYS','CONTACT','APP'];" +
             "function norm(v){return String(v||'').replace(/\\s+/g,' ').trim().toUpperCase();}" +
             "function known(v){return labels.indexOf(norm(v))>=0?norm(v):null;}" +
             "function labelFrom(el){var n=el;for(var i=0;i<7&&n;i++,n=n.parentElement){var a=null;try{a=known(n.getAttribute&&(n.getAttribute('aria-label')||n.getAttribute('data-tab')||n.getAttribute('data-section')||n.getAttribute('data-page')||n.getAttribute('title')));}catch(e){}if(a){return a;}var t=null;try{t=known(n.innerText||n.textContent);}catch(e){}if(t){return t;}}return null;}" +
@@ -521,6 +524,7 @@ public class MainActivity extends Activity {
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
+                        installBetaCustomTabs(view);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
@@ -1862,6 +1866,43 @@ public class MainActivity extends Activity {
         if (reload && webView.getUrl() != null) {
             showLoadingScreen("Applying desktop website mode…", 0);
             webView.reload();
+        }
+    }
+
+    private String readAssetText(String assetPath) throws Exception {
+        try (InputStream input = getAssets().open(assetPath);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                output.write(buffer, 0, count);
+            }
+            return output.toString(StandardCharsets.UTF_8.name());
+        }
+    }
+
+    private void installBetaCustomTabs(WebView view) {
+        if (view == null || !getPackageName().endsWith(".beta")) {
+            return;
+        }
+
+        try {
+            String css = readAssetText("dmz_tabs/style.css");
+            String javascript = readAssetText("dmz_tabs/app.js");
+            String script = "(function(){try{"
+                    + "var sid='hs-beta-tabs-style';"
+                    + "if(!document.getElementById(sid)){"
+                    + "var st=document.createElement('style');st.id=sid;"
+                    + "st.textContent=" + JSONObject.quote(css) + ";"
+                    + "(document.head||document.documentElement).appendChild(st);"
+                    + "}"
+                    + "window.__dmzHsBetaTabAssets=true;"
+                    + javascript
+                    + "return 'beta-tabs-installed';"
+                    + "}catch(e){return 'beta-tabs-error:'+String(e&&e.message||e);}})()";
+            view.evaluateJavascript(script, null);
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not install beta custom tabs", error);
         }
     }
 
