@@ -92,7 +92,22 @@ public class NotificationSyncWorker extends Worker {
                     prefs.getString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, "");
 
             if (!baselineReady || !operatorKey.equals(previousOperatorKey)) {
-                NotificationSync.saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+                JSONArray previousRaidIds = previousRaids.names();
+            if (previousRaidIds != null) {
+                for (int i = 0; i < previousRaidIds.length(); i++) {
+                    String raidId = previousRaidIds.optString(i, "");
+                    if (raidId.isEmpty() || nextRaids.has(raidId)) continue;
+
+                    NotificationSync.postNotification(
+                            context,
+                            "[Raids] Raid removed",
+                            "Hey " + canonicalName
+                                    + " — one of your raids is no longer on the live board.",
+                            "raid-removed:" + raidId);
+                }
+            }
+
+            NotificationSync.saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
                 return Result.success();
             }
 
@@ -118,13 +133,10 @@ public class NotificationSyncWorker extends Worker {
                 return Result.success();
             }
 
-            if (nextPlayerReports > previousPlayerReports
-                    && !appForeground
-                    && !NotificationSync.recentlyHandled(
-                            prefs, NotificationSync.PREF_HANDLED_OPERATOR_REPORT_MS)) {
+            if (nextPlayerReports > previousPlayerReports) {
                 NotificationSync.postNotification(
                         context,
-                        "DMZ Ranked report",
+                        "[Reports] Operator reported",
                         "Hey " + canonicalName + " — your operator profile was reported",
                         "operator-report:" + playerId + ":" + nextPlayerReports);
             }
@@ -137,7 +149,8 @@ public class NotificationSyncWorker extends Worker {
 
                     JSONObject next = nextRaids.optJSONObject(raidId);
                     JSONObject previous = previousRaids.optJSONObject(raidId);
-                    if (next == null || previous == null) continue;
+                    if (next == null) continue;
+                    if (previous == null) previous = new JSONObject();
 
                     int nextReports = next.optInt("reports", 0);
                     int previousReports = previous.optInt("reports", 0);
@@ -146,39 +159,30 @@ public class NotificationSyncWorker extends Worker {
                     boolean nextVerified = next.optBoolean("verified", false);
                     boolean previousVerified = previous.optBoolean("verified", false);
 
-                    if (nextReports > previousReports
-                            && !appForeground
-                            && !NotificationSync.recentlyHandled(
-                                    prefs, NotificationSync.PREF_HANDLED_RAID_REPORT_MS)) {
+                    if (nextReports > previousReports) {
                         NotificationSync.postNotification(
                                 context,
-                                "DMZ Ranked report",
+                                "[Reports] Raid reported",
                                 "Hey " + canonicalName + " — one of your raids was reported",
                                 "raid-report:" + raidId + ":" + nextReports);
                     }
 
-                    if (nextPending && !previousPending
-                            && !appForeground
-                            && !NotificationSync.recentlyHandled(
-                                    prefs, NotificationSync.PREF_HANDLED_REVIEW_MS)) {
+                    if (nextPending && !previousPending) {
                         String reason = clean(next.optString("pendingReason", ""));
                         String body =
                                 "Hey " + canonicalName + " — one of your raids is under review";
                         if (!reason.isEmpty()) body += " • " + shorten(reason, 160);
                         NotificationSync.postNotification(
                                 context,
-                                "Raid under review",
+                                "[Review] Raid under review",
                                 body,
                                 "raid-review:" + raidId);
                     }
 
-                    if (nextVerified && !previousVerified
-                            && !appForeground
-                            && !NotificationSync.recentlyHandled(
-                                    prefs, NotificationSync.PREF_HANDLED_VERIFIED_MS)) {
+                    if (nextVerified && !previousVerified) {
                         NotificationSync.postNotification(
                                 context,
-                                "Raid approved",
+                                "[Approved] Raid approved",
                                 "Hey " + canonicalName
                                         + " — one of your raids was approved and verified",
                                 "raid-verified:" + raidId);
@@ -212,13 +216,10 @@ public class NotificationSyncWorker extends Worker {
                 prefs.getString(NotificationSync.PREF_BASELINE_SEASON, "");
 
         if (!previous.isEmpty()
-                && !key.equals(previous)
-                && !prefs.getBoolean(NotificationSync.PREF_APP_FOREGROUND, false)
-                && !NotificationSync.recentlyHandled(
-                        prefs, NotificationSync.PREF_HANDLED_SEASON_MS)) {
+                && !key.equals(previous)) {
             NotificationSync.postNotification(
                     context,
-                    "Season update",
+                    "[Season] Season update",
                     name.isEmpty()
                             ? "DMZ Ranked season information changed."
                             : "DMZ Ranked is now showing " + name + ".",
@@ -286,7 +287,7 @@ public class NotificationSyncWorker extends Worker {
             connection.setRequestProperty("Cache-Control", "no-cache");
             connection.setRequestProperty(
                     "User-Agent",
-                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.42");
+                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.44");
             connection.setRequestProperty("Referer", "https://dmzranked.com/");
             connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
 
