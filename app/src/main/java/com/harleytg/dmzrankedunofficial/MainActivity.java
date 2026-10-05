@@ -1797,6 +1797,35 @@ public class MainActivity extends Activity {
             boolean reloadRequested = SettingsActivity.ACTION_RELOAD.equals(action);
             boolean saveOperatorRequested = SettingsActivity.ACTION_SAVE_OPERATOR.equals(action);
             boolean restoreOperatorRequested = SettingsActivity.ACTION_RESTORE_OPERATOR.equals(action);
+            boolean selectOperatorRequested = SettingsActivity.ACTION_SELECT_OPERATOR.equals(action);
+
+            if (selectOperatorRequested) {
+                String selectedOperator = data == null
+                        ? ""
+                        : data.getStringExtra(SettingsActivity.EXTRA_OPERATOR_NAME);
+                if (selectedOperator != null && !selectedOperator.trim().isEmpty()) {
+                    selectedOperator = selectedOperator.trim();
+                    if (preferences != null) {
+                        preferences.edit()
+                                .putString(PREF_SELECTED_OPERATOR, selectedOperator)
+                                .putBoolean(PREF_OPERATOR_VERIFIED, false)
+                                .putString(PREF_OPERATOR_SOURCE, "App operator picker")
+                                .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
+                                .apply();
+                    }
+                    Toast.makeText(this,
+                            "Switching to " + selectedOperator + "…",
+                            Toast.LENGTH_SHORT).show();
+                    applySavedOperatorToWebsite(0);
+                    if (webView != null) {
+                        webView.postDelayed(() -> {
+                            applySavedOperatorToWebsite(0);
+                            startOperatorMonitor();
+                        }, 450L);
+                    }
+                }
+                return;
+            }
 
             if (saveOperatorRequested) {
                 captureCurrentOperator(() -> captureOperatorBackup(
