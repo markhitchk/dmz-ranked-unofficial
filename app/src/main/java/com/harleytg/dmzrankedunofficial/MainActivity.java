@@ -235,6 +235,7 @@ public class MainActivity extends Activity {
     private int loadingScreenToken;
     private int siteNotificationMonitorToken;
     private boolean siteNotificationBaselineReady;
+    private DmzPublicStateMonitor publicStateMonitor;
     private final LinkedHashSet<String> seenSiteNotifications = new LinkedHashSet<>();
     private int operatorMonitorToken;
     private long lastOperatorBackupCaptureMs;
@@ -309,6 +310,7 @@ public class MainActivity extends Activity {
             applyAppearancePreferences();
             ensureSiteNotificationChannel();
             requestSiteNotificationPermissionIfNeeded();
+            publicStateMonitor = new DmzPublicStateMonitor(this, this::postNativeSiteNotification);
             applyKeepAwakePreference();
             showLoadingScreen("Starting DMZ Ranked…", 0);
 
@@ -943,6 +945,7 @@ public class MainActivity extends Activity {
                             editor.apply();
                             if (operatorChanged) {
                                 DmzRankedWidgetProvider.requestUpdateAll(MainActivity.this);
+                                if (publicStateMonitor != null) publicStateMonitor.pollNow();
                             }
                             if (preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
                                 maybeAutoSaveOperator(name);
@@ -1170,7 +1173,7 @@ public class MainActivity extends Activity {
                 SITE_NOTIFICATION_CHANNEL,
                 "DMZ Ranked live alerts",
                 NotificationManager.IMPORTANCE_HIGH);
-        channel.setDescription("Heads-up raid, review, website, season, and update alerts from DMZ Ranked.");
+        channel.setDescription("Heads-up raid, report, review, approval, website, season, and update alerts from DMZ Ranked.");
         channel.enableVibration(true);
         channel.enableLights(true);
         channel.setShowBadge(true);
@@ -1297,6 +1300,15 @@ public class MainActivity extends Activity {
         } else if (body.startsWith("[REVIEW]")) {
             title = "Raid under review";
             body = body.substring(8).trim();
+        } else if (body.startsWith("[REPORT]")) {
+            title = "DMZ Ranked report";
+            body = body.substring(8).trim();
+        } else if (body.startsWith("[APPROVED]")) {
+            title = "Raid approved";
+            body = body.substring(10).trim();
+        } else if (body.startsWith("[REMOVED]")) {
+            title = "Raid removed";
+            body = body.substring(9).trim();
         } else if (body.startsWith("[UPDATE]")) {
             title = "DMZ Ranked update";
             body = body.substring(8).trim();
@@ -2062,6 +2074,7 @@ public class MainActivity extends Activity {
         super.onResume();
         startTitleMetaRotation();
         checkPlayUpdateOnForeground();
+        if (publicStateMonitor != null) publicStateMonitor.start();
         if (webView != null) {
             try {
                 String url = webView.getUrl();
@@ -2076,6 +2089,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        if (publicStateMonitor != null) publicStateMonitor.stop();
         operatorMonitorToken++;
         siteNotificationMonitorToken++;
         stopTitleMetaRotation();
@@ -2106,6 +2120,7 @@ public class MainActivity extends Activity {
             } else {
                 siteNotificationMonitorToken++;
             }
+            if (publicStateMonitor != null) publicStateMonitor.pollNow();
             updateLoadingVerbose(loadingVerboseText == null ? "" : loadingVerboseText.getText().toString());
 
             boolean desktopNow = preferences.getBoolean(PREF_DESKTOP, false);
