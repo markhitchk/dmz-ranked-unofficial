@@ -33,7 +33,17 @@ public class NotificationSyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        return syncNow(getApplicationContext(), true);
+        Context context = getApplicationContext();
+        SharedPreferences prefs =
+                context.getSharedPreferences(NotificationSync.PREFS, Context.MODE_PRIVATE);
+        long heartbeat =
+                prefs.getLong(NotificationSync.PREF_LIVE_SERVICE_HEARTBEAT_MS, 0L);
+        if (heartbeat > 0L
+                && System.currentTimeMillis() - heartbeat < 30000L) {
+            markSync(prefs, "OK • live service active");
+            return Result.success();
+        }
+        return syncNow(context, true);
     }
 
     static Result syncNow(Context context, boolean skipWhileAppForeground) {
