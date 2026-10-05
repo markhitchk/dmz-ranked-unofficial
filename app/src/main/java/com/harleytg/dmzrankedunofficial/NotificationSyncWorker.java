@@ -281,7 +281,7 @@ public class NotificationSyncWorker extends Worker {
             connection.setRequestProperty("Cache-Control", "no-cache");
             connection.setRequestProperty(
                     "User-Agent",
-                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.51");
+                    "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 DMZRanked/1.0.52");
             connection.setRequestProperty("Referer", "https://dmzranked.com/");
             connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
 
