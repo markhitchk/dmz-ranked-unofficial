@@ -177,8 +177,12 @@ public class SettingsActivity extends Activity {
         boolean betaBuild = getPackageName().endsWith(".beta");
         TextView settingsSubtitle = findViewById(R.id.settingsSubtitle);
         TextView aboutTitle = findViewById(R.id.aboutTitle);
+        TextView aboutBetaBadge = findViewById(R.id.aboutBetaBadge);
         if (aboutTitle != null) {
-            aboutTitle.setText(betaBuild ? "DMZ RANKED [BETA]" : "DMZ RANKED");
+            aboutTitle.setText("DMZ RANKED");
+        }
+        if (aboutBetaBadge != null) {
+            aboutBetaBadge.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
         }
 
         PackageInfo packageInfo = getPackageInfoSafe();
