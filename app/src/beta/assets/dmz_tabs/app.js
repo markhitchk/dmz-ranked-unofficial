@@ -190,6 +190,10 @@
   }
 
   bind();
+  window.addEventListener("hashchange", () => {
+    const hashTab = clean(location.hash.replace(/^#/, ""));
+    setTab(tabOrder.includes(hashTab) ? hashTab : defaultTab, false);
+  });
   window.showSub = showSub;
   window.__dmzHsBetaTabsRefresh = () => {
     ensureBetaAppTab();
