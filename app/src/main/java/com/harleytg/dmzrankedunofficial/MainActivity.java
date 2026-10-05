@@ -1343,25 +1343,25 @@ public class MainActivity extends Activity {
         String body = message.trim();
         String title = "DMZ Ranked";
         if (body.startsWith("[RAID]")) {
-            title = "Raid submitted";
+            title = "[Raids] Raid submitted";
             body = body.substring(6).trim();
         } else if (body.startsWith("[REPORT]")) {
-            title = "DMZ Ranked report";
+            title = "[Reports] DMZ Ranked";
             body = body.substring(8).trim();
         } else if (body.startsWith("[APPROVED]")) {
-            title = "Raid approved";
+            title = "[Approved] Raid approved";
             body = body.substring(10).trim();
         } else if (body.startsWith("[REVIEW]")) {
-            title = "Raid under review";
+            title = "[Review] Raid under review";
             body = body.substring(8).trim();
         } else if (body.startsWith("[UPDATE]")) {
-            title = "DMZ Ranked update";
+            title = "[Update] DMZ Ranked";
             body = body.substring(8).trim();
         } else if (body.startsWith("[SEASON]")) {
-            title = "Season update";
+            title = "[Season] Season update";
             body = body.substring(8).trim();
         } else if (body.startsWith("[WEBSITE]")) {
-            title = "DMZ Ranked website";
+            title = "[Website] DMZ Ranked";
             body = body.substring(9).trim();
         }
         if (body.length() > 320) body = body.substring(0, 319) + "…";
