@@ -1099,8 +1099,23 @@ public class SettingsActivity extends Activity {
             status.setText("Enabled • pop-up alerts disabled by Android");
             status.setTextColor(getColor(R.color.dmz_gold));
         } else {
-            status.setText("Enabled • live + background sync on");
-            status.setTextColor(getColor(R.color.dmz_green));
+            String syncResult = preferences == null
+                    ? ""
+                    : preferences.getString(NotificationSync.PREF_LAST_SYNC_RESULT, "");
+            long syncMs = preferences == null
+                    ? 0L
+                    : preferences.getLong(NotificationSync.PREF_LAST_SYNC_MS, 0L);
+            String syncText = syncResult == null || syncResult.trim().isEmpty()
+                    ? "waiting for first background check"
+                    : syncResult.trim();
+            if (syncMs > 0L) {
+                long ageMinutes = Math.max(0L, (System.currentTimeMillis() - syncMs) / 60000L);
+                syncText += ageMinutes == 0L ? " • just now" : " • " + ageMinutes + "m ago";
+            }
+            status.setText("Enabled • live + background sync on\nBackground: " + syncText);
+            status.setTextColor(syncResult != null && syncResult.startsWith("ERROR")
+                    ? getColor(R.color.dmz_gold)
+                    : getColor(R.color.dmz_green));
         }
     }
 
