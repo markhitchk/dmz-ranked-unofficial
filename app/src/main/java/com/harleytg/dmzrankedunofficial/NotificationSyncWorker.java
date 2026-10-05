@@ -1,0 +1,309 @@
+package com.harleytg.dmzrankedunofficial;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import androidx.annotation.NonNull;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+
+public class NotificationSyncWorker extends Worker {
+    private static final String PUBLIC_STATE_URL =
+            "https://dmzranked.com/api/v1/data/public-state";
+
+    public NotificationSyncWorker(
+            @NonNull Context appContext,
+            @NonNull WorkerParameters workerParams) {
+        super(appContext, workerParams);
+    }
+
+    @NonNull
+    @Override
+    public Result doWork() {
+        Context context = getApplicationContext();
+        SharedPreferences prefs =
+                context.getSharedPreferences(NotificationSync.PREFS, Context.MODE_PRIVATE);
+
+        if (!prefs.getBoolean(NotificationSync.PREF_SITE_NOTIFICATIONS, true)) {
+            return Result.success();
+        }
+
+        try {
+            JSONObject root = fetchPublicState();
+            syncSeason(context, prefs, root);
+
+            String selected = clean(
+                    prefs.getString(NotificationSync.PREF_SELECTED_OPERATOR, ""));
+            if (selected.isEmpty()) return Result.success();
+
+            JSONArray players = root.optJSONArray("players");
+            JSONArray raids = root.optJSONArray("raids");
+            if (players == null || raids == null) return Result.retry();
+
+            JSONObject player = findPlayer(players, selected);
+            if (player == null) return Result.success();
+
+            String playerId = clean(player.optString("id", ""));
+            String canonicalName = clean(player.optString("name", selected));
+            String operatorKey =
+                    (playerId + "|" + canonicalName.toLowerCase(Locale.US)).trim();
+
+            JSONObject nextRaids = collectRaids(raids, playerId, canonicalName);
+            int nextPlayerReports = Math.max(0, player.optInt("reports", 0));
+
+            boolean baselineReady =
+                    prefs.getBoolean(NotificationSync.PREF_BASELINE_READY, false);
+            String previousOperatorKey =
+                    prefs.getString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, "");
+
+            if (!baselineReady || !operatorKey.equals(previousOperatorKey)) {
+                saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+                return Result.success();
+            }
+
+            int previousPlayerReports =
+                    prefs.getInt(NotificationSync.PREF_BASELINE_PLAYER_REPORTS, 0);
+            JSONObject previousRaids;
+            try {
+                previousRaids = new JSONObject(
+                        prefs.getString(NotificationSync.PREF_BASELINE_RAIDS, "{}"));
+            } catch (JSONException ignored) {
+                previousRaids = new JSONObject();
+            }
+
+            boolean appForeground =
+                    prefs.getBoolean(NotificationSync.PREF_APP_FOREGROUND, false);
+
+            if (nextPlayerReports > previousPlayerReports
+                    && !appForeground
+                    && !NotificationSync.recentlyHandled(
+                            prefs, NotificationSync.PREF_HANDLED_OPERATOR_REPORT_MS)) {
+                NotificationSync.postNotification(
+                        context,
+                        "DMZ Ranked report",
+                        "Hey " + canonicalName + " — your operator profile was reported",
+                        "operator-report:" + playerId + ":" + nextPlayerReports);
+            }
+
+            JSONArray raidIds = nextRaids.names();
+            if (raidIds != null) {
+                for (int i = 0; i < raidIds.length(); i++) {
+                    String raidId = raidIds.optString(i, "");
+                    if (raidId.isEmpty()) continue;
+
+                    JSONObject next = nextRaids.optJSONObject(raidId);
+                    JSONObject previous = previousRaids.optJSONObject(raidId);
+                    if (next == null || previous == null) continue;
+
+                    int nextReports = next.optInt("reports", 0);
+                    int previousReports = previous.optInt("reports", 0);
+                    boolean nextPending = next.optBoolean("pending", false);
+                    boolean previousPending = previous.optBoolean("pending", false);
+                    boolean nextVerified = next.optBoolean("verified", false);
+                    boolean previousVerified = previous.optBoolean("verified", false);
+
+                    if (nextReports > previousReports
+                            && !appForeground
+                            && !NotificationSync.recentlyHandled(
+                                    prefs, NotificationSync.PREF_HANDLED_RAID_REPORT_MS)) {
+                        NotificationSync.postNotification(
+                                context,
+                                "DMZ Ranked report",
+                                "Hey " + canonicalName + " — one of your raids was reported",
+                                "raid-report:" + raidId + ":" + nextReports);
+                    }
+
+                    if (nextPending && !previousPending
+                            && !appForeground
+                            && !NotificationSync.recentlyHandled(
+                                    prefs, NotificationSync.PREF_HANDLED_REVIEW_MS)) {
+                        String reason = clean(next.optString("pendingReason", ""));
+                        String body =
+                                "Hey " + canonicalName + " — one of your raids is under review";
+                        if (!reason.isEmpty()) body += " • " + shorten(reason, 160);
+                        NotificationSync.postNotification(
+                                context,
+                                "Raid under review",
+                                body,
+                                "raid-review:" + raidId);
+                    }
+
+                    if (nextVerified && !previousVerified
+                            && !appForeground
+                            && !NotificationSync.recentlyHandled(
+                                    prefs, NotificationSync.PREF_HANDLED_VERIFIED_MS)) {
+                        NotificationSync.postNotification(
+                                context,
+                                "Raid approved",
+                                "Hey " + canonicalName
+                                        + " — one of your raids was approved and verified",
+                                "raid-verified:" + raidId);
+                    }
+                }
+            }
+
+            saveBaseline(prefs, operatorKey, nextPlayerReports, nextRaids);
+            return Result.success();
+        } catch (IOException | JSONException error) {
+            return Result.retry();
+        } catch (Throwable ignored) {
+            return Result.retry();
+        }
+    }
+
+    private void syncSeason(
+            Context context,
+            SharedPreferences prefs,
+            JSONObject root) {
+        JSONObject meta = root.optJSONObject("meta");
+        JSONObject season = meta == null ? null : meta.optJSONObject("season");
+        if (season == null) return;
+
+        String name = clean(season.optString("name", ""));
+        String key = name + "|" + season.optLong("updatedAt", 0L);
+        String previous =
+                prefs.getString(NotificationSync.PREF_BASELINE_SEASON, "");
+
+        if (!previous.isEmpty()
+                && !key.equals(previous)
+                && !prefs.getBoolean(NotificationSync.PREF_APP_FOREGROUND, false)
+                && !NotificationSync.recentlyHandled(
+                        prefs, NotificationSync.PREF_HANDLED_SEASON_MS)) {
+            NotificationSync.postNotification(
+                    context,
+                    "Season update",
+                    name.isEmpty()
+                            ? "DMZ Ranked season information changed."
+                            : "DMZ Ranked is now showing " + name + ".",
+                    "season:" + key);
+        }
+
+        prefs.edit()
+                .putString(NotificationSync.PREF_BASELINE_SEASON, key)
+                .apply();
+    }
+
+    private static JSONObject findPlayer(JSONArray players, String selected) {
+        for (int i = 0; i < players.length(); i++) {
+            JSONObject player = players.optJSONObject(i);
+            if (player == null) continue;
+            String name = clean(player.optString("name", ""));
+            if (name.equalsIgnoreCase(selected)) return player;
+        }
+        return null;
+    }
+
+    private static JSONObject collectRaids(
+            JSONArray raids,
+            String playerId,
+            String playerName) throws JSONException {
+        JSONObject out = new JSONObject();
+
+        for (int i = 0; i < raids.length(); i++) {
+            JSONObject raid = raids.optJSONObject(i);
+            if (raid == null) continue;
+
+            String raidPlayerId = clean(raid.optString("playerId", ""));
+            String raidPlayerName = clean(raid.optString("playerName", ""));
+            boolean belongs = !playerId.isEmpty() && playerId.equals(raidPlayerId);
+            if (!belongs) belongs = raidPlayerName.equalsIgnoreCase(playerName);
+            if (!belongs) continue;
+
+            String raidId = clean(raid.optString("id", ""));
+            if (raidId.isEmpty()) continue;
+
+            JSONObject snapshot = new JSONObject();
+            snapshot.put("reports", Math.max(0, raid.optInt("reports", 0)));
+            snapshot.put("pending", raid.optBoolean("pending", false));
+            snapshot.put("verified", raid.optBoolean("verified", false));
+            snapshot.put(
+                    "pendingReason",
+                    clean(raid.optString("pendingReason", "")));
+            out.put(raidId, snapshot);
+        }
+
+        return out;
+    }
+
+    private static void saveBaseline(
+            SharedPreferences prefs,
+            String operatorKey,
+            int playerReports,
+            JSONObject raids) {
+        prefs.edit()
+                .putBoolean(NotificationSync.PREF_BASELINE_READY, true)
+                .putString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, operatorKey)
+                .putInt(NotificationSync.PREF_BASELINE_PLAYER_REPORTS, playerReports)
+                .putString(NotificationSync.PREF_BASELINE_RAIDS, raids.toString())
+                .apply();
+    }
+
+    private static JSONObject fetchPublicState()
+            throws IOException, JSONException {
+        HttpURLConnection connection = null;
+        try {
+            connection =
+                    (HttpURLConnection) new URL(PUBLIC_STATE_URL).openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Cache-Control", "no-cache");
+            connection.setRequestProperty(
+                    "User-Agent",
+                    "DMZ-Ranked-Android/1.0.35");
+
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                throw new IOException(
+                        "DMZ Ranked public-state HTTP " + status);
+            }
+
+            try (InputStream stream = connection.getInputStream();
+                 BufferedReader reader =
+                         new BufferedReader(
+                                 new InputStreamReader(
+                                         stream,
+                                         StandardCharsets.UTF_8))) {
+                StringBuilder body = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    body.append(line);
+                    if (body.length() > 4_000_000) {
+                        throw new IOException(
+                                "DMZ Ranked public-state response is too large");
+                    }
+                }
+                return new JSONObject(body.toString());
+            }
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private static String clean(String value) {
+        return value == null
+                ? ""
+                : value.trim().replaceAll("\\s+", " ");
+    }
+
+    private static String shorten(String value, int max) {
+        String text = clean(value);
+        if (text.length() <= max) return text;
+        return text.substring(0, Math.max(0, max - 1)) + "…";
+    }
+}
