@@ -7,7 +7,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
+import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -45,11 +50,14 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
     private static final String CACHE_PREFS = "dmz_ranked_widget_cache";
+    private static final String BADGE_CACHE_PREFS = "dmz_ranked_widget_badges";
     private static final String DATA_URL = "https://dmzranked.com/leaderboard.json";
+    private static final String BADGE_SOURCE_URL = "https://dmz-ticker.netlify.app/";
 
     private static final int CONNECT_TIMEOUT_MS = 8_000;
     private static final int READ_TIMEOUT_MS = 12_000;
     private static final int MAX_JSON_CHARS = 12_000_000;
+    private static final int MAX_BADGE_PAGE_CHARS = 8_000_000;
 
     private static final Tier[] TIERS = new Tier[] {
             new Tier("Iridescent", 6000, 100),
@@ -66,6 +74,18 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         if (appWidgetIds == null || appWidgetIds.length == 0) return;
         renderLoading(context, appWidgetManager, appWidgetIds);
         refreshAsync(context, appWidgetManager, appWidgetIds);
+    }
+
+    @Override
+    public void onAppWidgetOptionsChanged(
+            Context context,
+            AppWidgetManager appWidgetManager,
+            int appWidgetId,
+            Bundle newOptions) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions);
+        int[] ids = new int[] {appWidgetId};
+        renderLoading(context, appWidgetManager, ids);
+        refreshAsync(context, appWidgetManager, ids);
     }
 
     @Override
@@ -138,10 +158,14 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
             stats = readCachedStats(context, operator);
         }
 
+        String badgeData = stats == null
+                ? ""
+                : loadRankBadgeData(context, stats.rankLabel, stats.position);
+
         for (int id : ids) {
             RemoteViews views;
             if (stats != null) {
-                views = buildStatsViews(context, id, stats, error != null);
+                views = buildStatsViews(context, id, stats, error != null, badgeData);
             } else {
                 views = buildErrorViews(context, id, operator,
                         error == null ? "Operator not found on DMZ Ranked." : "Could not reach DMZ Ranked.");
@@ -398,63 +422,107 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         return new RankInfo(tier.name, false, d + 1, tier.name + " " + roman, pct, toNext);
     }
 
-    private static RemoteViews buildStatsViews(Context context, int appWidgetId, WidgetStats stats,
-                                                boolean staleBecauseNetworkFailed) {
+    private static RemoteViews buildStatsViews(
+            Context context,
+            int appWidgetId,
+            WidgetStats stats,
+            boolean staleBecauseNetworkFailed,
+            String badgeData) {
+        boolean compact = isCompactWidget(context, appWidgetId);
         RemoteViews views = baseViews(context, appWidgetId);
         views.setViewVisibility(R.id.widgetProgress, View.VISIBLE);
-        views.setViewVisibility(R.id.widgetStatus, View.GONE);
+        views.setViewVisibility(R.id.widgetStatus, View.VISIBLE);
+        views.setTextViewText(R.id.widgetStatus,
+                staleBecauseNetworkFailed || stats.fromCache ? "CACHED" : "LIVE");
         views.setTextViewText(R.id.widgetOperator, stats.name);
         views.setTextViewText(R.id.widgetRank, stats.rankLabel);
+        views.setTextColor(R.id.widgetRank, tierColor(stats.rankLabel));
         views.setTextViewText(R.id.widgetSr, formatNumber(stats.sr) + " SR");
         views.setTextViewText(R.id.widgetPosition,
                 "#" + stats.position + " / " + Math.max(stats.totalPlayers, stats.position));
-        views.setTextViewText(R.id.widgetDelta, signed(stats.lastDelta) + " last raid");
+        views.setTextViewText(R.id.widgetDelta, signed(stats.lastDelta));
         views.setTextColor(R.id.widgetDelta,
                 stats.lastDelta > 0 ? context.getColor(R.color.dmz_green)
                         : (stats.lastDelta < 0 ? context.getColor(R.color.dmz_red)
                         : context.getColor(R.color.dmz_muted)));
-        views.setProgressBar(R.id.widgetProgress, 100, Math.max(0, Math.min(100, stats.progressPct)), false);
+        views.setProgressBar(
+                R.id.widgetProgress,
+                100,
+                Math.max(0, Math.min(100, stats.progressPct)),
+                false);
 
-        String footer = "DMZRANKED.COM • "
-                + (staleBecauseNetworkFailed || stats.fromCache ? "CACHED • " : "")
-                + "UPDATED " + DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(stats.updatedAt));
-        views.setTextViewText(R.id.widgetFooter, footer.toUpperCase(Locale.US));
+        Bitmap badge = decodeBadge(context, badgeData, compact);
+        if (badge != null) {
+            views.setImageViewBitmap(R.id.widgetRankBadge, badge);
+        } else {
+            views.setImageViewResource(R.id.widgetRankBadge, R.drawable.dmz_ranked_logo);
+        }
+
+        String updated = DateFormat.getTimeInstance(DateFormat.SHORT)
+                .format(new Date(stats.updatedAt))
+                .toUpperCase(Locale.US);
+        String footer = (staleBecauseNetworkFailed || stats.fromCache ? "CACHED • " : "")
+                + "UPDATED " + updated;
+        views.setTextViewText(R.id.widgetFooter, footer);
+
+        String season = clean(stats.seasonName);
+        views.setTextViewText(
+                R.id.widgetSeason,
+                season.isEmpty() ? "DMZRANKED.COM" : season.toUpperCase(Locale.US));
         return views;
     }
 
     private static RemoteViews buildEmptyViews(Context context, int appWidgetId) {
         RemoteViews views = baseViews(context, appWidgetId);
+        views.setImageViewResource(R.id.widgetRankBadge, R.drawable.dmz_ranked_logo);
         views.setTextViewText(R.id.widgetOperator, "SELECT AN OPERATOR");
         views.setTextViewText(R.id.widgetRank, "Open DMZ Ranked → Operators");
+        views.setTextColor(R.id.widgetRank, context.getColor(R.color.dmz_gold));
         views.setTextViewText(R.id.widgetSr, "— SR");
         views.setTextViewText(R.id.widgetPosition, "#— / —");
-        views.setTextViewText(R.id.widgetDelta, "Widget follows your selected website operator");
+        views.setTextViewText(R.id.widgetDelta, "NO DATA");
         views.setTextColor(R.id.widgetDelta, context.getColor(R.color.dmz_muted));
         views.setViewVisibility(R.id.widgetProgress, View.GONE);
         views.setViewVisibility(R.id.widgetStatus, View.VISIBLE);
         views.setTextViewText(R.id.widgetStatus, "NO OPERATOR");
-        views.setTextViewText(R.id.widgetFooter, "DMZRANKED.COM • TAP TO OPEN APP");
+        views.setTextViewText(R.id.widgetFooter, "TAP TO OPEN APP");
+        views.setTextViewText(R.id.widgetSeason, "DMZRANKED.COM");
         return views;
     }
 
-    private static RemoteViews buildErrorViews(Context context, int appWidgetId, String operator,
-                                                String message) {
+    private static RemoteViews buildErrorViews(
+            Context context,
+            int appWidgetId,
+            String operator,
+            String message) {
         RemoteViews views = baseViews(context, appWidgetId);
+        views.setImageViewResource(R.id.widgetRankBadge, R.drawable.dmz_ranked_logo);
         views.setTextViewText(R.id.widgetOperator, operator);
         views.setTextViewText(R.id.widgetRank, message);
+        views.setTextColor(R.id.widgetRank, context.getColor(R.color.dmz_gold));
         views.setTextViewText(R.id.widgetSr, "— SR");
         views.setTextViewText(R.id.widgetPosition, "#— / —");
-        views.setTextViewText(R.id.widgetDelta, "Tap ↻ to try again");
+        views.setTextViewText(R.id.widgetDelta, "TAP ↻");
         views.setTextColor(R.id.widgetDelta, context.getColor(R.color.dmz_muted));
         views.setViewVisibility(R.id.widgetProgress, View.GONE);
         views.setViewVisibility(R.id.widgetStatus, View.VISIBLE);
         views.setTextViewText(R.id.widgetStatus, "OFFLINE");
-        views.setTextViewText(R.id.widgetFooter, "DMZRANKED.COM • REFRESH WHEN ONLINE");
+        views.setTextViewText(R.id.widgetFooter, "REFRESH WHEN ONLINE");
+        views.setTextViewText(R.id.widgetSeason, "DMZRANKED.COM");
         return views;
     }
 
     private static RemoteViews baseViews(Context context, int appWidgetId) {
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_dmz_stats);
+        int layout = isCompactWidget(context, appWidgetId)
+                ? R.layout.widget_dmz_stats_compact
+                : R.layout.widget_dmz_stats;
+        RemoteViews views = new RemoteViews(context.getPackageName(), layout);
+
+        views.setTextViewText(R.id.widgetAppTitle, "DMZ RANKED");
+        views.setTextViewText(R.id.widgetBrandSubtitle, "MADE BY HARLEY'S STUDIOS");
+        views.setViewVisibility(
+                R.id.widgetBetaTag,
+                context.getPackageName().endsWith(".beta") ? View.VISIBLE : View.GONE);
 
         Intent openApp = new Intent(context, MainActivity.class);
         openApp.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -478,24 +546,167 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         return views;
     }
 
+    private static boolean isCompactWidget(Context context, int appWidgetId) {
+        try {
+            Bundle options = AppWidgetManager.getInstance(context).getAppWidgetOptions(appWidgetId);
+            int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
+            int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130);
+            return minWidth < 245 || minHeight < 125;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private static void renderLoading(Context context, AppWidgetManager manager, int[] ids) {
         if (ids == null) return;
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String operator = clean(prefs.getString(PREF_SELECTED_OPERATOR, ""));
         for (int id : ids) {
             RemoteViews views = baseViews(context, id);
+            views.setImageViewResource(R.id.widgetRankBadge, R.drawable.dmz_ranked_logo);
             views.setTextViewText(R.id.widgetOperator, operator.isEmpty() ? "DMZ RANKED" : operator);
             views.setTextViewText(R.id.widgetRank, "Refreshing live standings…");
+            views.setTextColor(R.id.widgetRank, context.getColor(R.color.dmz_gold));
             views.setTextViewText(R.id.widgetSr, "… SR");
             views.setTextViewText(R.id.widgetPosition, "#… / …");
-            views.setTextViewText(R.id.widgetDelta, "Reading leaderboard.json");
+            views.setTextViewText(R.id.widgetDelta, "SYNC");
             views.setTextColor(R.id.widgetDelta, context.getColor(R.color.dmz_muted));
             views.setViewVisibility(R.id.widgetProgress, View.GONE);
             views.setViewVisibility(R.id.widgetStatus, View.VISIBLE);
             views.setTextViewText(R.id.widgetStatus, "SYNCING");
-            views.setTextViewText(R.id.widgetFooter, "DMZRANKED.COM • LIVE DATA");
+            views.setTextViewText(R.id.widgetFooter, "READING LIVE DATA");
+            views.setTextViewText(R.id.widgetSeason, "DMZRANKED.COM");
             manager.updateAppWidget(id, views);
         }
+    }
+
+    private static String loadRankBadgeData(Context context, String rankLabel, int standing) {
+        String key = badgeKey(rankLabel, standing);
+        if (key.isEmpty()) return "";
+
+        SharedPreferences cache = context.getSharedPreferences(BADGE_CACHE_PREFS, Context.MODE_PRIVATE);
+        String cached = cache.getString(key, "");
+        if (isBadgeData(cached)) return cached;
+
+        try {
+            String html = fetchText(BADGE_SOURCE_URL, MAX_BADGE_PAGE_CHARS);
+            int marker = html.indexOf("const BADGE");
+            int objectStart = marker < 0 ? -1 : html.indexOf('{', marker);
+            int objectEnd = objectStart < 0 ? -1 : html.indexOf("};", objectStart);
+            if (objectStart < 0 || objectEnd <= objectStart) return "";
+
+            JSONObject badges = new JSONObject(html.substring(objectStart, objectEnd + 1));
+            String badge = badges.optString(key, "");
+            if (!isBadgeData(badge)) return "";
+
+            cache.edit().putString(key, badge).apply();
+            return badge;
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    private static String fetchText(String urlString, int maxChars) throws Exception {
+        HttpURLConnection connection = null;
+        InputStream input = null;
+        BufferedReader reader = null;
+        try {
+            connection = (HttpURLConnection) new URL(urlString).openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(READ_TIMEOUT_MS);
+            connection.setUseCaches(true);
+            connection.setRequestProperty("Accept", "text/html,*/*");
+            connection.setRequestProperty("User-Agent",
+                    "DMZRankedAndroidWidget/1.0 (HarleysStudios; rank-badges)");
+
+            int code = connection.getResponseCode();
+            if (code < 200 || code >= 300) {
+                throw new IllegalStateException("Badge source returned HTTP " + code);
+            }
+
+            input = connection.getInputStream();
+            reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+            StringBuilder body = new StringBuilder(512 * 1024);
+            char[] buffer = new char[8192];
+            int read;
+            while ((read = reader.read(buffer)) >= 0) {
+                body.append(buffer, 0, read);
+                if (body.length() > maxChars) {
+                    throw new IllegalStateException("Badge source was unexpectedly large");
+                }
+            }
+            return body.toString();
+        } finally {
+            try {
+                if (reader != null) reader.close();
+            } catch (Throwable ignored) {
+            }
+            try {
+                if (input != null) input.close();
+            } catch (Throwable ignored) {
+            }
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private static boolean isBadgeData(String value) {
+        return value != null
+                && value.startsWith("data:image/")
+                && value.contains(";base64,")
+                && value.length() > 200;
+    }
+
+    private static String badgeKey(String rankLabel, int standing) {
+        String label = clean(rankLabel).toUpperCase(Locale.US);
+        if (label.startsWith("IRIDESCENT")) {
+            return standing >= 1 && standing <= 3 ? "Top" : "Iridescent";
+        }
+
+        String[] parts = label.split("\\s+");
+        if (parts.length < 2) return "";
+        String tier = parts[0].substring(0, 1)
+                + parts[0].substring(1).toLowerCase(Locale.US);
+        String division;
+        if ("I".equals(parts[1])) division = "1";
+        else if ("II".equals(parts[1])) division = "2";
+        else if ("III".equals(parts[1])) division = "3";
+        else return "";
+        return tier + division;
+    }
+
+    private static Bitmap decodeBadge(Context context, String data, boolean compact) {
+        if (!isBadgeData(data)) return null;
+        try {
+            int comma = data.indexOf(',');
+            byte[] bytes = Base64.decode(data.substring(comma + 1), Base64.DEFAULT);
+            Bitmap raw = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            if (raw == null) return null;
+
+            int width = dp(context, compact ? 42 : 58);
+            int height = dp(context, compact ? 46 : 64);
+            Bitmap scaled = Bitmap.createScaledBitmap(raw, width, height, true);
+            if (scaled != raw) raw.recycle();
+            return scaled;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static int dp(Context context, int value) {
+        return Math.max(1, Math.round(value * context.getResources().getDisplayMetrics().density));
+    }
+
+    private static int tierColor(String rankLabel) {
+        String label = clean(rankLabel).toUpperCase(Locale.US);
+        if (label.startsWith("IRIDESCENT")) return Color.parseColor("#C9B3FF");
+        if (label.startsWith("CRIMSON")) return Color.parseColor("#E5484D");
+        if (label.startsWith("DIAMOND")) return Color.parseColor("#8FD6FF");
+        if (label.startsWith("PLATINUM")) return Color.parseColor("#DFE7EE");
+        if (label.startsWith("GOLD")) return Color.parseColor("#F5C451");
+        if (label.startsWith("SILVER")) return Color.parseColor("#C3CCD4");
+        if (label.startsWith("BRONZE")) return Color.parseColor("#C48A5A");
+        return Color.parseColor("#F6C453");
     }
 
     private static void saveCachedStats(Context context, WidgetStats stats) {
