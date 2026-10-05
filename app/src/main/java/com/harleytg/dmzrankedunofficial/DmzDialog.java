@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.text.InputFilter;
 import android.view.Gravity;
 import android.view.View;
@@ -12,6 +15,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -87,16 +91,47 @@ public final class DmzDialog {
         LinearLayout card = buildCard(activity, eyebrowText, title, message, danger);
 
         if (danger) {
-            TextView warning = new TextView(activity);
-            warning.setText("This action cannot be automatically undone.");
-            warning.setTextColor(activity.getColor(R.color.dmz_red));
-            warning.setTextSize(11.5f);
-            warning.setTypeface(Typeface.DEFAULT_BOLD);
+            LinearLayout warningPanel = new LinearLayout(activity);
+            warningPanel.setOrientation(LinearLayout.VERTICAL);
+            warningPanel.setPadding(
+                    dp(activity, 14),
+                    dp(activity, 11),
+                    dp(activity, 14),
+                    dp(activity, 12));
+
+            GradientDrawable warningBackground = new GradientDrawable();
+            warningBackground.setColor(activity.getColor(R.color.dmz_panel_deep));
+            warningBackground.setStroke(dp(activity, 1), activity.getColor(R.color.dmz_red));
+            warningBackground.setCornerRadius(dp(activity, 10));
+            warningPanel.setBackground(warningBackground);
+
+            TextView warningTitle = new TextView(activity);
+            warningTitle.setText("⚠  REVIEW BEFORE CONTINUING");
+            warningTitle.setTextColor(activity.getColor(R.color.dmz_red));
+            warningTitle.setTextSize(11f);
+            warningTitle.setTypeface(Typeface.DEFAULT_BOLD);
+            warningTitle.setLetterSpacing(0.08f);
+            warningPanel.addView(warningTitle, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            TextView warningBody = new TextView(activity);
+            warningBody.setText(
+                    "This is a destructive action. Data or settings affected by it may not be recoverable.");
+            warningBody.setTextColor(activity.getColor(R.color.dmz_white));
+            warningBody.setTextSize(12.5f);
+            warningBody.setLineSpacing(0f, 1.10f);
+            LinearLayout.LayoutParams warningBodyParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            warningBodyParams.topMargin = dp(activity, 5);
+            warningPanel.addView(warningBody, warningBodyParams);
+
             LinearLayout.LayoutParams warningParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            warningParams.topMargin = dp(activity, 12);
-            card.addView(warning, warningParams);
+            warningParams.topMargin = dp(activity, 13);
+            card.addView(warningPanel, warningParams);
         }
 
         LinearLayout actions = buildActionRow(activity);
@@ -263,15 +298,51 @@ public final class DmzDialog {
                 ? R.drawable.danger_dialog_background
                 : R.drawable.dmz_dialog_background);
 
+        if (danger) {
+            FrameLayout cautionHeader = new FrameLayout(activity);
+            DangerTapeView cautionTape = new DangerTapeView(activity);
+            cautionHeader.addView(cautionTape, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    dp(activity, 36)));
+
+            TextView cautionLabel = new TextView(activity);
+            cautionLabel.setText("⚠  DANGER ZONE  •  CAUTION");
+            cautionLabel.setTextColor(activity.getColor(R.color.dmz_white));
+            cautionLabel.setTextSize(10.5f);
+            cautionLabel.setTypeface(Typeface.DEFAULT_BOLD);
+            cautionLabel.setLetterSpacing(0.10f);
+            cautionLabel.setGravity(Gravity.CENTER);
+            cautionLabel.setPadding(
+                    dp(activity, 10),
+                    dp(activity, 4),
+                    dp(activity, 10),
+                    dp(activity, 4));
+            cautionLabel.setBackgroundColor(0xCC080A09);
+
+            FrameLayout.LayoutParams labelParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER);
+            cautionHeader.addView(cautionLabel, labelParams);
+
+            card.addView(cautionHeader, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(activity, 36)));
+        }
+
         TextView eyebrow = new TextView(activity);
-        eyebrow.setText(eyebrowText == null ? "DMZ RANKED" : eyebrowText);
+        eyebrow.setText(danger
+                ? "DESTRUCTIVE ACTION"
+                : (eyebrowText == null ? "DMZ RANKED" : eyebrowText));
         eyebrow.setTextColor(activity.getColor(danger ? R.color.dmz_red : R.color.dmz_gold));
         eyebrow.setTextSize(10.5f);
         eyebrow.setTypeface(Typeface.DEFAULT_BOLD);
         eyebrow.setLetterSpacing(0.15f);
-        card.addView(eyebrow, new LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams eyebrowParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        if (danger) eyebrowParams.topMargin = dp(activity, 14);
+        card.addView(eyebrow, eyebrowParams);
 
         TextView heading = new TextView(activity);
         heading.setText(title == null ? "" : title);
@@ -393,6 +464,35 @@ public final class DmzDialog {
 
         dialog.show();
         return dialog;
+    }
+
+    private static final class DangerTapeView extends View {
+        private final Paint basePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint stripePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float stripeWidth;
+
+        DangerTapeView(Activity activity) {
+            super(activity);
+            basePaint.setColor(activity.getColor(R.color.dmz_red));
+            stripePaint.setColor(activity.getColor(R.color.dmz_black));
+            stripePaint.setAlpha(92);
+            stripeWidth = dp(activity, 12);
+            setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            canvas.drawRect(0f, 0f, getWidth(), getHeight(), basePaint);
+            canvas.save();
+            canvas.rotate(-24f, getWidth() / 2f, getHeight() / 2f);
+            float overscan = getHeight() * 4f;
+            float step = stripeWidth * 2f;
+            for (float x = -overscan; x < getWidth() + overscan; x += step) {
+                canvas.drawRect(x, -overscan, x + stripeWidth, getHeight() + overscan, stripePaint);
+            }
+            canvas.restore();
+        }
     }
 
     private static int dp(Activity activity, int value) {
