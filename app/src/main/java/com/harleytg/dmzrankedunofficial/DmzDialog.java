@@ -230,7 +230,37 @@ public final class DmzDialog {
             int checkedIndex,
             String negativeLabel,
             ChoiceCallback onChoice) {
-        LinearLayout card = buildCard(activity, "DMZ RANKED", title, message, false);
+        LinearLayout card = buildCard(activity, "PROFILE SELECTION", title, message, false);
+
+        FrameLayout pickerHeader = new FrameLayout(activity);
+        GradientDrawable pickerHeaderBackground = new GradientDrawable();
+        pickerHeaderBackground.setColor(activity.getColor(R.color.dmz_gold));
+        pickerHeaderBackground.setCornerRadius(dp(activity, 9));
+        pickerHeader.setBackground(pickerHeaderBackground);
+
+        TextView pickerHeaderLabel = new TextView(activity);
+        pickerHeaderLabel.setText("OPERATOR PICKER  •  DMZ RANKED");
+        pickerHeaderLabel.setTextColor(activity.getColor(R.color.dmz_black));
+        pickerHeaderLabel.setTextSize(10.5f);
+        pickerHeaderLabel.setTypeface(Typeface.DEFAULT_BOLD);
+        pickerHeaderLabel.setLetterSpacing(0.10f);
+        pickerHeaderLabel.setGravity(Gravity.CENTER);
+        pickerHeaderLabel.setPadding(
+                dp(activity, 12),
+                dp(activity, 8),
+                dp(activity, 12),
+                dp(activity, 8));
+
+        pickerHeader.addView(pickerHeaderLabel, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER));
+
+        LinearLayout.LayoutParams pickerHeaderParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        pickerHeaderParams.bottomMargin = dp(activity, 14);
+        card.addView(pickerHeader, 0, pickerHeaderParams);
 
         LinearLayout choices = new LinearLayout(activity);
         choices.setOrientation(LinearLayout.VERTICAL);
