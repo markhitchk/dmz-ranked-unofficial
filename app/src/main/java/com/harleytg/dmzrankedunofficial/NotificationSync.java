@@ -22,6 +22,8 @@ import androidx.work.OutOfQuotaPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import org.json.JSONObject;
+
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -154,6 +156,20 @@ final class NotificationSync {
     static boolean recentlyHandled(SharedPreferences prefs, String key) {
         long handled = prefs.getLong(key, 0L);
         return handled > 0L && System.currentTimeMillis() - handled < RECENT_FOREGROUND_EVENT_MS;
+    }
+
+    static void saveBaseline(
+            SharedPreferences prefs,
+            String operatorKey,
+            int playerReports,
+            JSONObject raids) {
+        if (prefs == null) return;
+        prefs.edit()
+                .putBoolean(PREF_BASELINE_READY, true)
+                .putString(PREF_BASELINE_OPERATOR_KEY, operatorKey == null ? "" : operatorKey)
+                .putInt(PREF_BASELINE_PLAYER_REPORTS, Math.max(0, playerReports))
+                .putString(PREF_BASELINE_RAIDS, raids == null ? "{}" : raids.toString())
+                .apply();
     }
 
     static void postNotification(Context context, String title, String body, String eventKey) {
