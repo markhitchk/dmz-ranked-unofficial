@@ -211,7 +211,12 @@ public class MainActivity extends Activity {
     private TextView loadingSyncedText;
     private TextView loadingPlayersText;
     private TextView loadingLiveDot;
+    private TextView titleMetaText;
+    private TextView websiteStatusChip;
+    private TextView betaBadge;
+    private String titleBaseMeta = "Made by Harley's Studios";
     private int loadingStatusPollToken;
+    private int headerStatusPollToken;
     private int siteNotificationMonitorToken;
     private boolean siteNotificationBaselineReady;
     private final LinkedHashSet<String> seenSiteNotifications = new LinkedHashSet<>();
@@ -251,15 +256,15 @@ public class MainActivity extends Activity {
             loadingSyncedText = findViewById(R.id.loadingSyncedText);
             loadingPlayersText = findViewById(R.id.loadingPlayersText);
             loadingLiveDot = findViewById(R.id.loadingLiveDot);
+            titleMetaText = findViewById(R.id.titleMetaText);
+            websiteStatusChip = findViewById(R.id.websiteStatusChip);
+            betaBadge = findViewById(R.id.betaBadge);
 
             applyBrandLogo(findViewById(R.id.titleLogo));
             applyBrandLogo(findViewById(R.id.loadingLogo));
             updateLoadingIdentity();
 
-            TextView titleText = findViewById(R.id.titleText);
-            if (titleText != null && getPackageName().endsWith(".beta")) {
-                titleText.setText("DMZ Ranked [Beta]");
-            }
+            updateTitleBarIdentity();
 
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
 
@@ -424,6 +429,7 @@ public class MainActivity extends Activity {
                     siteNotificationBaselineReady = false;
                     seenSiteNotifications.clear();
                     resetLoadingSiteStatus();
+                    updateWebsiteHeader("CONNECTING", "", "");
                     showLoadingScreen("Connecting to dmzranked.com…", 5);
                 }
             }
@@ -443,6 +449,7 @@ public class MainActivity extends Activity {
                         applySavedOperatorToWebsite(0);
                         startSiteNotificationMonitor();
                         startOperatorMonitor();
+                        startHeaderStatusMonitor();
                         return;
                     }
                 } catch (Throwable ignored) {
@@ -454,6 +461,8 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
                 if (request != null && request.isForMainFrame()) {
+                    headerStatusPollToken++;
+                    updateWebsiteHeader("OFFLINE", "", "");
                     hideLoadingScreen();
                     showOfflinePage();
                 }
@@ -608,9 +617,13 @@ public class MainActivity extends Activity {
             if (hasLive) {
                 if (loadingConnectionText != null) loadingConnectionText.setText("LIVE");
                 if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_green));
+                updateWebsiteHeader("LIVE", synced, players);
             } else if (attempt >= 12) {
                 if (loadingConnectionText != null) loadingConnectionText.setText("CONNECTED");
                 if (loadingLiveDot != null) loadingLiveDot.setTextColor(getColor(R.color.dmz_green));
+                updateWebsiteHeader("ONLINE", synced, players);
+            } else {
+                updateWebsiteHeader("CONNECTING", synced, players);
             }
 
             if (hasSynced && loadingSyncedText != null) loadingSyncedText.setText(synced);
@@ -1194,6 +1207,123 @@ public class MainActivity extends Activity {
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", HOME_URL);
     }
 
+    private void updateTitleBarIdentity() {
+        TextView titleText = findViewById(R.id.titleText);
+        boolean beta = getPackageName().endsWith(".beta");
+
+        if (titleText != null) {
+            titleText.setText("DMZ Ranked");
+        }
+        if (betaBadge != null) {
+            betaBadge.setVisibility(beta ? View.VISIBLE : View.GONE);
+        }
+
+        String versionName = "";
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (packageInfo != null && packageInfo.versionName != null) {
+                versionName = packageInfo.versionName.trim();
+            }
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read title bar version", error);
+        }
+
+        titleBaseMeta = "Made by Harley's Studios"
+                + (versionName.isEmpty() ? "" : " • v" + versionName);
+        if (titleMetaText != null) {
+            titleMetaText.setText(titleBaseMeta);
+        }
+        updateWebsiteHeader("CONNECTING", "", "");
+    }
+
+    private void updateWebsiteHeader(String state, String synced, String players) {
+        if (websiteStatusChip != null) {
+            String normalized = state == null ? "" : state.trim().toUpperCase(Locale.US);
+            String label;
+            int color;
+
+            switch (normalized) {
+                case "LIVE":
+                    label = "● LIVE";
+                    color = getColor(R.color.dmz_green);
+                    break;
+                case "ONLINE":
+                case "CONNECTED":
+                    label = "● ONLINE";
+                    color = getColor(R.color.dmz_green);
+                    break;
+                case "OFFLINE":
+                    label = "● OFFLINE";
+                    color = getColor(R.color.dmz_red);
+                    break;
+                default:
+                    label = "● CONNECT";
+                    color = getColor(R.color.dmz_gold);
+                    break;
+            }
+
+            websiteStatusChip.setText(label);
+            websiteStatusChip.setTextColor(color);
+        }
+
+        if (titleMetaText != null) {
+            StringBuilder meta = new StringBuilder(titleBaseMeta);
+            String cleanPlayers = players == null ? "" : players.trim();
+            String cleanSynced = synced == null ? "" : synced.trim();
+
+            if (!cleanPlayers.isEmpty()) {
+                meta.append(" • ").append(cleanPlayers);
+            } else if (!cleanSynced.isEmpty()) {
+                meta.append(" • ").append(cleanSynced);
+            }
+            titleMetaText.setText(meta.toString());
+        }
+    }
+
+    private void startHeaderStatusMonitor() {
+        if (webView == null || isFinishing()) return;
+        int token = ++headerStatusPollToken;
+        pollHeaderStatus(token, 0);
+    }
+
+    private void pollHeaderStatus(int token, int attempt) {
+        if (webView == null || isFinishing() || token != headerStatusPollToken) return;
+
+        Uri current;
+        try {
+            String rawUrl = webView.getUrl();
+            current = rawUrl == null ? null : Uri.parse(rawUrl);
+        } catch (Throwable ignored) {
+            current = null;
+        }
+        if (!isDmzUrl(current)) return;
+
+        try {
+            webView.evaluateJavascript(READ_SITE_STATUS_SCRIPT, result -> {
+                if (isFinishing() || token != headerStatusPollToken) return;
+
+                String decoded = decodeJavascriptString(result);
+                String[] parts = decoded.split("\\|\\|\\|", -1);
+                String live = parts.length > 0 ? parts[0].trim() : "";
+                String synced = parts.length > 1 ? parts[1].trim() : "";
+                String players = parts.length > 2 ? parts[2].trim() : "";
+
+                boolean hasLive = "LIVE".equalsIgnoreCase(live);
+                boolean hasSiteData = !synced.isEmpty() || !players.isEmpty();
+                updateWebsiteHeader(
+                        hasLive ? "LIVE" : (hasSiteData || attempt > 0 ? "ONLINE" : "CONNECTING"),
+                        synced,
+                        players);
+
+                if (webView != null && !isFinishing() && token == headerStatusPollToken) {
+                    webView.postDelayed(() -> pollHeaderStatus(token, attempt + 1), 10000);
+                }
+            });
+        } catch (Throwable error) {
+            updateWebsiteHeader("OFFLINE", "", "");
+        }
+    }
+
     private void updateLoadingIdentity() {
         TextView appName = findViewById(R.id.loadingAppName);
         TextView versionText = findViewById(R.id.loadingVersionText);
@@ -1555,6 +1685,7 @@ public class MainActivity extends Activity {
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     startSiteNotificationMonitor();
                     startOperatorMonitor();
+                    startHeaderStatusMonitor();
                 }
             } catch (Throwable ignored) {
             }
@@ -1565,6 +1696,7 @@ public class MainActivity extends Activity {
     protected void onPause() {
         operatorMonitorToken++;
         siteNotificationMonitorToken++;
+        headerStatusPollToken++;
         super.onPause();
     }
 
@@ -1641,6 +1773,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         operatorMonitorToken++;
         siteNotificationMonitorToken++;
+        headerStatusPollToken++;
         try {
             if (webView != null) {
                 webView.stopLoading();
