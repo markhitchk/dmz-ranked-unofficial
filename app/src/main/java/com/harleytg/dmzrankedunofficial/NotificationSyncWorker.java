@@ -198,7 +198,7 @@ public class NotificationSyncWorker extends Worker {
         }
     }
 
-    private void syncSeason(
+    private static void syncSeason(
             Context context,
             SharedPreferences prefs,
             JSONObject root) {
