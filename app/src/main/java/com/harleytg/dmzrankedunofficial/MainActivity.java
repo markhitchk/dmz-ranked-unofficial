@@ -1335,8 +1335,7 @@ public class MainActivity extends Activity {
 
         String build = versionCode >= 0 ? String.valueOf(versionCode) : "Unknown";
         titleMetaMessages = new String[]{
-                "Version " + versionName,
-                "Build " + build,
+                "Version " + versionName + " • Build " + build,
                 "Made by Harley's Studios"
         };
 
