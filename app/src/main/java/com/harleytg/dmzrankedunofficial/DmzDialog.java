@@ -92,56 +92,77 @@ public final class DmzDialog {
 
         if (danger) {
             LinearLayout warningPanel = new LinearLayout(activity);
-            warningPanel.setOrientation(LinearLayout.VERTICAL);
+            warningPanel.setOrientation(LinearLayout.HORIZONTAL);
+            warningPanel.setGravity(Gravity.CENTER_VERTICAL);
             warningPanel.setPadding(
-                    dp(activity, 14),
-                    dp(activity, 11),
-                    dp(activity, 14),
+                    dp(activity, 12),
+                    dp(activity, 12),
+                    dp(activity, 12),
                     dp(activity, 12));
 
             GradientDrawable warningBackground = new GradientDrawable();
             warningBackground.setColor(activity.getColor(R.color.dmz_panel_deep));
             warningBackground.setStroke(dp(activity, 1), activity.getColor(R.color.dmz_red));
-            warningBackground.setCornerRadius(dp(activity, 10));
+            warningBackground.setCornerRadius(dp(activity, 12));
             warningPanel.setBackground(warningBackground);
 
+            TextView warningIcon = new TextView(activity);
+            warningIcon.setText("!");
+            warningIcon.setGravity(Gravity.CENTER);
+            warningIcon.setTextColor(activity.getColor(R.color.dmz_white));
+            warningIcon.setTextSize(18f);
+            warningIcon.setTypeface(Typeface.DEFAULT_BOLD);
+            GradientDrawable warningIconBackground = new GradientDrawable();
+            warningIconBackground.setColor(activity.getColor(R.color.dmz_red));
+            warningIconBackground.setShape(GradientDrawable.OVAL);
+            warningIcon.setBackground(warningIconBackground);
+            warningPanel.addView(warningIcon, new LinearLayout.LayoutParams(
+                    dp(activity, 36),
+                    dp(activity, 36)));
+
+            LinearLayout warningCopy = new LinearLayout(activity);
+            warningCopy.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams warningCopyParams = new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f);
+            warningCopyParams.leftMargin = dp(activity, 11);
+            warningPanel.addView(warningCopy, warningCopyParams);
+
             TextView warningTitle = new TextView(activity);
-            warningTitle.setText("⚠  REVIEW BEFORE CONTINUING");
+            warningTitle.setText("REVIEW THIS ACTION");
             warningTitle.setTextColor(activity.getColor(R.color.dmz_red));
             warningTitle.setTextSize(11f);
             warningTitle.setTypeface(Typeface.DEFAULT_BOLD);
             warningTitle.setLetterSpacing(0.08f);
-            warningPanel.addView(warningTitle, new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            warningCopy.addView(warningTitle);
 
             TextView warningBody = new TextView(activity);
-            warningBody.setText(
-                    "This is a destructive action. Data or settings affected by it may not be recoverable.");
-            warningBody.setTextColor(activity.getColor(R.color.dmz_white));
+            warningBody.setText("This can remove or reset data and may not be recoverable.");
+            warningBody.setTextColor(activity.getColor(R.color.dmz_muted));
             warningBody.setTextSize(12.5f);
-            warningBody.setLineSpacing(0f, 1.10f);
+            warningBody.setLineSpacing(0f, 1.08f);
             LinearLayout.LayoutParams warningBodyParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            warningBodyParams.topMargin = dp(activity, 5);
-            warningPanel.addView(warningBody, warningBodyParams);
+            warningBodyParams.topMargin = dp(activity, 3);
+            warningCopy.addView(warningBody, warningBodyParams);
 
             LinearLayout.LayoutParams warningParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            warningParams.topMargin = dp(activity, 13);
+            warningParams.topMargin = dp(activity, 14);
             card.addView(warningPanel, warningParams);
         }
 
         LinearLayout actions = buildActionRow(activity);
         TextView negative = null;
         if (negativeLabel != null && !negativeLabel.trim().isEmpty()) {
-            negative = buildAction(activity, negativeLabel, false, false);
+            negative = buildModalAction(activity, negativeLabel, false, danger);
             actions.addView(negative, weightedParams(activity, false));
         }
 
-        TextView positive = buildAction(activity, positiveLabel, true, danger);
+        TextView positive = buildModalAction(activity, positiveLabel, true, danger);
         actions.addView(positive, weightedParams(activity, negative != null));
 
         card.addView(actions, actionRowParams(activity));
@@ -243,33 +264,114 @@ public final class DmzDialog {
         LinearLayout.LayoutParams choicesParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        choicesParams.topMargin = dp(activity, 12);
+        choicesParams.topMargin = dp(activity, 15);
         card.addView(choices, choicesParams);
 
         final AlertDialog[] holder = new AlertDialog[1];
         for (int i = 0; i < items.length; i++) {
             final int index = i;
-            String value = items[i] == null ? "" : items[i];
+            final String value = items[i] == null ? "" : items[i];
+            final boolean selected = i == checkedIndex;
 
-            TextView row = new TextView(activity);
-            row.setText((i == checkedIndex ? "●  " : "○  ") + value);
-            row.setTextColor(i == checkedIndex
-                    ? activity.getColor(R.color.dmz_gold)
-                    : activity.getColor(R.color.dmz_white));
-            row.setTextSize(14f);
-            row.setTypeface(i == checkedIndex ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(activity, 14), dp(activity, 13), dp(activity, 14), dp(activity, 13));
-            row.setBackgroundResource(i == checkedIndex
-                    ? R.drawable.operator_selected_background
-                    : R.drawable.settings_action_background);
+            row.setPadding(
+                    dp(activity, 12),
+                    dp(activity, 11),
+                    dp(activity, 12),
+                    dp(activity, 11));
+
+            GradientDrawable rowBackground = new GradientDrawable();
+            rowBackground.setColor(activity.getColor(
+                    selected ? R.color.dmz_panel : R.color.dmz_panel_deep));
+            rowBackground.setStroke(
+                    dp(activity, selected ? 2 : 1),
+                    activity.getColor(selected ? R.color.dmz_gold : R.color.dmz_card_border));
+            rowBackground.setCornerRadius(dp(activity, 12));
+            row.setBackground(rowBackground);
             row.setClickable(true);
             row.setFocusable(true);
+            row.setMinimumHeight(dp(activity, 62));
+
+            TextView selector = new TextView(activity);
+            selector.setText(selected ? "✓" : "");
+            selector.setGravity(Gravity.CENTER);
+            selector.setTextSize(15f);
+            selector.setTypeface(Typeface.DEFAULT_BOLD);
+            selector.setTextColor(activity.getColor(
+                    selected ? R.color.dmz_black : R.color.dmz_muted));
+
+            GradientDrawable selectorBackground = new GradientDrawable();
+            selectorBackground.setShape(GradientDrawable.OVAL);
+            selectorBackground.setColor(activity.getColor(
+                    selected ? R.color.dmz_gold : R.color.dmz_panel));
+            selectorBackground.setStroke(
+                    dp(activity, 1),
+                    activity.getColor(selected ? R.color.dmz_gold : R.color.dmz_muted));
+            selector.setBackground(selectorBackground);
+            row.addView(selector, new LinearLayout.LayoutParams(
+                    dp(activity, 30),
+                    dp(activity, 30)));
+
+            LinearLayout profileCopy = new LinearLayout(activity);
+            profileCopy.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams profileCopyParams = new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f);
+            profileCopyParams.leftMargin = dp(activity, 12);
+            row.addView(profileCopy, profileCopyParams);
+
+            TextView profileName = new TextView(activity);
+            profileName.setText(value);
+            profileName.setTextColor(activity.getColor(
+                    selected ? R.color.dmz_gold : R.color.dmz_white));
+            profileName.setTextSize(15f);
+            profileName.setTypeface(selected ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+            profileCopy.addView(profileName);
+
+            TextView profileState = new TextView(activity);
+            profileState.setText(selected ? "Current operator" : "Tap to use this operator");
+            profileState.setTextColor(activity.getColor(R.color.dmz_muted));
+            profileState.setTextSize(11.5f);
+            LinearLayout.LayoutParams profileStateParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            profileStateParams.topMargin = dp(activity, 2);
+            profileCopy.addView(profileState, profileStateParams);
+
+            TextView stateChip = new TextView(activity);
+            stateChip.setText(selected ? "ACTIVE" : "SELECT");
+            stateChip.setGravity(Gravity.CENTER);
+            stateChip.setTextSize(9.5f);
+            stateChip.setTypeface(Typeface.DEFAULT_BOLD);
+            stateChip.setLetterSpacing(0.06f);
+            stateChip.setPadding(
+                    dp(activity, 9),
+                    dp(activity, 5),
+                    dp(activity, 9),
+                    dp(activity, 5));
+            stateChip.setTextColor(activity.getColor(
+                    selected ? R.color.dmz_black : R.color.dmz_gold));
+            GradientDrawable chipBackground = new GradientDrawable();
+            chipBackground.setColor(activity.getColor(
+                    selected ? R.color.dmz_gold : R.color.dmz_panel_deep));
+            chipBackground.setStroke(
+                    dp(activity, 1),
+                    activity.getColor(R.color.dmz_gold_dark));
+            chipBackground.setCornerRadius(dp(activity, 20));
+            stateChip.setBackground(chipBackground);
+            LinearLayout.LayoutParams chipParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            chipParams.leftMargin = dp(activity, 8);
+            row.addView(stateChip, chipParams);
 
             LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            if (i > 0) rowParams.topMargin = dp(activity, 8);
+            if (i > 0) rowParams.topMargin = dp(activity, 9);
             choices.addView(row, rowParams);
 
             row.setOnClickListener(v -> {
@@ -278,12 +380,23 @@ public final class DmzDialog {
             });
         }
 
-        LinearLayout actions = buildActionRow(activity);
-        TextView negative = buildAction(activity, negativeLabel, false, false);
-        actions.addView(negative, new LinearLayout.LayoutParams(
+        TextView footer = new TextView(activity);
+        footer.setText("Profiles are imported from DMZRanked.com  •  Maximum 2 operators");
+        footer.setTextColor(activity.getColor(R.color.dmz_muted));
+        footer.setTextSize(10.5f);
+        footer.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        card.addView(actions, actionRowParams(activity));
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        footerParams.topMargin = dp(activity, 12);
+        card.addView(footer, footerParams);
+
+        TextView negative = buildModalAction(activity, negativeLabel, false, false);
+        LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(activity, 46));
+        cancelParams.topMargin = dp(activity, 15);
+        card.addView(negative, cancelParams);
 
         AlertDialog dialog = present(activity, card, false);
         holder[0] = dialog;
@@ -299,7 +412,7 @@ public final class DmzDialog {
             boolean danger) {
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(activity, 22), dp(activity, 20), dp(activity, 22), dp(activity, 18));
+        card.setPadding(dp(activity, 18), dp(activity, 18), dp(activity, 18), dp(activity, 16));
         card.setBackgroundResource(danger
                 ? R.drawable.danger_dialog_background
                 : R.drawable.dmz_dialog_background);
@@ -378,6 +491,50 @@ public final class DmzDialog {
         return params;
     }
 
+    private static TextView buildModalAction(
+            Activity activity,
+            String label,
+            boolean primary,
+            boolean danger) {
+        TextView action = new TextView(activity);
+        action.setText(label == null ? "OK" : label);
+        action.setGravity(Gravity.CENTER);
+        action.setTextSize(11f);
+        action.setTypeface(Typeface.DEFAULT_BOLD);
+        action.setLetterSpacing(0.05f);
+        action.setClickable(true);
+        action.setFocusable(true);
+        action.setMinHeight(dp(activity, 48));
+        action.setPadding(
+                dp(activity, 12),
+                dp(activity, 12),
+                dp(activity, 12),
+                dp(activity, 12));
+
+        GradientDrawable background = new GradientDrawable();
+        background.setCornerRadius(dp(activity, 10));
+
+        if (primary && danger) {
+            background.setColor(activity.getColor(R.color.dmz_red));
+            background.setStroke(dp(activity, 1), activity.getColor(R.color.dmz_red));
+            action.setTextColor(activity.getColor(R.color.dmz_white));
+        } else if (primary) {
+            background.setColor(activity.getColor(R.color.dmz_gold));
+            background.setStroke(dp(activity, 1), activity.getColor(R.color.dmz_gold));
+            action.setTextColor(activity.getColor(R.color.dmz_black));
+        } else {
+            background.setColor(activity.getColor(R.color.dmz_panel_deep));
+            background.setStroke(
+                    dp(activity, 1),
+                    activity.getColor(danger ? R.color.dmz_red : R.color.dmz_card_border));
+            action.setTextColor(activity.getColor(
+                    danger ? R.color.dmz_white : R.color.dmz_muted));
+        }
+
+        action.setBackground(background);
+        return action;
+    }
+
     private static TextView buildAction(
             Activity activity,
             String label,
@@ -415,12 +572,12 @@ public final class DmzDialog {
             if (window != null) {
                 window.setBackgroundDrawableResource(android.R.color.transparent);
                 int width = Math.min(
-                        activity.getResources().getDisplayMetrics().widthPixels - dp(activity, 32),
-                        dp(activity, 460));
+                        activity.getResources().getDisplayMetrics().widthPixels - dp(activity, 28),
+                        dp(activity, 450));
                 window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
                 window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
                 WindowManager.LayoutParams params = window.getAttributes();
-                params.dimAmount = 0.72f;
+                params.dimAmount = 0.78f;
                 window.setAttributes(params);
                 if (showKeyboard) {
                     window.setSoftInputMode(
@@ -432,15 +589,18 @@ public final class DmzDialog {
             SharedPreferences prefs = activity.getSharedPreferences(
                     "dmz_ranked_settings",
                     Activity.MODE_PRIVATE);
+            card.setElevation(dp(activity, 18));
             if (prefs.getBoolean("app_animations", true)) {
                 card.setAlpha(0f);
-                card.setScaleX(0.96f);
-                card.setScaleY(0.96f);
+                card.setScaleX(0.97f);
+                card.setScaleY(0.97f);
+                card.setTranslationY(dp(activity, 10));
                 card.animate()
                         .alpha(1f)
                         .scaleX(1f)
                         .scaleY(1f)
-                        .setDuration(180L)
+                        .translationY(0f)
+                        .setDuration(190L)
                         .start();
             }
         });
