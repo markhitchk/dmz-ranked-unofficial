@@ -1315,14 +1315,12 @@ public class MainActivity extends Activity {
     }
 
     private void animateTitleLoadingLogo() {
-        if (!loadingAnimationsRunning || titleLogoView == null) return;
+        if (titleLogoView == null) return;
         titleLogoView.animate().cancel();
-        titleLogoView.animate()
-                .rotationBy(360f)
-                .setDuration(1100L)
-                .setInterpolator(new android.view.animation.LinearInterpolator())
-                .withEndAction(this::animateTitleLoadingLogo)
-                .start();
+        titleLogoView.setRotation(0f);
+        titleLogoView.setScaleX(1f);
+        titleLogoView.setScaleY(1f);
+        titleLogoView.setAlpha(1f);
     }
 
     private void animateLoadingScreenLogo() {
