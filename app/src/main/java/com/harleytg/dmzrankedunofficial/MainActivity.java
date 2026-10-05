@@ -232,6 +232,7 @@ public class MainActivity extends Activity {
     private int lastTitleMetaIndex = -1;
     private boolean loadingAnimationsRunning;
     private int loadingStatusPollToken;
+    private int loadingScreenToken;
     private int siteNotificationMonitorToken;
     private boolean siteNotificationBaselineReady;
     private final LinkedHashSet<String> seenSiteNotifications = new LinkedHashSet<>();
@@ -803,6 +804,84 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void switchOperatorAndReload(String operatorName) {
+        String selected = operatorName == null ? "" : operatorName.trim();
+        if (selected.isEmpty() || webView == null || isFinishing()) return;
+
+        // Stop monitors tied to the previous operator/page before changing website state.
+        operatorMonitorToken++;
+        siteNotificationMonitorToken++;
+        loadingStatusPollToken++;
+        siteNotificationBaselineReady = false;
+        seenSiteNotifications.clear();
+        resetLoadingSiteStatus();
+        showLoadingScreen("Switching operator to " + selected + "…", 6);
+
+        String quoted = JSONObject.quote(selected);
+        String script =
+                "(function(){try{" +
+                "var name=" + quoted + ";" +
+                // App-requested selection must override the page's manual-touch guard.
+                "window.__dmzAndroidOperatorTouched=false;" +
+                "try{localStorage.setItem('dmz_myname',name);}catch(e){}" +
+                "var input=document.getElementById('playerName');" +
+                "var pick=document.getElementById('playerPick');" +
+                "var target=name.toLowerCase();" +
+                "if(pick){" +
+                "for(var i=1;i<pick.options.length;i++){" +
+                "var o=pick.options[i];" +
+                "var v=String(o.value||o.textContent||'').trim();" +
+                "if(v.toLowerCase()===target){" +
+                "pick.selectedIndex=i;" +
+                "pick.dispatchEvent(new Event('change',{bubbles:true}));" +
+                "break;" +
+                "}" +
+                "}" +
+                "}" +
+                "if(input){" +
+                "input.value=name;" +
+                "input.dispatchEvent(new Event('input',{bubbles:true}));" +
+                "input.dispatchEvent(new Event('change',{bubbles:true}));" +
+                "}" +
+                "return 'applied';" +
+                "}catch(e){return 'error';}})()";
+
+        try {
+            webView.evaluateJavascript(script, ignored -> {
+                if (webView == null || isFinishing()) return;
+                webView.postDelayed(() -> {
+                    if (webView == null || isFinishing()) return;
+
+                    // A real page reload resets page-lifetime JS guards and gives the normal
+                    // loading/status pipeline a fresh lifecycle. This removes the need to
+                    // force-close the app after switching operators.
+                    try {
+                        webView.stopLoading();
+                    } catch (Throwable ignoredStop) {
+                    }
+
+                    String currentUrl = webView.getUrl();
+                    if (currentUrl != null) {
+                        try {
+                            if (isDmzUrl(Uri.parse(currentUrl))) {
+                                webView.reload();
+                                return;
+                            }
+                        } catch (Throwable ignoredUrl) {
+                        }
+                    }
+                    webView.loadUrl(HOME_URL);
+                }, 180L);
+            });
+        } catch (Throwable error) {
+            Log.e(TAG, "Could not switch operator in WebView", error);
+            hideLoadingScreen();
+            Toast.makeText(this,
+                    "Could not switch operator. Try again.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void startOperatorMonitor() {
         if (webView == null || isFinishing()) return;
         int token = ++operatorMonitorToken;
@@ -1267,10 +1346,13 @@ public class MainActivity extends Activity {
     }
 
     private void hideLoadingScreenDelayed(long delayMs) {
+        final int token = loadingScreenToken;
         if (loadingProgressBar != null) loadingProgressBar.setProgress(100);
         if (loadingOverlay != null) {
             loadingOverlay.postDelayed(() -> {
-                if (isFinishing() || loadingOverlay == null) return;
+                if (isFinishing()
+                        || token != loadingScreenToken
+                        || loadingOverlay == null) return;
                 boolean animate = preferences == null
                         || preferences.getBoolean(PREF_APP_ANIMATIONS, true);
                 if (!animate) {
@@ -1517,6 +1599,7 @@ public class MainActivity extends Activity {
     }
 
     private void showLoadingScreen(String status, int progress) {
+        final int token = ++loadingScreenToken;
         setMainChromeVisible(true);
         startLoadingAnimations();
         if (loadingProgressBar != null) loadingProgressBar.setProgress(progress);
@@ -1524,6 +1607,22 @@ public class MainActivity extends Activity {
             loadingOverlay.animate().cancel();
             loadingOverlay.setAlpha(1f);
             loadingOverlay.setVisibility(View.VISIBLE);
+
+            // Never let a completed WebView remain hidden forever behind the splash.
+            // This is a final escape hatch for site-side SPA/operator transitions that
+            // do not produce the normal LIVE/SYNCED/PLAYERS markers.
+            loadingOverlay.postDelayed(() -> {
+                if (isFinishing()
+                        || token != loadingScreenToken
+                        || loadingOverlay == null
+                        || loadingOverlay.getVisibility() != View.VISIBLE
+                        || webView == null
+                        || webView.getProgress() < 100) {
+                    return;
+                }
+                updateLoadingVerbose("Site ready.");
+                hideLoadingScreenDelayed(0);
+            }, 9000L);
         }
         updateLoadingVerbose(status);
     }
@@ -2015,10 +2114,6 @@ public class MainActivity extends Activity {
             boolean contentSizeChanged = !contentSizeNow.equals(contentSizeBeforeSettings);
             String action = data == null ? null : data.getStringExtra(SettingsActivity.EXTRA_ACTION);
 
-            if (contentSizeChanged) {
-                recreate();
-                return;
-            }
             boolean reloadRequested = SettingsActivity.ACTION_RELOAD.equals(action);
             boolean saveOperatorRequested = SettingsActivity.ACTION_SAVE_OPERATOR.equals(action);
             boolean restoreOperatorRequested = SettingsActivity.ACTION_RESTORE_OPERATOR.equals(action);
@@ -2042,13 +2137,7 @@ public class MainActivity extends Activity {
                     Toast.makeText(this,
                             "Switching to " + selectedOperator + "…",
                             Toast.LENGTH_SHORT).show();
-                    applySavedOperatorToWebsite(0);
-                    if (webView != null) {
-                        webView.postDelayed(() -> {
-                            applySavedOperatorToWebsite(0);
-                            startOperatorMonitor();
-                        }, 450L);
-                    }
+                    switchOperatorAndReload(selectedOperator);
                 }
                 return;
             }
@@ -2067,6 +2156,12 @@ public class MainActivity extends Activity {
 
             if (desktopChanged) {
                 applyDesktopMode(false);
+            }
+
+            if (contentSizeChanged) {
+                // Text zoom is already applied above. Recreating MainActivity here used to
+                // restart/restore the WebView mid-transition and could strand the loading UI.
+                applyAppearancePreferences();
             }
 
             if ((desktopChanged || reloadRequested) && webView != null && webView.getUrl() != null) {
