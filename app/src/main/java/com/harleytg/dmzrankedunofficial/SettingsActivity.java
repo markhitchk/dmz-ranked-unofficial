@@ -1726,7 +1726,8 @@ public class SettingsActivity extends Activity {
                 "RESET SETTINGS",
                 () -> {
                     preferences.edit().clear().apply();
-                    Toast.makeText(this, "App settings reset to defaults.", Toast.LENGTH_SHORT).show();
+                    DmzRankedWidgetProvider.requestUpdateAll(this);
+                    Toast.makeText(this, "App and widget settings reset to defaults.", Toast.LENGTH_SHORT).show();
                     recreate();
                 });
     }
