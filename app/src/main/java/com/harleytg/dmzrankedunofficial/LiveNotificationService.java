@@ -60,10 +60,10 @@ public class LiveNotificationService extends Service {
 
         Notification notification = builder
                 .setSmallIcon(R.drawable.ic_notification_dmz)
-                .setContentTitle("DMZ Ranked live alerts")
-                .setContentText("Watching reports and raid status in real time")
+                .setContentTitle("DMZ Ranked")
+                .setContentText("[System] Live monitoring active")
                 .setStyle(new Notification.BigTextStyle().bigText(
-                        "Watching DMZ Ranked reports, review holds, and raid approvals every few seconds."))
+                        "[System] Live monitoring active\nWatching reports, review holds, and raid approvals every few seconds."))
                 .setContentIntent(contentIntent)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
