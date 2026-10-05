@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
     private static final int SETTINGS_REQUEST = 2002;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2003;
     private static final int PLAY_UPDATE_REQUEST = 2004;
-    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
+    private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v3_heads_up";
 
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_DESKTOP = "desktop_site";
@@ -1341,39 +1341,43 @@ public class MainActivity extends Activity {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         String body = message.trim();
-        String title = "DMZ Ranked";
+        String alertLine = "[System] Alert";
         if (body.startsWith("[RAID]")) {
-            title = "[Raids] Raid submitted";
+            alertLine = "[Raids] Raid submitted";
             body = body.substring(6).trim();
         } else if (body.startsWith("[REPORT]")) {
-            title = "[Reports] DMZ Ranked";
             body = body.substring(8).trim();
+            alertLine = body.toLowerCase(Locale.US).contains("operator")
+                    ? "[Reports] Operator reported"
+                    : "[Reports] Raid reported";
         } else if (body.startsWith("[APPROVED]")) {
-            title = "[Approved] Raid approved";
+            alertLine = "[Approved] Raid approved";
             body = body.substring(10).trim();
         } else if (body.startsWith("[REVIEW]")) {
-            title = "[Review] Raid under review";
+            alertLine = "[Review] Raid under review";
             body = body.substring(8).trim();
         } else if (body.startsWith("[UPDATE]")) {
-            title = "[Update] DMZ Ranked";
+            alertLine = "[System] Update available";
             body = body.substring(8).trim();
         } else if (body.startsWith("[SEASON]")) {
-            title = "[Season] Season update";
+            alertLine = "[System] Season update";
             body = body.substring(8).trim();
         } else if (body.startsWith("[WEBSITE]")) {
-            title = "[Website] DMZ Ranked";
+            alertLine = "[System] Website alert";
             body = body.substring(9).trim();
         }
         if (body.length() > 320) body = body.substring(0, 319) + "…";
+        String preview = body.isEmpty() ? alertLine : alertLine + " • " + body;
+        String expanded = body.isEmpty() ? alertLine : alertLine + "\n" + body;
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new Notification.Builder(this, SITE_NOTIFICATION_CHANNEL)
                 : new Notification.Builder(this);
 
         builder.setSmallIcon(R.drawable.ic_notification_dmz)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new Notification.BigTextStyle().bigText(body))
+                .setContentTitle("DMZ Ranked")
+                .setContentText(preview)
+                .setStyle(new Notification.BigTextStyle().bigText(expanded))
                 .setContentIntent(contentIntent)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(false)
@@ -1389,7 +1393,7 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
         }
 
-        NotificationSync.recordForegroundNotification(this, title, body);
+        NotificationSync.recordForegroundNotification(this, "DMZ Ranked", expanded);
         manager.notify(12000 + Math.abs(body.hashCode() % 8000), builder.build());
     }
 
