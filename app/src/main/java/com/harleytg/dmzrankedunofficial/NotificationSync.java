@@ -18,7 +18,6 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
-import androidx.work.OutOfQuotaPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
@@ -95,7 +94,6 @@ final class NotificationSync {
 
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(NotificationSyncWorker.class)
                 .setConstraints(constraints)
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build();
 
         WorkManager.getInstance(app).enqueueUniqueWork(
