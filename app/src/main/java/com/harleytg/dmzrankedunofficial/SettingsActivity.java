@@ -1112,7 +1112,7 @@ public class SettingsActivity extends Activity {
                 long ageMinutes = Math.max(0L, (System.currentTimeMillis() - syncMs) / 60000L);
                 syncText += ageMinutes == 0L ? " • just now" : " • " + ageMinutes + "m ago";
             }
-            status.setText("Enabled • live + background sync on\nBackground: " + syncText);
+            status.setText("Enabled • live in-app alerts + Play-safe background checks\nBackground: " + syncText);
             status.setTextColor(syncResult != null && syncResult.startsWith("ERROR")
                     ? getColor(R.color.dmz_gold)
                     : getColor(R.color.dmz_green));
