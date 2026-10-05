@@ -1,8 +1,6 @@
 (() => {
-  const PAGE_ID = "hs-unofficial-app-page";
+  const TAB = "unofficial-app";
   const TAB_ATTR = "data-hs-unofficial-app";
-  const APP_HASH = "#unofficial-app";
-  let previousHash = "";
 
   function clean(value) {
     return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
@@ -42,143 +40,86 @@
   }
 
   function findSiteNav() {
-    const direct = document.querySelector("nav.tabs, .tabs[role='tablist'], nav[role='tablist']");
-    if (direct) return direct;
+    return document.querySelector(".wrap nav.tabs");
+  }
 
-    const buttons = Array.from(document.querySelectorAll("button,a,[role='tab']"));
-    const leader = buttons.find((el) => clean(el.textContent).toUpperCase() === "LEADERBOARD");
-    if (!leader) return null;
-
-    let node = leader.parentElement;
-    for (let i = 0; i < 5 && node; i++, node = node.parentElement) {
-      const text = clean(node.textContent).toUpperCase();
-      if (text.includes("LEADERBOARD") && text.includes("CONTACT")) return node;
-    }
-    return leader.parentElement;
+  function findWrap(nav) {
+    return (nav && nav.closest(".wrap")) || document.querySelector(".wrap");
   }
 
   function updateWelcome() {
     const welcome = document.getElementById("hs-unofficial-welcome");
     if (!welcome) return;
     const operator = getOperatorName();
-    const next = operator ? `Welcome back, ${operator}!` : "Welcome, Guest!";
+    const next = operator ? `Welcome back, ${operator}.` : "Welcome, Guest.";
     if (welcome.textContent !== next) welcome.textContent = next;
   }
 
-  function ensurePage() {
-    let page = document.getElementById(PAGE_ID);
-    if (page) return page;
+  function ensureSection(nav) {
+    let section = document.getElementById(TAB);
+    if (section) return section;
 
-    page = document.createElement("section");
-    page.id = PAGE_ID;
-    page.setAttribute("role", "tabpanel");
-    page.setAttribute("aria-label", "DMZ Ranked Unofficial App");
-    page.innerHTML =
-      '<div class="hs-unofficial-page-inner">' +
-        '<div class="hs-unofficial-hero">' +
-          '<div class="hs-unofficial-kicker">Harley\'s Studios • Android Beta</div>' +
-          '<h1>DMZ Ranked Unofficial App</h1>' +
-          '<h2 id="hs-unofficial-welcome">Welcome, Guest!</h2>' +
-          '<p>A dedicated page for the Android wrapper, app features, notifications, operator tools, and Beta testing.</p>' +
-          '<div class="hs-unofficial-badges">' +
-            '<span class="hs-unofficial-badge beta">Beta</span>' +
-            '<span class="hs-unofficial-badge">1.0.51 (155)</span>' +
-            '<span class="hs-unofficial-badge">Harley\'s Studios</span>' +
-          '</div>' +
+    const wrap = findWrap(nav);
+    if (!wrap) return null;
+
+    section = document.createElement("section");
+    section.id = TAB;
+    section.setAttribute("aria-label", "DMZ Ranked Unofficial App");
+    section.innerHTML =
+      '<div class="sect-hero camp">' +
+        '<h2>Unofficial App<small>Harley\'s Studios · Android Beta</small></h2>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2 class="section-title" id="hs-unofficial-welcome">Welcome, Guest.</h2>' +
+        '<p class="hs-app-intro"><b>DMZ Ranked Unofficial App</b> is the Android app experience built around dmzranked.com. This page contains app-only information and tools while the DMZ Ranked website continues to run normally.</p>' +
+        '<div class="hs-app-meta">' +
+          '<span class="hs-app-pill beta">Beta</span>' +
+          '<span class="hs-app-pill">1.0.52 (156)</span>' +
+          '<span class="hs-app-pill">Harley\'s Studios</span>' +
         '</div>' +
-        '<div class="hs-unofficial-grid">' +
-          '<div class="hs-unofficial-card"><h3>Website</h3><p class="hs-unofficial-status"><span class="hs-unofficial-status-dot"></span><span>dmzranked.com runs normally inside the app.</span></p></div>' +
-          '<div class="hs-unofficial-card"><h3>Notifications</h3><p>App alerts cover reports, reviews, approvals, raids, updates, and system messages.</p></div>' +
-          '<div class="hs-unofficial-card"><h3>Operator</h3><p>The app can detect the operator selected on this device and use it for app-only features.</p></div>' +
-          '<div class="hs-unofficial-card"><h3>Beta Testing</h3><p>This page is an experimental Beta feature and can be changed without changing the DMZ Ranked website.</p></div>' +
-        '</div>' +
-        '<div class="hs-unofficial-note"><strong>Unofficial app notice:</strong> This page is injected only inside Harley\'s Studios DMZ Ranked Unofficial App. It does not edit, upload to, or modify dmzranked.com.</div>' +
-        '<div class="hs-unofficial-actions"><button type="button" class="hs-unofficial-back">Back to DMZ Ranked</button></div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2 class="section-title">App Status</h2>' +
+        '<div class="hs-app-row"><div class="hs-app-label">Website</div><div class="hs-app-value"><span class="hs-app-status"><span class="hs-app-dot"></span>dmzranked.com loaded in the app</span></div></div>' +
+        '<div class="hs-app-row"><div class="hs-app-label">Release channel</div><div class="hs-app-value">Beta testing</div></div>' +
+        '<div class="hs-app-row"><div class="hs-app-label">Build</div><div class="hs-app-value">1.0.52 (156)</div></div>' +
+        '<div class="hs-app-row"><div class="hs-app-label">Developer</div><div class="hs-app-value">Harley\'s Studios</div></div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<h2 class="section-title">Unofficial App Features</h2>' +
+        '<ul class="hs-app-list">' +
+          '<li><b>Android notifications</b> for reports, reviews, approvals, raids, updates, and system alerts.</li>' +
+          '<li><b>Operator detection</b> so app-only features can recognize the operator saved on this device.</li>' +
+          '<li><b>App settings</b> and Android-specific controls that are separate from the website.</li>' +
+          '<li><b>Beta testing features</b> can be tried here before they are considered for the stable app.</li>' +
+        '</ul>' +
+      '</div>' +
+
+      '<div class="card hs-app-notice">' +
+        '<h2 class="section-title">About This Page</h2>' +
+        '<p>This Unofficial App tab exists only inside Harley\'s Studios DMZ Ranked Unofficial App. It is injected by the Android Beta app and does not edit, upload to, or modify the dmzranked.com website.</p>' +
       '</div>';
 
-    document.body.appendChild(page);
-    page.querySelector(".hs-unofficial-back").addEventListener("click", () => closePage(true));
-    return page;
+    wrap.appendChild(section);
+    return section;
   }
 
-  function positionPage() {
-    const nav = findSiteNav();
-    const page = ensurePage();
-    let top = 0;
-
-    if (nav) {
-      nav.classList.add("hs-unofficial-nav-host");
-      const rect = nav.getBoundingClientRect();
-      top = Math.max(0, Math.min(window.innerHeight - 80, Math.round(rect.bottom)));
-    }
-
-    page.style.setProperty("--hs-unofficial-page-top", `${top}px`);
-  }
-
-  function setCustomTabSelected(selected) {
-    const nav = findSiteNav();
-    if (!nav) return;
-
-    const button = nav.querySelector(`[${TAB_ATTR}]`);
-    if (button) {
-      button.classList.toggle("active", selected);
-      button.setAttribute("aria-selected", selected ? "true" : "false");
-    }
-
-    if (selected) {
-      nav.querySelectorAll("[data-tab],[role='tab']").forEach((other) => {
-        if (other !== button) {
-          other.classList.remove("active");
-          if (other.hasAttribute("aria-selected")) other.setAttribute("aria-selected", "false");
-        }
-      });
-    }
-  }
-
-  function openPage(updateHash = true) {
-    const page = ensurePage();
-    if (location.hash !== APP_HASH) previousHash = location.hash;
-    window.scrollTo(0, 0);
-    positionPage();
-    page.classList.add("active");
-    page.setAttribute("aria-hidden", "false");
-    document.documentElement.classList.add("hs-unofficial-app-open");
-    setCustomTabSelected(true);
+  function activateOurTab(button, section) {
+    document.querySelectorAll("[data-tab]").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll("section").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    section.classList.add("active");
     updateWelcome();
-
-    if (updateHash && location.hash !== APP_HASH) {
-      history.pushState(null, "", APP_HASH);
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function closePage(restoreHash = false) {
-    const page = document.getElementById(PAGE_ID);
-    if (page) {
-      page.classList.remove("active");
-      page.setAttribute("aria-hidden", "true");
-    }
-
-    document.documentElement.classList.remove("hs-unofficial-app-open");
-    setCustomTabSelected(false);
-
-    if (restoreHash && location.hash === APP_HASH) {
-      history.replaceState(null, "", previousHash || location.pathname + location.search);
-    }
-  }
-
-  function bindCustomButton(button) {
-    if (!button || button.dataset.hsBound === "true") return;
+  function bindButton(button, section) {
+    if (!button || !section || button.dataset.hsBound === "true") return;
     button.dataset.hsBound = "true";
-
-    button.addEventListener(
-      "click",
-      (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        openPage(true);
-      },
-      true
-    );
+    button.addEventListener("click", () => activateOurTab(button, section));
   }
 
   function ensureTab() {
@@ -187,55 +128,28 @@
     const nav = findSiteNav();
     if (!nav) return;
 
-    if (!nav.hasAttribute("role")) nav.setAttribute("role", "tablist");
-
     let button = nav.querySelector(`[${TAB_ATTR}]`);
     if (!button) {
       button = document.createElement("button");
       button.type = "button";
       button.className = "hs-unofficial-tab";
+      button.dataset.tab = TAB;
       button.setAttribute(TAB_ATTR, "true");
-      button.setAttribute("role", "tab");
-      button.setAttribute("aria-selected", "false");
       button.textContent = "Unofficial App";
       nav.appendChild(button);
     }
 
-    bindCustomButton(button);
-    ensurePage();
+    const section = ensureSection(nav);
+    bindButton(button, section);
     updateWelcome();
-
-    if (location.hash === APP_HASH) {
-      openPage(false);
-    }
   }
-
-  document.addEventListener(
-    "click",
-    (event) => {
-      const nav = findSiteNav();
-      if (!nav || !nav.contains(event.target)) return;
-      const custom = event.target.closest(`[${TAB_ATTR}]`);
-      if (!custom && document.getElementById(PAGE_ID)?.classList.contains("active")) {
-        closePage(false);
-      }
-    },
-    true
-  );
-
-  window.addEventListener("hashchange", () => {
-    if (location.hash === APP_HASH) openPage(false);
-    else closePage(false);
-  });
-
-  window.addEventListener("resize", () => {
-    if (document.getElementById(PAGE_ID)?.classList.contains("active")) positionPage();
-  });
 
   ensureTab();
 
   const observer = new MutationObserver(() => {
-    ensureTab();
+    if (!document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`) || !document.getElementById(TAB)) {
+      ensureTab();
+    }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
