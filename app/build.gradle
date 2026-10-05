@@ -184,8 +184,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 138
-        versionName '1.0.34'
+        versionCode 139
+        versionName '1.0.35'
     }
 
     sourceSets {
@@ -232,4 +232,5 @@ tasks.named("preBuild").configure {
 
 dependencies {
     implementation 'com.google.android.play:app-update:2.1.0'
+    implementation 'androidx.work:work-runtime:2.10.1'
 }
