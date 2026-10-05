@@ -211,56 +211,7 @@
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
-                <LinearLayout
-                    android:id="@+id/harleysStudiosSupportCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/settings_action_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="14dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/kofi_support"
-                            android:textColor="@color/dmz_white"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="@string/kofi_support_summary"
-                            android:textColor="@color/dmz_muted"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:background="@drawable/settings_support_background"
-                        android:paddingStart="12dp"
-                        android:paddingTop="7dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="7dp"
-                        android:text="SUPPORT ↗"
-                        android:textColor="@color/dmz_black"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                
 
                 <LinearLayout
                     android:id="@+id/creditsContent"
@@ -386,6 +337,57 @@
                                 android:textColor="@color/dmz_muted"
                                 android:textSize="13sp" />
                         </LinearLayout>
+                    </LinearLayout>
+
+    <LinearLayout
+                        android:id="@+id/harleysStudiosSupportCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/settings_action_background"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/kofi_support"
+                                android:textColor="@color/dmz_white"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/kofi_support_summary"
+                                android:textColor="@color/dmz_muted"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/settings_support_background"
+                            android:paddingStart="12dp"
+                            android:paddingTop="7dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="7dp"
+                            android:text="SUPPORT ↗"
+                            android:textColor="@color/dmz_black"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
@@ -1396,7 +1398,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-
             <LinearLayout
                 android:id="@+id/dataTransferSection"
                 android:layout_width="match_parent"
@@ -1592,7 +1593,6 @@
                     </LinearLayout>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="COPY" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
                 </LinearLayout>
-
 
                 <LinearLayout
                     android:id="@+id/lockDeveloperToolsCard"
