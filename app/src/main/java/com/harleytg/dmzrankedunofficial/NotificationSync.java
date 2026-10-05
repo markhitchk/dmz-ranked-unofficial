@@ -40,6 +40,7 @@ final class NotificationSync {
     static final String PREF_BASELINE_SEASON = "notification_sync_season";
     static final String PREF_LAST_SYNC_MS = "notification_sync_last_ms";
     static final String PREF_LAST_SYNC_RESULT = "notification_sync_last_result";
+    static final String PREF_LIVE_SERVICE_HEARTBEAT_MS = "notification_live_service_heartbeat_ms";
 
     static final String PREF_HANDLED_RAID_REPORT_MS = "notification_handled_raid_report_ms";
     static final String PREF_HANDLED_OPERATOR_REPORT_MS = "notification_handled_operator_report_ms";
@@ -64,7 +65,22 @@ final class NotificationSync {
             workManager.cancelUniqueWork(PERIODIC_WORK);
             workManager.cancelUniqueWork(PRIME_WORK);
             workManager.cancelUniqueWork(BACKGROUND_KICK_WORK);
+            try {
+                app.stopService(new Intent(app, LiveNotificationService.class));
+            } catch (Throwable ignored) {
+            }
             return;
+        }
+
+        try {
+            Intent liveIntent = new Intent(app, LiveNotificationService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                app.startForegroundService(liveIntent);
+            } else {
+                app.startService(liveIntent);
+            }
+        } catch (Throwable ignored) {
+            // WorkManager remains the fallback if Android refuses the foreground service.
         }
 
         Constraints constraints = new Constraints.Builder()
