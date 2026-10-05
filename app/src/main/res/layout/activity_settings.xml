@@ -933,7 +933,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-condensed"
-                        android:text="Widget size mode"
+                        android:text="Widget layout mode"
                         android:textColor="@color/dmz_white"
                         android:textSize="17sp"
                         android:textStyle="bold" />
@@ -943,7 +943,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Auto follows the launcher size. You can force Compact, Standard, or Large."
+                        android:text="Controls the content layout. Long-press the Android widget to resize its physical home-screen footprint."
                         android:textColor="@color/dmz_muted"
                         android:textSize="13sp" />
 
