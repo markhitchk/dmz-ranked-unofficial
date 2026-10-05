@@ -304,6 +304,6 @@ public final class DmzPublicStateMonitor {
     }
 
     private static String clean(String value) {
-        return value == null ? "" : value.replaceAll("\s+", " ").trim();
+        return value == null ? "" : value.replaceAll("\\s+", " ").trim();
     }
 }
