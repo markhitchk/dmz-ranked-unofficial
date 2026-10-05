@@ -14,8 +14,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Read-only bridge used by the side-by-side beta package to import safe app data
- * from the production app. No cookies, passwords, PINs, tokens, sessions, auth
+ * Read-only bridge used by the stable and beta packages to exchange safe app data
+ * side by side. No cookies, passwords, PINs, tokens, sessions, auth
  * values, or WebView private files are exposed.
  */
 public final class MigrationProvider extends ContentProvider {
