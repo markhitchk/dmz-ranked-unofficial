@@ -6,6 +6,7 @@
 
     <queries>
         <provider android:authorities="com.harleytg.dmzranked.migration" />
+        <provider android:authorities="com.harleytg.dmzranked.beta.migration" />
     </queries>
 
     <application
