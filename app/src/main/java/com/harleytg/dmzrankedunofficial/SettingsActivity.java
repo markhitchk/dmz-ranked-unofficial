@@ -7,7 +7,9 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.appwidget.AppWidgetManager;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -306,6 +308,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
         findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> checkForPlayUpdate(true));
         findViewById(R.id.playStoreCard).setOnClickListener(v -> openPlayStore());
+        findViewById(R.id.homeWidgetCard).setOnClickListener(v -> pinHomeWidget());
         findViewById(R.id.copyDiagnosticsCard).setOnClickListener(v -> {
             if (developerUnlocked) copyDiagnostics();
         });
@@ -342,6 +345,7 @@ public class SettingsActivity extends Activity {
         updateNotificationStatus();
         updateOperatorBackupStatus();
         updatePeerImportUi();
+        updateWidgetSummary();
         setDeveloperSectionVisible(false);
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
@@ -370,6 +374,7 @@ public class SettingsActivity extends Activity {
         updateNotificationStatus();
         updateOperatorBackupStatus();
         updatePeerImportUi();
+        updateWidgetSummary();
         startLivePlayUpdateMonitoring();
         if (developerUnlocked) updateDiagnosticsSummary();
     }
@@ -609,6 +614,11 @@ public class SettingsActivity extends Activity {
                         "detailed verbose loading status percentage progress");
         findViewById(R.id.appExperienceSection).setVisibility(appMatch ? View.VISIBLE : View.GONE);
 
+        boolean widgetMatch =
+                showIfMatches(R.id.homeWidgetCard, q,
+                        "widget home screen launcher live stats rank sr standings operator dmz ranked");
+        findViewById(R.id.widgetSection).setVisibility(widgetMatch ? View.VISIBLE : View.GONE);
+
         boolean operatorMatch =
                 showIfMatches(R.id.operatorStatusCard, q,
                         "operator website account profile saved backup current dmz ranked")
@@ -707,7 +717,7 @@ public class SettingsActivity extends Activity {
                         "danger reset app settings defaults");
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
-        boolean any = aboutMatch || appearanceMatch || appMatch || operatorMatch
+        boolean any = aboutMatch || appearanceMatch || appMatch || widgetMatch || operatorMatch
                 || transferMatch || notificationMatch || updateMatch || actionMatch || betaProgramMatch
                 || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
@@ -876,6 +886,53 @@ public class SettingsActivity extends Activity {
         }
     }
 
+    private void pinHomeWidget() {
+        AppWidgetManager manager = AppWidgetManager.getInstance(this);
+        ComponentName provider = new ComponentName(this, DmzRankedWidgetProvider.class);
+
+        if (!manager.isRequestPinAppWidgetSupported()) {
+            Toast.makeText(this,
+                    "Your launcher does not support adding widgets directly. Use the home-screen widget picker instead.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        DmzRankedWidgetProvider.requestUpdateAll(this);
+        boolean requested = manager.requestPinAppWidget(provider, null, null);
+        String selected = preferences == null
+                ? ""
+                : preferences.getString(PREF_SELECTED_OPERATOR, "");
+        selected = selected == null ? "" : selected.trim();
+
+        if (requested) {
+            Toast.makeText(this,
+                    selected.isEmpty()
+                            ? "Widget request opened. Select an operator in DMZ Ranked to populate it."
+                            : "Widget request opened for " + selected + ".",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this,
+                    "Could not open the widget picker. Add DMZ Ranked from your launcher's widget menu.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void updateWidgetSummary() {
+        TextView summary = findViewById(R.id.homeWidgetSummaryText);
+        if (summary == null) return;
+
+        String selected = preferences == null
+                ? ""
+                : preferences.getString(PREF_SELECTED_OPERATOR, "");
+        selected = selected == null ? "" : selected.trim();
+        if (selected.isEmpty()) {
+            summary.setText("Add a native live-stats widget. Select a website operator first, or add it now and choose one later.");
+        } else {
+            summary.setText("Uses " + selected
+                    + " • Live SR, rank, leaderboard position, and last-raid change from dmzranked.com.");
+        }
+    }
+
     private void showOperatorPicker() {
         if (preferences == null) return;
 
@@ -917,6 +974,9 @@ public class SettingsActivity extends Activity {
                             .putString(PREF_OPERATOR_SOURCE, "App operator picker")
                             .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                             .apply();
+
+                    DmzRankedWidgetProvider.requestUpdateAll(this);
+                    updateWidgetSummary();
 
                     Intent result = new Intent()
                             .putExtra(EXTRA_ACTION, ACTION_SELECT_OPERATOR)
