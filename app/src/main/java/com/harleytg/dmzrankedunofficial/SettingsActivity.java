@@ -184,6 +184,10 @@ public class SettingsActivity extends Activity {
         if (aboutBetaBadge != null) {
             aboutBetaBadge.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
         }
+        View betaProgramSection = findViewById(R.id.betaProgramSection);
+        if (betaProgramSection != null) {
+            betaProgramSection.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
+        }
 
         PackageInfo packageInfo = getPackageInfoSafe();
         String versionName = packageInfo == null || packageInfo.versionName == null
@@ -313,6 +317,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.appSupportDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
         findViewById(R.id.mainDiscordCard).setOnClickListener(v -> openExternal(MAIN_DISCORD_URL));
         findViewById(R.id.betaGroupCard).setOnClickListener(v -> openExternal(BETA_GROUP_URL));
+        findViewById(R.id.betaDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
 
         EditText settingsSearch = findViewById(R.id.settingsSearch);
         settingsSearch.addTextChangedListener(new TextWatcher() {
@@ -639,6 +644,19 @@ public class SettingsActivity extends Activity {
                         "clear cache webview temporary files");
         findViewById(R.id.pageActionsSection).setVisibility(actionMatch ? View.VISIBLE : View.GONE);
 
+        boolean betaProgramMatch = false;
+        if (getPackageName().endsWith(".beta")) {
+            betaProgramMatch = showIfMatches(
+                    R.id.betaDiscordCard,
+                    q,
+                    "beta harley harleys studios discord testing early build bug report support");
+            findViewById(R.id.betaProgramSection)
+                    .setVisibility(betaProgramMatch ? View.VISIBLE : View.GONE);
+        } else {
+            findViewById(R.id.betaProgramSection).setVisibility(View.GONE);
+            findViewById(R.id.betaDiscordCard).setVisibility(View.GONE);
+        }
+
         boolean helpMatch =
                 showIfMatches(R.id.feedbackCard, q,
                         "feedback report bug feature help support")
@@ -675,8 +693,8 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
         boolean any = aboutMatch || appearanceMatch || appMatch || operatorMatch
-                || transferMatch || notificationMatch || updateMatch || actionMatch || helpMatch
-                || dangerMatch || developerMatch;
+                || transferMatch || notificationMatch || updateMatch || actionMatch || betaProgramMatch
+                || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
     }
 
