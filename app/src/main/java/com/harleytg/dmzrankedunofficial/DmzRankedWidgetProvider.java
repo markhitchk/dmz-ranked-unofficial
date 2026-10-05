@@ -40,8 +40,8 @@ import java.util.Map;
  * Native DMZ Ranked home-screen widget.
  *
  * The widget intentionally does not embed the OBS / Netlify pages. It reads the public
- * dmzranked.com leaderboard JSON and performs the same SR/rank calculation client-side,
- * which makes the widget lighter, battery-friendly, and compatible with RemoteViews.
+ * dmzranked.com public-state API (with leaderboard.json fallback) and performs the same
+ * SR/rank calculation client-side, keeping the widget native and RemoteViews-compatible.
  */
 public class DmzRankedWidgetProvider extends AppWidgetProvider {
     public static final String ACTION_REFRESH = "com.harleytg.dmzranked.action.WIDGET_REFRESH";
@@ -58,7 +58,8 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
     private static final String PREF_WIDGET_SHOW_REFRESH = "widget_show_refresh";
     private static final String CACHE_PREFS = "dmz_ranked_widget_cache";
     private static final String BADGE_CACHE_PREFS = "dmz_ranked_widget_badges";
-    private static final String DATA_URL = "https://dmzranked.com/leaderboard.json";
+    private static final String PUBLIC_STATE_URL = "https://dmzranked.com/api/v1/data/public-state";
+    private static final String SNAPSHOT_DATA_URL = "https://dmzranked.com/leaderboard.json";
     private static final String BADGE_SOURCE_URL = "https://dmz-ticker.netlify.app/";
 
     private static final int CONNECT_TIMEOUT_MS = 8_000;
@@ -154,7 +155,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         WidgetStats stats = null;
         Throwable error = null;
         try {
-            JSONObject root = fetchJson(DATA_URL);
+            JSONObject root = fetchWidgetState();
             stats = resolveStats(root, operator);
             if (stats != null) saveCachedStats(context, stats);
         } catch (Throwable t) {
@@ -178,6 +179,37 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
                         error == null ? "Operator not found on DMZ Ranked." : "Could not reach DMZ Ranked.");
             }
             manager.updateAppWidget(id, views);
+        }
+    }
+
+    private static JSONObject fetchWidgetState() throws Exception {
+        Exception primaryError = null;
+        try {
+            JSONObject publicState = fetchJson(PUBLIC_STATE_URL);
+            JSONArray players = publicState.optJSONArray("players");
+            JSONArray raids = publicState.optJSONArray("raids");
+            JSONObject meta = publicState.optJSONObject("meta");
+            JSONObject season = meta == null ? null : meta.optJSONObject("season");
+            if (players != null && raids != null && season != null) {
+                JSONObject data = new JSONObject();
+                data.put("players", players);
+                data.put("raids", raids);
+                data.put("season", season);
+
+                JSONObject wrapped = new JSONObject();
+                wrapped.put("data", data);
+                return wrapped;
+            }
+            primaryError = new IllegalStateException("DMZ Ranked public-state payload was incomplete");
+        } catch (Exception error) {
+            primaryError = error;
+        }
+
+        try {
+            return fetchJson(SNAPSHOT_DATA_URL);
+        } catch (Exception fallbackError) {
+            if (primaryError != null) fallbackError.addSuppressed(primaryError);
+            throw fallbackError;
         }
     }
 
