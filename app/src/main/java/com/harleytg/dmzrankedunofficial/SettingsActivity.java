@@ -25,6 +25,8 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.Editable;
@@ -99,6 +101,7 @@ public class SettingsActivity extends Activity {
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v2";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
     private static final int PLAY_UPDATE_REQUEST = 2005;
+    private static final long LIVE_PLAY_UPDATE_POLL_MS = 30_000L;
 
     // Developer tools are intentionally hidden from normal Settings. Five taps on
     // Harley's Studios in Credits opens the PIN gate. The PIN itself is never stored
@@ -124,6 +127,12 @@ public class SettingsActivity extends Activity {
     private AppUpdateManager appUpdateManager;
     private InstallStateUpdatedListener installStateUpdatedListener;
     private boolean updateReadyDialogShown;
+    private Handler playUpdateHandler;
+    private Runnable playUpdatePoller;
+    private boolean livePlayUpdateMonitoring;
+    private boolean playUpdateCheckInFlight;
+    private long lastPlayUpdateCheckAt;
+    private long lastAnnouncedUpdateBuild = -1L;
     private boolean pendingTestNotification;
     private boolean creditsExpanded;
     private boolean developerUnlocked;
@@ -150,6 +159,16 @@ public class SettingsActivity extends Activity {
                         state.installStatus(),
                         state.bytesDownloaded(),
                         state.totalBytesToDownload()));
+
+        playUpdateHandler = new Handler(Looper.getMainLooper());
+        playUpdatePoller = new Runnable() {
+            @Override
+            public void run() {
+                if (!livePlayUpdateMonitoring || isFinishing()) return;
+                checkForPlayUpdate(false);
+                playUpdateHandler.postDelayed(this, LIVE_PLAY_UPDATE_POLL_MS);
+            }
+        };
 
         applyBrandLogo(findViewById(R.id.settingsLogo));
         applyBrandLogo(findViewById(R.id.aboutLogo));
@@ -334,12 +353,13 @@ public class SettingsActivity extends Activity {
         updateNotificationStatus();
         updateOperatorBackupStatus();
         updatePeerImportUi();
-        checkForPlayUpdate(false);
+        startLivePlayUpdateMonitoring();
         if (developerUnlocked) updateDiagnosticsSummary();
     }
 
     @Override
     protected void onStop() {
+        stopLivePlayUpdateMonitoring();
         if (appUpdateManager != null && installStateUpdatedListener != null) {
             appUpdateManager.unregisterListener(installStateUpdatedListener);
         }
@@ -1114,6 +1134,31 @@ public class SettingsActivity extends Activity {
         }
     }
 
+    private void startLivePlayUpdateMonitoring() {
+        livePlayUpdateMonitoring = true;
+        if (playUpdateHandler != null && playUpdatePoller != null) {
+            playUpdateHandler.removeCallbacks(playUpdatePoller);
+        }
+        checkForPlayUpdate(false);
+        if (playUpdateHandler != null && playUpdatePoller != null) {
+            playUpdateHandler.postDelayed(playUpdatePoller, LIVE_PLAY_UPDATE_POLL_MS);
+        }
+    }
+
+    private void stopLivePlayUpdateMonitoring() {
+        livePlayUpdateMonitoring = false;
+        if (playUpdateHandler != null && playUpdatePoller != null) {
+            playUpdateHandler.removeCallbacks(playUpdatePoller);
+        }
+    }
+
+    private String liveUpdateCheckLabel() {
+        if (lastPlayUpdateCheckAt <= 0L) return "Live monitoring";
+        String time = DateFormat.getTimeInstance(DateFormat.SHORT)
+                .format(new Date(lastPlayUpdateCheckAt));
+        return "Live • checked " + time;
+    }
+
     private void checkForPlayUpdate(boolean userRequested) {
         TextView status = findViewById(R.id.updateVersionText);
         if (appUpdateManager == null) {
@@ -1124,17 +1169,32 @@ public class SettingsActivity extends Activity {
             return;
         }
 
-        if (status != null) {
-            status.setText(installedVersionLabel() + " • Checking Google Play…");
+        if (playUpdateCheckInFlight) {
+            if (userRequested) {
+                Toast.makeText(this, "A Google Play update check is already running.",
+                        Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        playUpdateCheckInFlight = true;
+        if (status != null && userRequested) {
+            status.setText(installedVersionLabel() + " • Checking Google Play now…");
         }
 
         appUpdateManager.getAppUpdateInfo()
-                .addOnSuccessListener(info -> handlePlayUpdateInfo(info, userRequested))
+                .addOnSuccessListener(info -> {
+                    playUpdateCheckInFlight = false;
+                    lastPlayUpdateCheckAt = System.currentTimeMillis();
+                    handlePlayUpdateInfo(info, userRequested);
+                })
                 .addOnFailureListener(error -> {
+                    playUpdateCheckInFlight = false;
+                    lastPlayUpdateCheckAt = System.currentTimeMillis();
                     Log.w(TAG, "Google Play update check failed", error);
                     if (status != null) {
                         status.setText(installedVersionLabel()
-                                + " • Google Play check unavailable on this install.");
+                                + " • Play check unavailable • " + liveUpdateCheckLabel());
                     }
                     if (userRequested) {
                         Toast.makeText(this,
@@ -1165,26 +1225,33 @@ public class SettingsActivity extends Activity {
         if (availability == UpdateAvailability.UPDATE_AVAILABLE) {
             long availableBuild = info.availableVersionCode();
             if (status != null) {
-                status.setText("Update available on Google Play • Build "
-                        + availableBuild + " • Tap CHECK to update.");
+                status.setText("Update available • Build "
+                        + availableBuild + " • " + liveUpdateCheckLabel()
+                        + " • Tap CHECK to update.");
             }
 
             if (userRequested) {
                 startFlexiblePlayUpdate(info);
+            } else if (availableBuild != lastAnnouncedUpdateBuild) {
+                lastAnnouncedUpdateBuild = availableBuild;
+                Toast.makeText(this,
+                        "Google Play update available • Build " + availableBuild + ".",
+                        Toast.LENGTH_LONG).show();
             }
             return;
         }
 
         if (availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
             if (status != null) {
-                status.setText("A Google Play update is already in progress.");
+                status.setText("Google Play update in progress • " + liveUpdateCheckLabel());
             }
             return;
         }
 
         if (availability == UpdateAvailability.UPDATE_NOT_AVAILABLE) {
             if (status != null) {
-                status.setText("Up to date • " + installedVersionLabel());
+                status.setText("Up to date • " + installedVersionLabel()
+                        + " • " + liveUpdateCheckLabel());
             }
             if (userRequested) {
                 Toast.makeText(this, "DMZ Ranked is up to date.", Toast.LENGTH_SHORT).show();
@@ -1194,7 +1261,8 @@ public class SettingsActivity extends Activity {
 
         if (status != null) {
             status.setText(installedVersionLabel()
-                    + " • Google Play could not determine update availability.");
+                    + " • Google Play could not determine update availability • "
+                    + liveUpdateCheckLabel());
         }
         if (userRequested) {
             Toast.makeText(this,
@@ -1254,7 +1322,10 @@ public class SettingsActivity extends Activity {
         } else if (installStatus == InstallStatus.INSTALLING) {
             status.setText("Installing Google Play update…");
         } else if (installStatus == InstallStatus.INSTALLED) {
-            status.setText("Update installed.");
+            status.setText("Update installed • refreshing Google Play status…");
+            if (playUpdateHandler != null) {
+                playUpdateHandler.postDelayed(() -> checkForPlayUpdate(false), 1200L);
+            }
         } else if (installStatus == InstallStatus.FAILED) {
             status.setText("Google Play update failed • Tap CHECK to retry.");
         } else if (installStatus == InstallStatus.CANCELED) {
@@ -1312,7 +1383,10 @@ public class SettingsActivity extends Activity {
         if (resultCode == RESULT_OK) {
             TextView status = findViewById(R.id.updateVersionText);
             if (status != null) {
-                status.setText("Google Play accepted the update • Downloading…");
+                status.setText("Google Play accepted the update • Downloading live…");
+            }
+            if (playUpdateHandler != null) {
+                playUpdateHandler.postDelayed(() -> checkForPlayUpdate(false), 1200L);
             }
         } else {
             TextView status = findViewById(R.id.updateVersionText);
