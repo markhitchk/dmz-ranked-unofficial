@@ -1175,16 +1175,149 @@ public class MainActivity extends Activity {
                     Log.d(TAG, "Could not parse site notifications", error);
                 }
 
+                pollSelectedOperatorAlertState(token);
+
                 if (webView != null && !isFinishing() && token == siteNotificationMonitorToken) {
                     webView.postDelayed(() -> pollSiteNotifications(token), 1800);
                 }
             });
         } catch (Throwable error) {
             Log.d(TAG, "Could not read site notifications", error);
+            pollSelectedOperatorAlertState(token);
             if (webView != null && !isFinishing() && token == siteNotificationMonitorToken) {
                 webView.postDelayed(() -> pollSiteNotifications(token), 1800);
             }
         }
+    }
+
+    /**
+     * The website does not emit a toast to the owner when another user reports one
+     * of their raids/operator records. While the WebView is active, compare the
+     * selected operator's live board state with the same baseline used by the
+     * background worker so report/review/approval alerts are immediate.
+     */
+    private void pollSelectedOperatorAlertState(int token) {
+        if (webView == null || isFinishing() || token != siteNotificationMonitorToken
+                || preferences == null
+                || !preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true)) {
+            return;
+        }
+
+        String selected = preferences.getString(PREF_SELECTED_OPERATOR, "");
+        if (selected == null || selected.trim().isEmpty()) return;
+        selected = selected.trim();
+
+        String script =
+                "(function(){try{" +
+                "var wanted=" + JSONObject.quote(selected) + ";" +
+                "if(typeof state==='undefined'||!state||!Array.isArray(state.players)||!Array.isArray(state.raids))return '{}';" +
+                "var p=null;for(var i=0;i<state.players.length;i++){var q=state.players[i];if(q&&String(q.name||'').trim().toLowerCase()===wanted.toLowerCase()){p=q;break;}}" +
+                "if(!p)return '{}';var raids={};" +
+                "for(var j=0;j<state.raids.length;j++){var r=state.raids[j];if(!r||r.deleted)continue;" +
+                "var mine=(p.id&&String(r.playerId||'')===String(p.id))||String(r.playerName||'').trim().toLowerCase()===String(p.name||wanted).trim().toLowerCase();" +
+                "if(!mine||!r.id)continue;raids[String(r.id)]={reports:Number(r.reports||0),pending:!!r.pending,verified:!!r.verified,pendingReason:String(r.pendingReason||'')};}" +
+                "return JSON.stringify({playerId:String(p.id||''),name:String(p.name||wanted),reports:Number(p.reports||0),raids:raids});" +
+                "}catch(e){return '{}';}})()";
+
+        try {
+            webView.evaluateJavascript(script, result -> {
+                if (isFinishing() || token != siteNotificationMonitorToken) return;
+                try {
+                    String decoded = decodeJavascriptString(result);
+                    if (decoded == null || decoded.trim().isEmpty() || "{}".equals(decoded.trim())) return;
+                    handleSelectedOperatorAlertState(new JSONObject(decoded));
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not parse selected operator alert state", error);
+                }
+            });
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not read selected operator alert state", error);
+        }
+    }
+
+    private void handleSelectedOperatorAlertState(JSONObject next) {
+        if (preferences == null || next == null) return;
+
+        String playerId = next.optString("playerId", "").trim();
+        String name = next.optString("name", "").trim();
+        if (name.isEmpty()) name = preferences.getString(PREF_SELECTED_OPERATOR, "Operator");
+        String operatorKey = (playerId + "|" + name.toLowerCase(Locale.US)).trim();
+        int nextPlayerReports = Math.max(0, next.optInt("reports", 0));
+        JSONObject nextRaids = next.optJSONObject("raids");
+        if (nextRaids == null) nextRaids = new JSONObject();
+
+        boolean baselineReady =
+                preferences.getBoolean(NotificationSync.PREF_BASELINE_READY, false);
+        String previousOperatorKey =
+                preferences.getString(NotificationSync.PREF_BASELINE_OPERATOR_KEY, "");
+
+        if (!baselineReady || !operatorKey.equals(previousOperatorKey)) {
+            NotificationSync.saveBaseline(
+                    preferences, operatorKey, nextPlayerReports, nextRaids);
+            return;
+        }
+
+        int previousPlayerReports =
+                preferences.getInt(NotificationSync.PREF_BASELINE_PLAYER_REPORTS, 0);
+        JSONObject previousRaids;
+        try {
+            previousRaids = new JSONObject(
+                    preferences.getString(NotificationSync.PREF_BASELINE_RAIDS, "{}"));
+        } catch (Throwable ignored) {
+            previousRaids = new JSONObject();
+        }
+
+        if (nextPlayerReports > previousPlayerReports
+                && !NotificationSync.recentlyHandled(
+                        preferences, NotificationSync.PREF_HANDLED_OPERATOR_REPORT_MS)) {
+            postNativeSiteNotification(
+                    "[REPORT]Hey " + name + " — your operator profile was reported");
+        }
+
+        Iterator<String> keys = nextRaids.keys();
+        while (keys.hasNext()) {
+            String raidId = keys.next();
+            JSONObject n = nextRaids.optJSONObject(raidId);
+            JSONObject p = previousRaids.optJSONObject(raidId);
+            if (n == null || p == null) continue;
+
+            int nextReports = Math.max(0, n.optInt("reports", 0));
+            int previousReports = Math.max(0, p.optInt("reports", 0));
+            boolean nextPending = n.optBoolean("pending", false);
+            boolean previousPending = p.optBoolean("pending", false);
+            boolean nextVerified = n.optBoolean("verified", false);
+            boolean previousVerified = p.optBoolean("verified", false);
+
+            if (nextReports > previousReports
+                    && !NotificationSync.recentlyHandled(
+                            preferences, NotificationSync.PREF_HANDLED_RAID_REPORT_MS)) {
+                postNativeSiteNotification(
+                        "[REPORT]Hey " + name + " — one of your raids was reported");
+            }
+
+            if (nextPending && !previousPending
+                    && !NotificationSync.recentlyHandled(
+                            preferences, NotificationSync.PREF_HANDLED_REVIEW_MS)) {
+                String reason = n.optString("pendingReason", "").trim();
+                String body = "Hey " + name + " — one of your raids is under review";
+                if (!reason.isEmpty()) {
+                    if (reason.length() > 160) reason = reason.substring(0, 159) + "…";
+                    body += " • " + reason;
+                }
+                postNativeSiteNotification("[REVIEW]" + body);
+            }
+
+            if (nextVerified && !previousVerified
+                    && !NotificationSync.recentlyHandled(
+                            preferences, NotificationSync.PREF_HANDLED_VERIFIED_MS)) {
+                postNativeSiteNotification(
+                        "[APPROVED]Hey " + name
+                                + " — one of your raids was approved and verified");
+            }
+        }
+
+        NotificationSync.saveBaseline(
+                preferences, operatorKey, nextPlayerReports, nextRaids);
     }
 
     private void postNativeSiteNotification(String message) {
@@ -1214,6 +1347,12 @@ public class MainActivity extends Activity {
         if (body.startsWith("[RAID]")) {
             title = "Raid submitted";
             body = body.substring(6).trim();
+        } else if (body.startsWith("[REPORT]")) {
+            title = "DMZ Ranked report";
+            body = body.substring(8).trim();
+        } else if (body.startsWith("[APPROVED]")) {
+            title = "Raid approved";
+            body = body.substring(10).trim();
         } else if (body.startsWith("[REVIEW]")) {
             title = "Raid under review";
             body = body.substring(8).trim();
