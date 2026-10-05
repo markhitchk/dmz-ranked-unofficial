@@ -214,6 +214,7 @@ public class MainActivity extends Activity {
     private TextView titleTextView;
     private TextView titleMetaText;
     private TextView betaBadge;
+    private TextView loadingBetaBadge;
     private ImageView titleLogoView;
     private ImageView loadingLogoView;
     private String[] titleMetaMessages = new String[]{"Made by Harley's Studios"};
@@ -272,6 +273,7 @@ public class MainActivity extends Activity {
             titleTextView = findViewById(R.id.titleText);
             titleMetaText = findViewById(R.id.titleMetaText);
             betaBadge = findViewById(R.id.betaBadge);
+            loadingBetaBadge = findViewById(R.id.loadingBetaBadge);
             titleLogoView = findViewById(R.id.titleLogo);
             loadingLogoView = findViewById(R.id.loadingLogo);
 
@@ -1387,7 +1389,10 @@ public class MainActivity extends Activity {
 
         boolean beta = getPackageName().endsWith(".beta");
         if (appName != null) {
-            appName.setText(beta ? "DMZ Ranked [Beta]" : "DMZ Ranked");
+            appName.setText("DMZ Ranked");
+        }
+        if (loadingBetaBadge != null) {
+            loadingBetaBadge.setVisibility(beta ? View.VISIBLE : View.GONE);
         }
 
         String versionName = "Unknown";
