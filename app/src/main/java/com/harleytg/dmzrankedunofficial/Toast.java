@@ -105,10 +105,10 @@ public final class Toast {
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT,
-                    Gravity.BOTTOM);
+                    Gravity.TOP);
             params.leftMargin = dp(activity, 16);
             params.rightMargin = dp(activity, 16);
-            params.bottomMargin = dp(activity, 24);
+            params.topMargin = resolveTopAlertMargin(activity, root);
             root.addView(card, params);
         } else {
             root.addView(card, new ViewGroup.LayoutParams(
@@ -117,7 +117,7 @@ public final class Toast {
         }
 
         card.setAlpha(0f);
-        card.setTranslationY(dp(activity, 18));
+        card.setTranslationY(-dp(activity, 18));
         card.animate()
                 .alpha(1f)
                 .translationY(0f)
@@ -129,7 +129,7 @@ public final class Toast {
             card.animate().cancel();
             card.animate()
                     .alpha(0f)
-                    .translationY(dp(activity, 14))
+                    .translationY(-dp(activity, 14))
                     .setDuration(150L)
                     .withEndAction(() -> {
                         if (card.getParent() instanceof ViewGroup) {
@@ -144,6 +144,45 @@ public final class Toast {
                 dismiss,
                 duration == LENGTH_LONG ? 4200L : 2700L
         );
+    }
+
+    private static int resolveTopAlertMargin(Activity activity, ViewGroup contentRoot) {
+        View anchor = activity.findViewById(R.id.titleBar);
+
+        if (anchor == null || anchor.getVisibility() != View.VISIBLE) {
+            if (contentRoot.getChildCount() > 0) {
+                View activityRoot = contentRoot.getChildAt(0);
+                if (activityRoot instanceof ViewGroup && ((ViewGroup) activityRoot).getChildCount() > 0) {
+                    View candidate = ((ViewGroup) activityRoot).getChildAt(0);
+                    int candidateHeight = candidate.getHeight();
+                    if (candidateHeight <= 0 && candidate.getLayoutParams() != null) {
+                        candidateHeight = candidate.getLayoutParams().height;
+                    }
+                    if (candidate.getVisibility() == View.VISIBLE
+                            && candidateHeight > 0
+                            && candidateHeight <= dp(activity, 120)) {
+                        anchor = candidate;
+                    }
+                }
+            }
+        }
+
+        if (anchor == null || anchor.getVisibility() != View.VISIBLE) {
+            return dp(activity, 12);
+        }
+
+        int[] rootLocation = new int[2];
+        int[] anchorLocation = new int[2];
+        contentRoot.getLocationOnScreen(rootLocation);
+        anchor.getLocationOnScreen(anchorLocation);
+
+        int anchorHeight = anchor.getHeight();
+        if (anchorHeight <= 0 && anchor.getLayoutParams() != null) {
+            anchorHeight = anchor.getLayoutParams().height;
+        }
+
+        int margin = anchorLocation[1] - rootLocation[1] + Math.max(0, anchorHeight) + dp(activity, 8);
+        return Math.max(dp(activity, 12), margin);
     }
 
     private static int dp(Context context, int value) {
