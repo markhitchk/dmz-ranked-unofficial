@@ -1,19 +1,8 @@
 (() => {
-  const defaultTab = "board";
-  const tabOrder = [
-    "board",
-    "howto",
-    "log",
-    "community",
-    "championship",
-    "history",
-    "rules",
-    "updates",
-    "overlays",
-    "contact",
-    "app"
-  ];
-  let currentTab = defaultTab;
+  const PAGE_ID = "hs-unofficial-app-page";
+  const TAB_ATTR = "data-hs-unofficial-app";
+  const APP_HASH = "#unofficial-app";
+  let previousHash = "";
 
   function clean(value) {
     return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
@@ -52,158 +41,203 @@
     return "";
   }
 
-  function updateAppWelcome() {
-    const welcome = document.getElementById("hs-app-welcome");
+  function findSiteNav() {
+    const direct = document.querySelector("nav.tabs, .tabs[role='tablist'], nav[role='tablist']");
+    if (direct) return direct;
+
+    const buttons = Array.from(document.querySelectorAll("button,a,[role='tab']"));
+    const leader = buttons.find((el) => clean(el.textContent).toUpperCase() === "LEADERBOARD");
+    if (!leader) return null;
+
+    let node = leader.parentElement;
+    for (let i = 0; i < 5 && node; i++, node = node.parentElement) {
+      const text = clean(node.textContent).toUpperCase();
+      if (text.includes("LEADERBOARD") && text.includes("CONTACT")) return node;
+    }
+    return leader.parentElement;
+  }
+
+  function updateWelcome() {
+    const welcome = document.getElementById("hs-unofficial-welcome");
     if (!welcome) return;
     const operator = getOperatorName();
     welcome.textContent = operator ? `Welcome back, ${operator}!` : "Welcome, Guest!";
   }
 
-  function ensureBetaAppTab() {
+  function ensurePage() {
+    let page = document.getElementById(PAGE_ID);
+    if (page) return page;
+
+    page = document.createElement("section");
+    page.id = PAGE_ID;
+    page.setAttribute("role", "tabpanel");
+    page.setAttribute("aria-label", "DMZ Ranked Unofficial App");
+    page.innerHTML =
+      '<div class="hs-unofficial-page-inner">' +
+        '<div class="hs-unofficial-hero">' +
+          '<div class="hs-unofficial-kicker">Harley\'s Studios • Android Beta</div>' +
+          '<h1>DMZ Ranked Unofficial App</h1>' +
+          '<h2 id="hs-unofficial-welcome">Welcome, Guest!</h2>' +
+          '<p>A dedicated page for the Android wrapper, app features, notifications, operator tools, and Beta testing.</p>' +
+          '<div class="hs-unofficial-badges">' +
+            '<span class="hs-unofficial-badge beta">Beta</span>' +
+            '<span class="hs-unofficial-badge">1.0.51 (155)</span>' +
+            '<span class="hs-unofficial-badge">Harley\'s Studios</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="hs-unofficial-grid">' +
+          '<div class="hs-unofficial-card"><h3>Website</h3><p class="hs-unofficial-status"><span class="hs-unofficial-status-dot"></span><span>dmzranked.com runs normally inside the app.</span></p></div>' +
+          '<div class="hs-unofficial-card"><h3>Notifications</h3><p>App alerts cover reports, reviews, approvals, raids, updates, and system messages.</p></div>' +
+          '<div class="hs-unofficial-card"><h3>Operator</h3><p>The app can detect the operator selected on this device and use it for app-only features.</p></div>' +
+          '<div class="hs-unofficial-card"><h3>Beta Testing</h3><p>This page is an experimental Beta feature and can be changed without changing the DMZ Ranked website.</p></div>' +
+        '</div>' +
+        '<div class="hs-unofficial-note"><strong>Unofficial app notice:</strong> This page is injected only inside Harley\'s Studios DMZ Ranked Unofficial App. It does not edit, upload to, or modify dmzranked.com.</div>' +
+        '<div class="hs-unofficial-actions"><button type="button" class="hs-unofficial-back">Back to DMZ Ranked</button></div>' +
+      '</div>';
+
+    document.body.appendChild(page);
+    page.querySelector(".hs-unofficial-back").addEventListener("click", () => closePage(true));
+    return page;
+  }
+
+  function positionPage() {
+    const nav = findSiteNav();
+    const page = ensurePage();
+    let top = 0;
+
+    if (nav) {
+      nav.classList.add("hs-unofficial-nav-host");
+      const rect = nav.getBoundingClientRect();
+      top = Math.max(0, Math.min(window.innerHeight - 80, Math.round(rect.bottom)));
+    }
+
+    page.style.setProperty("--hs-unofficial-page-top", `${top}px`);
+  }
+
+  function setCustomTabSelected(selected) {
+    const nav = findSiteNav();
+    if (!nav) return;
+
+    const button = nav.querySelector(`[${TAB_ATTR}]`);
+    if (button) {
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+    }
+
+    if (selected) {
+      nav.querySelectorAll("[data-tab],[role='tab']").forEach((other) => {
+        if (other !== button) {
+          other.classList.remove("active");
+          if (other.hasAttribute("aria-selected")) other.setAttribute("aria-selected", "false");
+        }
+      });
+    }
+  }
+
+  function openPage(updateHash = true) {
+    const page = ensurePage();
+    if (location.hash !== APP_HASH) previousHash = location.hash;
+    window.scrollTo(0, 0);
+    positionPage();
+    page.classList.add("active");
+    page.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("hs-unofficial-app-open");
+    setCustomTabSelected(true);
+    updateWelcome();
+
+    if (updateHash && location.hash !== APP_HASH) {
+      history.pushState(null, "", APP_HASH);
+    }
+  }
+
+  function closePage(restoreHash = false) {
+    const page = document.getElementById(PAGE_ID);
+    if (page) {
+      page.classList.remove("active");
+      page.setAttribute("aria-hidden", "true");
+    }
+
+    document.documentElement.classList.remove("hs-unofficial-app-open");
+    setCustomTabSelected(false);
+
+    if (restoreHash && location.hash === APP_HASH) {
+      history.replaceState(null, "", previousHash || location.pathname + location.search);
+    }
+  }
+
+  function bindCustomButton(button) {
+    if (!button || button.dataset.hsBound === "true") return;
+    button.dataset.hsBound = "true";
+
+    button.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openPage(true);
+      },
+      true
+    );
+  }
+
+  function ensureTab() {
     if (location.hostname !== "dmzranked.com" && !location.hostname.endsWith(".dmzranked.com")) return;
 
-    const nav = document.querySelector("nav.tabs, .tabs[role='tablist'], .tabs");
+    const nav = findSiteNav();
     if (!nav) return;
 
     if (!nav.hasAttribute("role")) nav.setAttribute("role", "tablist");
 
-    let button = nav.querySelector('[data-tab="app"]');
+    let button = nav.querySelector(`[${TAB_ATTR}]`);
     if (!button) {
       button = document.createElement("button");
       button.type = "button";
-      button.className = "hs-app-tab";
-      button.dataset.tab = "app";
+      button.className = "hs-unofficial-tab";
+      button.setAttribute(TAB_ATTR, "true");
       button.setAttribute("role", "tab");
       button.setAttribute("aria-selected", "false");
-      button.textContent = "App";
+      button.textContent = "Unofficial App";
       nav.appendChild(button);
     }
 
-    let panel = document.getElementById("app");
-    if (!panel) {
-      panel = document.createElement("section");
-      panel.id = "app";
-      panel.className = "tab-section hs-app-panel";
-      panel.setAttribute("role", "tabpanel");
-      panel.innerHTML =
-        '<div class="hs-app-card">' +
-        '<div class="hs-app-kicker">Harley\'s Studios • Beta Test</div>' +
-        '<h2 id="hs-app-welcome">Welcome, Guest!</h2>' +
-        '<p>Thank you for using Harley\'s Studios DMZ Ranked Unofficial App.</p>' +
-        '<p class="hs-app-note">This tab is added only by the Android Beta app. It does not modify or affect the dmzranked.com website.</p>' +
-        "</div>";
-      const parent = document.querySelector("main") || nav.parentElement || document.body;
-      parent.appendChild(panel);
-    }
+    bindCustomButton(button);
+    ensurePage();
+    updateWelcome();
 
-    updateAppWelcome();
+    if (location.hash === APP_HASH) {
+      openPage(false);
+    }
   }
 
-  function setTab(tab, updateHash = true) {
-    const nav = document.querySelector("nav.tabs, .tabs[role='tablist'], .tabs");
-    if (!nav || !tabOrder.includes(tab)) tab = defaultTab;
-
-    currentTab = tab;
-
-    nav.querySelectorAll("[data-tab]").forEach((button) => {
-      const active = button.dataset.tab === tab;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-selected", active ? "true" : "false");
-    });
-
-    tabOrder.forEach((name) => {
-      const panel = document.getElementById(name);
-      if (!panel) return;
-      const active = name === tab;
-      panel.classList.toggle("active", active);
-      if (panel.classList.contains("tab-section") || name === "app") {
-        panel.hidden = !active;
+  document.addEventListener(
+    "click",
+    (event) => {
+      const nav = findSiteNav();
+      if (!nav || !nav.contains(event.target)) return;
+      const custom = event.target.closest(`[${TAB_ATTR}]`);
+      if (!custom && document.getElementById(PAGE_ID)?.classList.contains("active")) {
+        closePage(false);
       }
-    });
+    },
+    true
+  );
 
-    if (updateHash && location.hash !== `#${tab}`) {
-      location.hash = tab;
-    }
-
-    if (tab === "app") updateAppWelcome();
-  }
-
-  function showSub(sub) {
-    const community = document.getElementById("community");
-    if (!community) return;
-
-    const buttons = Array.from(community.querySelectorAll("[data-sub]"));
-    const available = buttons.map((button) => button.dataset.sub);
-    const target = available.includes(sub) ? sub : available[0];
-    if (!target) return;
-
-    buttons.forEach((button) => {
-      const active = button.dataset.sub === target;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-selected", active ? "true" : "false");
-    });
-
-    community.querySelectorAll(".subpanel").forEach((panel) => {
-      panel.classList.toggle("active", panel.id === `sub-${target}`);
-    });
-  }
-
-  function bind() {
-    ensureBetaAppTab();
-    const nav = document.querySelector("nav.tabs, .tabs[role='tablist'], .tabs");
-    if (!nav || nav.dataset.hsBetaTabsBound === "true") return;
-
-    nav.dataset.hsBetaTabsBound = "true";
-    nav.addEventListener(
-      "click",
-      (event) => {
-        const button = event.target.closest("[data-tab]");
-        if (!button || !nav.contains(button)) return;
-
-        const tab = button.dataset.tab;
-        if (!tabOrder.includes(tab)) return;
-
-        if (tab === "app") {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-
-        setTab(tab);
-      },
-      true
-    );
-
-    const community = document.getElementById("community");
-    if (community && community.dataset.hsSubtabsBound !== "true") {
-      community.dataset.hsSubtabsBound = "true";
-      community.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-sub]");
-        if (!button || !community.contains(button)) return;
-        showSub(button.dataset.sub);
-      });
-      const firstSub = community.querySelector("[data-sub]");
-      if (firstSub) showSub(firstSub.dataset.sub);
-    }
-
-    const hashTab = clean(location.hash.replace(/^#/, ""));
-    setTab(tabOrder.includes(hashTab) ? hashTab : defaultTab, false);
-  }
-
-  bind();
   window.addEventListener("hashchange", () => {
-    const hashTab = clean(location.hash.replace(/^#/, ""));
-    setTab(tabOrder.includes(hashTab) ? hashTab : defaultTab, false);
+    if (location.hash === APP_HASH) openPage(false);
+    else closePage(false);
   });
-  window.showSub = showSub;
-  window.__dmzHsBetaTabsRefresh = () => {
-    ensureBetaAppTab();
-    updateAppWelcome();
-  };
+
+  window.addEventListener("resize", () => {
+    if (document.getElementById(PAGE_ID)?.classList.contains("active")) positionPage();
+  });
+
+  ensureTab();
 
   const observer = new MutationObserver(() => {
-    ensureBetaAppTab();
+    ensureTab();
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
-  window.setInterval(updateAppWelcome, 1500);
+  window.setInterval(updateWelcome, 1500);
+  window.__dmzHsBetaTabsRefresh = ensureTab;
 })();
