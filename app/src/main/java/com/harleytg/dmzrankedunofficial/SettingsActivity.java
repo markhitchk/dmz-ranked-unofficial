@@ -15,6 +15,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -56,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Locale;
 
 import org.json.JSONObject;
@@ -68,6 +71,8 @@ public class SettingsActivity extends Activity {
     private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
     private static final String PLAY_STORE_HTTPS_PREFIX = "https://play.google.com/store/apps/details?id=";
     private static final String PLAY_STORE_MARKET_PREFIX = "market://details?id=";
+    private static final String PRODUCTION_PACKAGE = "com.harleytg.dmzranked";
+    private static final String BETA_PACKAGE = "com.harleytg.dmzranked.beta";
     private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
     private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
 
@@ -259,6 +264,7 @@ public class SettingsActivity extends Activity {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_ACTION, ACTION_RESTORE_OPERATOR));
             finish();
         });
+        findViewById(R.id.peerImportCard).setOnClickListener(v -> confirmPeerImport());
         findViewById(R.id.notificationSettingsCard).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
         findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> checkForPlayUpdate(true));
@@ -293,6 +299,7 @@ public class SettingsActivity extends Activity {
 
         updateNotificationStatus();
         updateOperatorBackupStatus();
+        updatePeerImportUi();
         setDeveloperSectionVisible(false);
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
@@ -320,6 +327,7 @@ public class SettingsActivity extends Activity {
         super.onResume();
         updateNotificationStatus();
         updateOperatorBackupStatus();
+        updatePeerImportUi();
         checkForPlayUpdate(false);
         if (developerUnlocked) updateDiagnosticsSummary();
     }
@@ -422,6 +430,9 @@ public class SettingsActivity extends Activity {
         int horizontalPadding = Math.round(24 * getResources().getDisplayMetrics().density);
         pinInput.setPadding(horizontalPadding, pinInput.getPaddingTop(),
                 horizontalPadding, pinInput.getPaddingBottom());
+        pinInput.setTextColor(getColor(R.color.dmz_white));
+        pinInput.setHintTextColor(getColor(R.color.dmz_muted));
+        pinInput.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.dmz_gold)));
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Developer access")
@@ -581,6 +592,11 @@ public class SettingsActivity extends Activity {
                         "operator restore recover backup local website data");
         findViewById(R.id.operatorBackupSection).setVisibility(operatorMatch ? View.VISIBLE : View.GONE);
 
+        boolean transferMatch =
+                showIfMatches(R.id.peerImportCard, q,
+                        "import transfer migrate migration beta stable production app data settings operators backup");
+        findViewById(R.id.dataTransferSection).setVisibility(transferMatch ? View.VISIBLE : View.GONE);
+
         boolean notificationMatch =
                 showIfMatches(R.id.siteNotificationsCard, q,
                         "website notifications alerts permission android")
@@ -640,7 +656,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
         boolean any = aboutMatch || appearanceMatch || appMatch || operatorMatch
-                || notificationMatch || updateMatch || actionMatch || helpMatch
+                || transferMatch || notificationMatch || updateMatch || actionMatch || helpMatch
                 || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
     }
@@ -662,6 +678,149 @@ public class SettingsActivity extends Activity {
         return false;
     }
 
+
+
+    private boolean isBetaBuild() {
+        return BETA_PACKAGE.equals(getPackageName());
+    }
+
+    private String peerPackageName() {
+        return isBetaBuild() ? PRODUCTION_PACKAGE : BETA_PACKAGE;
+    }
+
+    private String peerMigrationAuthority() {
+        return peerPackageName() + ".migration";
+    }
+
+    private String peerAppLabel() {
+        return isBetaBuild() ? "DMZ Ranked" : "DMZ Ranked [Beta]";
+    }
+
+    private boolean isPeerMigrationAvailable() {
+        try {
+            return getPackageManager().resolveContentProvider(peerMigrationAuthority(), 0) != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private void updatePeerImportUi() {
+        TextView title = findViewById(R.id.peerImportTitle);
+        TextView summary = findViewById(R.id.peerImportSummary);
+        TextView action = findViewById(R.id.peerImportAction);
+        View card = findViewById(R.id.peerImportCard);
+        if (title == null || summary == null || action == null || card == null) return;
+
+        String peer = peerAppLabel();
+        boolean available = isPeerMigrationAvailable();
+        title.setText("Import from " + peer);
+        if (available) {
+            summary.setText("Copy app settings and up to 2 app-managed operator backups from "
+                    + peer + ". Website cookies and sign-in sessions stay separate.");
+            action.setText("IMPORT");
+            card.setEnabled(true);
+            card.setAlpha(1f);
+        } else {
+            summary.setText(peer + " is not installed or is too old to export app data.");
+            action.setText("NOT FOUND");
+            card.setEnabled(false);
+            card.setAlpha(0.62f);
+        }
+    }
+
+    private void confirmPeerImport() {
+        if (!isPeerMigrationAvailable()) {
+            updatePeerImportUi();
+            Toast.makeText(this, peerAppLabel() + " is not available to import from.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Import from " + peerAppLabel() + "?")
+                .setMessage("This copies supported Android app settings and up to 2 app-managed operator backups. "
+                        + "Website cookies, sign-in sessions, passwords, and PINs are not copied. "
+                        + "Matching settings in this app will be replaced.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Import", (dialog, which) -> importFromPeerApp())
+                .show();
+    }
+
+    private void importFromPeerApp() {
+        Cursor cursor = null;
+        try {
+            Uri uri = Uri.parse("content://" + peerMigrationAuthority() + "/export");
+            cursor = getContentResolver().query(uri, new String[]{"payload"}, null, null, null);
+            if (cursor == null || !cursor.moveToFirst()) {
+                throw new IllegalStateException("No migration payload returned");
+            }
+            int column = cursor.getColumnIndex("payload");
+            if (column < 0) throw new IllegalStateException("Migration payload column missing");
+
+            String raw = cursor.getString(column);
+            if (raw == null || raw.trim().isEmpty()) {
+                throw new IllegalStateException("Migration payload was empty");
+            }
+
+            JSONObject payload = new JSONObject(raw);
+            String sourcePackage = payload.optString("sourcePackage", "");
+            if (!peerPackageName().equals(sourcePackage)) {
+                throw new SecurityException("Unexpected migration source: " + sourcePackage);
+            }
+
+            JSONObject importedPrefs = payload.optJSONObject("preferences");
+            SharedPreferences.Editor editor = preferences.edit();
+            int importedSettings = 0;
+            if (importedPrefs != null) {
+                Iterator<String> keys = importedPrefs.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    Object value = importedPrefs.opt(key);
+                    if (value instanceof Boolean) {
+                        editor.putBoolean(key, (Boolean) value);
+                        importedSettings++;
+                    } else if (value instanceof Number) {
+                        editor.putLong(key, ((Number) value).longValue());
+                        importedSettings++;
+                    } else if (value instanceof String) {
+                        editor.putString(key, (String) value);
+                        importedSettings++;
+                    }
+                }
+            }
+            editor.apply();
+
+            int importedOperators = OperatorBackupStore.importJson(
+                    this, payload.optString("operatorBackups", "{}"));
+
+            Toast.makeText(
+                    this,
+                    "Imported " + importedSettings + " app setting"
+                            + (importedSettings == 1 ? "" : "s")
+                            + " and " + importedOperators + " operator backup"
+                            + (importedOperators == 1 ? "" : "s")
+                            + " from " + peerAppLabel() + ".",
+                    Toast.LENGTH_LONG).show();
+
+            updateOperatorBackupStatus();
+            recreate();
+        } catch (SecurityException denied) {
+            Log.w(TAG, "Peer app import was denied", denied);
+            Toast.makeText(this,
+                    "Could not import from " + peerAppLabel()
+                            + ". Update both app versions, then try again.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable error) {
+            Log.e(TAG, "Could not import peer app data", error);
+            Toast.makeText(this,
+                    "Import failed. Open " + peerAppLabel()
+                            + " once, then return here and retry.",
+                    Toast.LENGTH_LONG).show();
+        } finally {
+            if (cursor != null) cursor.close();
+            updatePeerImportUi();
+        }
+    }
 
     private void updateOperatorBackupStatus() {
         TextView status = findViewById(R.id.operatorStatusText);
@@ -857,7 +1016,7 @@ public class SettingsActivity extends Activity {
                 ? new Notification.Builder(this, SITE_NOTIFICATION_CHANNEL)
                 : new Notification.Builder(this);
 
-        builder.setSmallIcon(R.drawable.ic_notification)
+        builder.setSmallIcon(R.drawable.ic_notification_dmz)
                 .setContentTitle("DMZ Ranked test notification")
                 .setContentText("Heads-up notifications are working on this device.")
                 .setStyle(new Notification.BigTextStyle()
