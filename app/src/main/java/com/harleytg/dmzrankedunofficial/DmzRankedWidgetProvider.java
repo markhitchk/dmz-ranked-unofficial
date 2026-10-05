@@ -49,6 +49,13 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
 
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_SELECTED_OPERATOR = "website_selected_operator";
+    private static final String PREF_WIDGET_SIZE_MODE = "widget_size_mode";
+    private static final String PREF_WIDGET_SHOW_BADGE = "widget_show_badge";
+    private static final String PREF_WIDGET_SHOW_STATUS = "widget_show_status";
+    private static final String PREF_WIDGET_SHOW_PROGRESS = "widget_show_progress";
+    private static final String PREF_WIDGET_SHOW_SEASON = "widget_show_season";
+    private static final String PREF_WIDGET_SHOW_BRANDING = "widget_show_branding";
+    private static final String PREF_WIDGET_SHOW_REFRESH = "widget_show_refresh";
     private static final String CACHE_PREFS = "dmz_ranked_widget_cache";
     private static final String BADGE_CACHE_PREFS = "dmz_ranked_widget_badges";
     private static final String DATA_URL = "https://dmzranked.com/leaderboard.json";
@@ -428,7 +435,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
             WidgetStats stats,
             boolean staleBecauseNetworkFailed,
             String badgeData) {
-        boolean compact = isCompactWidget(context, appWidgetId);
+        int displayMode = widgetDisplayMode(context, appWidgetId);
         RemoteViews views = baseViews(context, appWidgetId);
         views.setViewVisibility(R.id.widgetProgress, View.VISIBLE);
         views.setViewVisibility(R.id.widgetStatus, View.VISIBLE);
@@ -451,7 +458,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
                 Math.max(0, Math.min(100, stats.progressPct)),
                 false);
 
-        Bitmap badge = decodeBadge(context, badgeData, compact);
+        Bitmap badge = decodeBadge(context, badgeData, displayMode);
         if (badge != null) {
             views.setImageViewBitmap(R.id.widgetRankBadge, badge);
         } else {
@@ -469,6 +476,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(
                 R.id.widgetSeason,
                 season.isEmpty() ? "DMZRANKED.COM" : season.toUpperCase(Locale.US));
+        applyWidgetDisplayPreferences(context, views, true);
         return views;
     }
 
@@ -487,6 +495,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widgetStatus, "NO OPERATOR");
         views.setTextViewText(R.id.widgetFooter, "TAP TO OPEN APP");
         views.setTextViewText(R.id.widgetSeason, "DMZRANKED.COM");
+        applyWidgetDisplayPreferences(context, views, false);
         return views;
     }
 
@@ -509,13 +518,17 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widgetStatus, "OFFLINE");
         views.setTextViewText(R.id.widgetFooter, "REFRESH WHEN ONLINE");
         views.setTextViewText(R.id.widgetSeason, "DMZRANKED.COM");
+        applyWidgetDisplayPreferences(context, views, false);
         return views;
     }
 
     private static RemoteViews baseViews(Context context, int appWidgetId) {
-        int layout = isCompactWidget(context, appWidgetId)
+        int displayMode = widgetDisplayMode(context, appWidgetId);
+        int layout = displayMode == 0
                 ? R.layout.widget_dmz_stats_compact
-                : R.layout.widget_dmz_stats;
+                : (displayMode == 2
+                    ? R.layout.widget_dmz_stats_large
+                    : R.layout.widget_dmz_stats);
         RemoteViews views = new RemoteViews(context.getPackageName(), layout);
 
         views.setTextViewText(R.id.widgetAppTitle, "DMZ RANKED");
@@ -546,15 +559,55 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         return views;
     }
 
-    private static boolean isCompactWidget(Context context, int appWidgetId) {
+    private static int widgetDisplayMode(Context context, int appWidgetId) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String requested = prefs.getString(PREF_WIDGET_SIZE_MODE, "auto");
+        requested = requested == null ? "auto" : requested.trim().toLowerCase(Locale.US);
+
+        if ("compact".equals(requested)) return 0;
+        if ("standard".equals(requested)) return 1;
+        if ("large".equals(requested)) return 2;
+
         try {
             Bundle options = AppWidgetManager.getInstance(context).getAppWidgetOptions(appWidgetId);
             int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
             int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 130);
-            return minWidth < 245 || minHeight < 125;
+
+            if (minWidth < 245 || minHeight < 125) return 0;
+            if (minWidth >= 330 && minHeight >= 165) return 2;
         } catch (Throwable ignored) {
-            return false;
         }
+        return 1;
+    }
+
+    private static boolean isCompactWidget(Context context, int appWidgetId) {
+        return widgetDisplayMode(context, appWidgetId) == 0;
+    }
+
+    private static void applyWidgetDisplayPreferences(
+            Context context,
+            RemoteViews views,
+            boolean progressAvailable) {
+        if (views == null) return;
+
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        boolean showBadge = prefs.getBoolean(PREF_WIDGET_SHOW_BADGE, true);
+        boolean showStatus = prefs.getBoolean(PREF_WIDGET_SHOW_STATUS, true);
+        boolean showProgress = prefs.getBoolean(PREF_WIDGET_SHOW_PROGRESS, true);
+        boolean showSeason = prefs.getBoolean(PREF_WIDGET_SHOW_SEASON, true);
+        boolean showBranding = prefs.getBoolean(PREF_WIDGET_SHOW_BRANDING, true);
+        boolean showRefresh = prefs.getBoolean(PREF_WIDGET_SHOW_REFRESH, true);
+
+        views.setViewVisibility(R.id.widgetRankBadge, showBadge ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widgetStatus, showStatus ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(
+                R.id.widgetProgress,
+                showProgress && progressAvailable ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widgetSeason, showSeason ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(
+                R.id.widgetBrandSubtitle,
+                showBranding ? View.VISIBLE : View.GONE);
+        views.setViewVisibility(R.id.widgetRefresh, showRefresh ? View.VISIBLE : View.GONE);
     }
 
     private static void renderLoading(Context context, AppWidgetManager manager, int[] ids) {
@@ -576,6 +629,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widgetStatus, "SYNCING");
             views.setTextViewText(R.id.widgetFooter, "READING LIVE DATA");
             views.setTextViewText(R.id.widgetSeason, "DMZRANKED.COM");
+            applyWidgetDisplayPreferences(context, views, false);
             manager.updateAppWidget(id, views);
         }
     }
@@ -675,7 +729,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
         return tier + division;
     }
 
-    private static Bitmap decodeBadge(Context context, String data, boolean compact) {
+    private static Bitmap decodeBadge(Context context, String data, int displayMode) {
         if (!isBadgeData(data)) return null;
         try {
             int comma = data.indexOf(',');
@@ -683,8 +737,8 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
             Bitmap raw = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             if (raw == null) return null;
 
-            int width = dp(context, compact ? 42 : 58);
-            int height = dp(context, compact ? 46 : 64);
+            int width = dp(context, displayMode == 0 ? 42 : (displayMode == 2 ? 76 : 58));
+            int height = dp(context, displayMode == 0 ? 46 : (displayMode == 2 ? 84 : 64));
             Bitmap scaled = Bitmap.createScaledBitmap(raw, width, height, true);
             if (scaled != raw) raw.recycle();
             return scaled;
