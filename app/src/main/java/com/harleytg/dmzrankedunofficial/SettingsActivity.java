@@ -1068,13 +1068,13 @@ public class SettingsActivity extends Activity {
 
         if (summary != null) {
             if ("compact".equals(mode)) {
-                summary.setText("Compact • force the dense one-row widget layout at any launcher size.");
+                summary.setText("Compact • dense 2×1-ready layout. Long-press the home-screen widget to shrink its Android grid size.");
             } else if ("standard".equals(mode)) {
-                summary.setText("Standard • force the regular DMZ Ranked card layout.");
+                summary.setText("Standard • regular DMZ Ranked card layout. Android launcher size is changed separately on the home screen.");
             } else if ("large".equals(mode)) {
-                summary.setText("Large • bigger rank badge, operator name, SR, and controls.");
+                summary.setText("Large • bigger badge, operator, SR, and controls. Expand the widget on the home screen for best fit.");
             } else {
-                summary.setText("Auto • switches between Compact, Standard, and Large as you resize the widget.");
+                summary.setText("Auto • follows the Android widget footprint as you resize it. Minimum supported footprint is now 2×1-style.");
             }
         }
 
