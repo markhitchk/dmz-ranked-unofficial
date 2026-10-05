@@ -192,6 +192,21 @@ public class MainActivity extends Activity {
             "return 'installed';" +
             "}catch(e){return 'error:'+String(e&&e.message||e);}})()";
 
+    private static final String INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT =
+            "(function(){try{" +
+            "var host=String(location.hostname||'').toLowerCase();" +
+            "if(host!=='dmzranked.com'&&!host.endsWith('.dmzranked.com'))return 'skip-origin';" +
+            "var styleId='dmz-harleys-studios-app-style';" +
+            "if(!document.getElementById(styleId)){" +
+            "var st=document.createElement('style');st.id=styleId;" +
+            "st.textContent='#dmz-harleys-studios-app-message{box-sizing:border-box;width:calc(100% - 28px);max-width:760px;margin:22px auto calc(24px + env(safe-area-inset-bottom));padding:13px 16px;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;font-family:inherit;font-size:13px;line-height:1.45;font-weight:700;letter-spacing:.01em;color:#e9eee9;background:linear-gradient(135deg,rgba(20,25,29,.97),rgba(10,14,12,.97));border:1px solid rgba(246,196,83,.46);border-left:4px solid #f6c453;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.28)}#dmz-harleys-studios-app-message .dmz-hs-accent{color:#f6c453;font-weight:900}#dmz-harleys-studios-app-message .dmz-hs-dot{color:#55d582;font-size:12px}@media(max-width:520px){#dmz-harleys-studios-app-message{width:calc(100% - 20px);margin-top:16px;padding:12px 13px;font-size:12.5px}}';" +
+            "(document.head||document.documentElement).appendChild(st);" +
+            "}" +
+            "var id='dmz-harleys-studios-app-message',msg=document.getElementById(id);" +
+            "if(!msg){msg=document.createElement('div');msg.id=id;msg.setAttribute('role','note');msg.setAttribute('aria-label','Harley\\'s Studios DMZ Ranked Unofficial App');msg.innerHTML='<span class=\\'dmz-hs-dot\\'>●</span><span>Thank you for using <span class=\\'dmz-hs-accent\\'>Harley\\'s Studios</span> DMZ Ranked Unofficial App</span>';(document.body||document.documentElement).appendChild(msg);}" +
+            "return 'installed';" +
+            "}catch(e){return 'error:'+String(e&&e.message||e);}})()";
+
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
             "(function(){try{" +
             "if(window.__dmzInstallNativeHooks)try{window.__dmzInstallNativeHooks();}catch(e){}" +
@@ -481,6 +496,7 @@ public class MainActivity extends Activity {
                         applyDesktopViewportIfNeeded(view);
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
+                        view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
