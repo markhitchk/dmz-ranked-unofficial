@@ -862,6 +862,9 @@ public class MainActivity extends Activity {
                                         .putBoolean(PREF_OPERATOR_PROTECTED, false);
                             }
                             editor.apply();
+                            if (operatorChanged) {
+                                DmzRankedWidgetProvider.requestUpdateAll(MainActivity.this);
+                            }
                             if (preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
                                 maybeAutoSaveOperator(name);
                             }
@@ -1057,6 +1060,7 @@ public class MainActivity extends Activity {
                                 .putString(PREF_SELECTED_OPERATOR, operatorName)
                                 .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                                 .apply();
+                        DmzRankedWidgetProvider.requestUpdateAll(MainActivity.this);
                     }
                     Toast.makeText(MainActivity.this,
                             "Restored " + (operatorName.isEmpty() ? "saved operator" : operatorName)
@@ -2033,6 +2037,7 @@ public class MainActivity extends Activity {
                                 .putString(PREF_OPERATOR_SOURCE, "App operator picker")
                                 .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                                 .apply();
+                        DmzRankedWidgetProvider.requestUpdateAll(this);
                     }
                     Toast.makeText(this,
                             "Switching to " + selectedOperator + "…",
