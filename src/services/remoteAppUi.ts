@@ -1,8 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const CSS_URL =
   'https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.css';
 const JS_URL =
   'https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.js';
 
+const CACHE_CSS = 'dmz_remote_app_ui_css_v1';
+const CACHE_JS = 'dmz_remote_app_ui_js_v1';
 const MAX_BYTES = 512 * 1024;
 const TIMEOUT_MS = 4500;
 
@@ -32,8 +36,20 @@ async function fetchText(url: string): Promise<string> {
 }
 
 export async function loadRemoteAppUi(): Promise<{ css: string; js: string }> {
-  const [css, js] = await Promise.all([fetchText(CSS_URL), fetchText(JS_URL)]);
-  return { css, js };
+  try {
+    const [css, js] = await Promise.all([fetchText(CSS_URL), fetchText(JS_URL)]);
+    await AsyncStorage.multiSet([
+      [CACHE_CSS, css],
+      [CACHE_JS, js]
+    ]);
+    return { css, js };
+  } catch (error) {
+    const cached = await AsyncStorage.multiGet([CACHE_CSS, CACHE_JS]);
+    const css = cached[0]?.[1] ?? '';
+    const js = cached[1]?.[1] ?? '';
+    if (!css || !js) throw error;
+    return { css, js };
+  }
 }
 
 export function buildRemoteUiInjection(css: string, js: string): string {
@@ -51,6 +67,7 @@ export function buildRemoteUiInjection(css: string, js: string): string {
     '  } catch (error) {',
     "    if (window.HarleysStudiosApp && window.HarleysStudiosApp.log) window.HarleysStudiosApp.log('Remote UI JS failed: ' + error);",
     '  }',
+    '  if (window.__dmzRnReadOperator) window.__dmzRnReadOperator();',
     '  return true;',
     '})();',
     'true;'

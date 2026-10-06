@@ -23,10 +23,15 @@ export function useSettings() {
     []
   );
 
+  const replace = useCallback((next: AppSettings) => {
+    setSettings(next);
+    void saveSettings(next);
+  }, []);
+
   const reset = useCallback(async () => {
     const next = await resetSettings();
     setSettings(next);
   }, []);
 
-  return { settings, ready, update, reset };
+  return { settings, ready, update, replace, reset };
 }

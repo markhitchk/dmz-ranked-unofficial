@@ -1,12 +1,22 @@
+import { Platform } from 'react-native';
+
 export const colors = {
-  background: '#090909',
-  surface: '#111111',
-  surfaceRaised: '#191919',
-  border: '#2C2C2C',
-  text: '#F3F3F3',
-  muted: '#A5A5A5',
-  gold: '#D6A84B',
-  goldSoft: '#8E6C2C',
-  danger: '#C84E4E',
-  success: '#4CA66A'
+  black: '#080A09',
+  toolbar: '#111111',
+  red: '#E14B4A',
+  green: '#55D582',
+  gold: '#F6C453',
+  goldDark: '#D8A433',
+  goldSoft: '#E2B24D',
+  white: '#F5F5F5',
+  muted: '#999F9B',
+  panel: '#14191D',
+  panelDeep: '#0B0F11',
+  card: '#121619',
+  cardBorder: '#343A3B',
+  cardBorderGold: '#8A6B24',
+  chip: '#101418'
 } as const;
+
+export const condensedFont =
+  Platform.OS === 'android' ? 'sans-serif-condensed' : undefined;

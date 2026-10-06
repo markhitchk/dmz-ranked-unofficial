@@ -1,18 +1,97 @@
-import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
+import React, { useEffect, useRef } from 'react';
+import {
+  Animated,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
+import * as Application from 'expo-application';
+import { colors, condensedFont } from '../theme';
+import type { AppChannel } from '../types';
 
-export function LoadingOverlay({ verbose }: { verbose: boolean }) {
+type Props = {
+  channel: AppChannel;
+  progress: number;
+  status: string;
+  verbose: boolean;
+  animations: boolean;
+};
+
+export function LoadingOverlay({
+  channel,
+  progress,
+  status,
+  verbose,
+  animations
+}: Props) {
+  const pulse = useRef(new Animated.Value(1)).current;
+  const version = Application.nativeApplicationVersion ?? '1.0.61';
+  const build = Application.nativeBuildVersion ?? '165';
+
+  useEffect(() => {
+    if (!animations) {
+      pulse.stopAnimation();
+      pulse.setValue(1);
+      return;
+    }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(pulse, {
+            toValue: 1.06,
+            duration: 620,
+            useNativeDriver: true
+          })
+        ]),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 620,
+          useNativeDriver: true
+        })
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [animations, pulse]);
+
+  const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
+
   return (
     <View style={styles.overlay} pointerEvents="none">
-      <View style={styles.card}>
-        <ActivityIndicator size="large" color={colors.gold} />
-        <Text style={styles.title}>Loading DMZ Ranked</Text>
-        {verbose ? (
-          <Text style={styles.detail}>
-            Connecting to dmzranked.com and applying the app UI…
-          </Text>
-        ) : null}
+      <View style={styles.center}>
+        <Animated.View
+          style={{
+            transform: [{ scale: pulse }],
+            opacity: pulse.interpolate({
+              inputRange: [1, 1.06],
+              outputRange: [1, 0.78]
+            })
+          }}
+        >
+          <Image
+            source={require('../../assets/dmz_ranked_logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </Animated.View>
+
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>DMZ Ranked</Text>
+          {channel === 'beta' ? <Text style={styles.beta}>BETA</Text> : null}
+        </View>
+
+        <Text style={styles.version}>
+          Version {version} • Build {build}
+        </Text>
+
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${safeProgress}%` }]} />
+        </View>
+
+        {verbose ? <Text style={styles.verbose}>{status}</Text> : null}
       </View>
     </View>
   );
@@ -25,31 +104,67 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
+    backgroundColor: colors.black
+  },
+  center: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background
+    paddingHorizontal: 28
   },
-  card: {
-    width: '78%',
-    maxWidth: 360,
-    padding: 24,
-    borderRadius: 18,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border
+  logo: { width: 156, height: 156 },
+  nameRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center'
   },
-  title: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    marginTop: 14
+  name: {
+    color: colors.white,
+    fontFamily: condensedFont,
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: Platform.OS === 'android' ? 1.2 : 0
   },
-  detail: {
-    color: colors.muted,
+  beta: {
+    marginLeft: 9,
+    minWidth: 44,
     textAlign: 'center',
-    fontSize: 12,
+    backgroundColor: colors.gold,
+    borderColor: colors.goldDark,
+    borderWidth: 1,
+    borderRadius: 4,
+    color: colors.black,
+    fontFamily: condensedFont,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+    paddingHorizontal: 8,
+    paddingVertical: 3
+  },
+  version: {
     marginTop: 8,
-    lineHeight: 17
+    color: colors.muted,
+    fontFamily: condensedFont,
+    fontSize: 13,
+    letterSpacing: 0.3
+  },
+  track: {
+    width: 240,
+    height: 4,
+    marginTop: 18,
+    overflow: 'hidden',
+    borderRadius: 2,
+    backgroundColor: '#252B28'
+  },
+  fill: {
+    height: '100%',
+    backgroundColor: colors.gold
+  },
+  verbose: {
+    marginTop: 10,
+    color: colors.muted,
+    fontFamily: condensedFont,
+    fontSize: 13,
+    textAlign: 'center'
   }
 });
