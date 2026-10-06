@@ -482,65 +482,51 @@
 
   function enhanceWelcomeMessage() {
     const message = document.getElementById("dmz-harleys-studios-app-message");
-    if (!message || message.dataset.hsProfessionalWelcome === "true") return;
+    if (!message) return;
 
-    let welcome = message.querySelector("#dmz-hs-welcome");
-    if (!welcome) {
-      welcome = document.createElement("div");
-      welcome.id = "dmz-hs-welcome";
-      welcome.className = "dmz-hs-welcome";
+    const channel = appChannelLabel();
+    const showBeta = channel === "BETA";
+    const signature = channel + "|" + APP_LOGO_URL;
+    if (message.dataset.hsProfessionalWelcome === signature) return;
+
+    const thanks = document.createElement("div");
+    thanks.className = "dmz-hs-thanks";
+    thanks.innerHTML = 'Thank you for using <span class="dmz-hs-name">Harley\'s Studios</span>';
+
+    const appLine = document.createElement("div");
+    appLine.className = "dmz-hs-app-line";
+
+    const logo = document.createElement("img");
+    logo.className = "dmz-hs-app-logo";
+    logo.alt = "DMZ Ranked app logo";
+    logo.src = APP_LOGO_URL;
+    logo.onerror = function () {
+      if (this.src !== APP_LOGO_FALLBACK_URL) this.src = APP_LOGO_FALLBACK_URL;
+    };
+
+    const title = document.createElement("span");
+    title.className = "dmz-hs-app-title";
+    title.textContent = "DMZ Ranked Unofficial App";
+
+    appLine.appendChild(logo);
+    appLine.appendChild(title);
+
+    if (showBeta) {
+      const beta = document.createElement("span");
+      beta.className = "dmz-hs-app-beta";
+      beta.textContent = "BETA";
+      appLine.appendChild(beta);
     }
 
-    let copy = message.querySelector(".dmz-hs-copy");
-    if (!copy) {
-      copy = document.createElement("div");
-      copy.className = "dmz-hs-copy";
-    }
-
-    let note = message.querySelector(".dmz-hs-note");
-    if (!note) {
-      note = document.createElement("div");
-      note.className = "dmz-hs-note";
-    }
-
-    const content = document.createElement("div");
-    content.className = "dmz-hs-message-content";
-
-    const kicker = document.createElement("div");
-    kicker.className = "dmz-hs-kicker";
-    kicker.textContent = "Harley's Studios · App Experience";
-
-    const text = document.createElement("div");
-    text.className = "dmz-hs-message-text";
-
-    copy.innerHTML =
-      '<span class="dmz-hs-dot" aria-hidden="true"></span>' +
-      '<span>Thanks for using the DMZ Ranked Android app.</span>';
-
-    note.innerHTML =
-      '<span class="dmz-hs-note-dot" aria-hidden="true"></span>' +
-      '<span>Mobile enhancements active · dmzranked.com remains unchanged</span>';
-
-    text.appendChild(kicker);
-    text.appendChild(welcome);
-    text.appendChild(copy);
-
-    const mark = document.createElement("div");
-    mark.className = "dmz-hs-app-mark";
-    mark.setAttribute("aria-hidden", "true");
-    mark.innerHTML = '<span>DMZ</span><small>APP</small>';
-
-    content.appendChild(mark);
-    content.appendChild(text);
+    const note = document.createElement("div");
+    note.className = "dmz-hs-note";
+    note.textContent = "App-only display override — this does not modify or affect the dmzranked.com website.";
 
     while (message.firstChild) message.removeChild(message.firstChild);
-    message.appendChild(content);
+    message.appendChild(thanks);
+    message.appendChild(appLine);
     message.appendChild(note);
-    message.dataset.hsProfessionalWelcome = "true";
-
-    if (typeof window.__dmzHsUpdateMessage === "function") {
-      try { window.__dmzHsUpdateMessage(); } catch (_) {}
-    }
+    message.dataset.hsProfessionalWelcome = signature;
   }
 
   function ensureGlobalStats() {
@@ -583,15 +569,6 @@
     const message = document.getElementById("dmz-harleys-studios-app-message");
     if (message && message.parentNode) {
       if (host.previousElementSibling !== message) message.insertAdjacentElement("afterend", host);
-      const copy = message.querySelector(".dmz-hs-copy");
-      if (copy && !copy.querySelector(".dmz-hs-channel-badge")) {
-        const badge = document.createElement("span");
-        badge.className = "dmz-hs-channel-badge";
-        badge.setAttribute("data-hs-channel-badge", "true");
-        badge.textContent = appChannelLabel();
-        copy.appendChild(document.createTextNode(" "));
-        copy.appendChild(badge);
-      }
     } else if (!host.parentNode) {
       const nav = findSiteNav();
       if (nav && nav.parentNode) nav.parentNode.insertBefore(host, nav);
