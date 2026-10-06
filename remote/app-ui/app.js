@@ -589,7 +589,14 @@
     const nav = findSiteNav();
     if (nav) {
       nav.querySelectorAll(".tab-dot").forEach((dot) => {
-        if (seen.has(dot) || !elementIsVisible(dot)) return;
+        // Never count the App tab's own aggregate dot as a website notification.
+        // Otherwise it changes the fingerprint when hidden, then re-triggers itself.
+        if (
+          seen.has(dot) ||
+          !elementIsVisible(dot) ||
+          dot.classList.contains("hs-unofficial-tab-notify") ||
+          (dot.closest && dot.closest("[data-hs-unofficial-app]"))
+        ) return;
         const owner = dot.closest("[data-tab]");
         const key = clean(dot.id || (owner && owner.getAttribute("data-tab")) || "site");
         active.push(key + ":1");
@@ -627,8 +634,18 @@
   function renderTabNotification(button) {
     if (!button) return;
     const state = websiteNotificationState();
-    const seenFingerprint = readAppNotificationSeen();
-    const hasUnreadForApp = state.count > 0 && state.fingerprint !== seenFingerprint;
+    const appTabActive = button.classList.contains("active") || button.getAttribute("aria-selected") === "true";
+
+    // Match the site's tab behavior: once the App tab itself is being viewed,
+    // its aggregate dot is acknowledged and stays cleared for the current state.
+    if (appTabActive) {
+      try {
+        localStorage.setItem(APP_NOTIFICATION_SEEN_KEY, state.fingerprint);
+      } catch (_) {}
+    }
+
+    const seenFingerprint = appTabActive ? state.fingerprint : readAppNotificationSeen();
+    const hasUnreadForApp = !appTabActive && state.count > 0 && state.fingerprint !== seenFingerprint;
     let badge = button.querySelector(".hs-unofficial-tab-notify");
 
     if (!badge) {
