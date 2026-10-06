@@ -226,7 +226,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("Cache-Control", "no-cache");
             connection.setRequestProperty("User-Agent",
-                    "DMZRankedAndroidWidget/1.0.55 (HarleysStudios; com.harleytg.dmzranked)");
+                    "DMZRankedAndroidWidget/1.0.56 (HarleysStudios; com.harleytg.dmzranked)");
 
             int code = connection.getResponseCode();
             if (code < 200 || code >= 300) {
@@ -704,7 +704,7 @@ public class DmzRankedWidgetProvider extends AppWidgetProvider {
             connection.setUseCaches(true);
             connection.setRequestProperty("Accept", "text/html,*/*");
             connection.setRequestProperty("User-Agent",
-                    "DMZRankedAndroidWidget/1.0.55 (HarleysStudios; rank-badges)");
+                    "DMZRankedAndroidWidget/1.0.56 (HarleysStudios; rank-badges)");
 
             int code = connection.getResponseCode();
             if (code < 200 || code >= 300) {
