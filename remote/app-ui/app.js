@@ -47,6 +47,7 @@
   const SNAPSHOT_URL = "https://dmzranked.com/leaderboard.json";
   const APP_INFO = (window.__DMZ_APP_INFO && typeof window.__DMZ_APP_INFO === "object") ? window.__DMZ_APP_INFO : {};
   const APP_LOGO_URL = clean(APP_INFO.logoUrl) || "file:///android_res/drawable/dmz_ranked_logo.png";
+  const APP_LOGO_FALLBACK_URL = "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/app/src/main/logo/png/dmz_ranked_logo.png";
 
   // Exact rank emblems used by dmzranked.com's leaderboard/profile UI.
   // Keep these tied to the website assets so Current/My Operator matches the site,
@@ -535,6 +536,78 @@
     return host;
   }
 
+  function elementIsVisible(el) {
+    if (!el) return false;
+    try {
+      const style = window.getComputedStyle(el);
+      return style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        style.opacity !== "0" &&
+        el.getClientRects().length > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Mirror the website's own notification indicators. DMZ Ranked currently
+  // exposes tab dots for Community, Updates and Watch, plus a numeric Under
+  // Review badge. The app does not invent unread state; it only reflects what
+  // the loaded website is already showing.
+  function websiteNotificationCount() {
+    let count = 0;
+    const seen = new Set();
+
+    ["communityDot", "updatesDot", "watchDot"].forEach((id) => {
+      const dot = document.getElementById(id);
+      if (dot && elementIsVisible(dot)) {
+        count += 1;
+        seen.add(dot);
+      }
+    });
+
+    const review = document.getElementById("reviewCount");
+    if (review && elementIsVisible(review)) {
+      const value = parseInt(clean(review.textContent), 10);
+      count += Number.isFinite(value) && value > 0 ? value : 1;
+      seen.add(review);
+    }
+
+    // Future-proof for additional website notification dots without double
+    // counting the known IDs above.
+    document.querySelectorAll(".tabs .tab-dot, .subtabs .tab-dot, .sub-tabs .tab-dot").forEach((dot) => {
+      if (!seen.has(dot) && elementIsVisible(dot)) count += 1;
+    });
+
+    return Math.max(0, count);
+  }
+
+  function renderTabNotification(button) {
+    if (!button) return;
+    const count = websiteNotificationCount();
+    let badge = button.querySelector(".hs-unofficial-tab-notify");
+
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "hs-unofficial-tab-notify";
+      badge.setAttribute("aria-label", "Website notifications");
+      badge.hidden = true;
+      button.appendChild(badge);
+    }
+
+    const next = count > 99 ? "99+" : String(count);
+    if (count > 0) {
+      if (badge.textContent !== next) badge.textContent = next;
+      badge.hidden = false;
+      button.classList.add("has-site-notifications");
+      button.setAttribute("data-hs-site-notification-count", String(count));
+    } else {
+      if (badge.textContent) badge.textContent = "";
+      badge.hidden = true;
+      button.classList.remove("has-site-notifications");
+      button.removeAttribute("data-hs-site-notification-count");
+    }
+  }
+
   function decorateTabButton(button) {
     if (!button) return;
     const channel = appChannelLabel();
@@ -544,9 +617,15 @@
 
     const logo = document.createElement("img");
     logo.className = "hs-unofficial-tab-logo";
-    logo.alt = "";
+    logo.alt = "DMZ Ranked";
     logo.src = APP_LOGO_URL;
-    logo.addEventListener("error", () => logo.classList.add("failed"), { once: true });
+    logo.addEventListener("error", () => {
+      if (logo.src !== APP_LOGO_FALLBACK_URL) {
+        logo.src = APP_LOGO_FALLBACK_URL;
+        return;
+      }
+      logo.classList.add("failed");
+    });
 
     const label = document.createElement("span");
     label.className = "hs-unofficial-tab-label";
@@ -564,6 +643,8 @@
       badge.textContent = "BETA";
       button.appendChild(badge);
     }
+
+    renderTabNotification(button);
   }
 
   function findSiteNav() {
@@ -690,11 +771,22 @@
       ensureTab();
     } else {
       ensureGlobalStats();
+      const appTab = document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`);
+      renderTabNotification(appTab);
     }
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class", "style", "hidden", "aria-hidden"]
+  });
 
-  window.setInterval(updateWelcome, 1500);
+  window.setInterval(() => {
+    updateWelcome();
+    const appTab = document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`);
+    renderTabNotification(appTab);
+  }, 1500);
   window.__dmzHsBetaTabsRefresh = ensureTab;
 })();
 
