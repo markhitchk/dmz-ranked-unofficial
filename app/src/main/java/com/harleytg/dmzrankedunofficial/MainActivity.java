@@ -252,6 +252,8 @@ public class MainActivity extends Activity {
             "return 'installed-top';" +
             "}catch(e){return 'error:'+String(e&&e.message||e);}})()";
 
+    // Welcome line is repaired by both the native injector and streamed app-ui JS so
+    // older installed builds still regain Welcome, Guest / Welcome back, <operator>.
     private static final String READ_SITE_NOTIFICATIONS_SCRIPT =
             "(function(){try{" +
             "if(window.__dmzInstallNativeHooks)try{window.__dmzInstallNativeHooks();}catch(e){}" +
