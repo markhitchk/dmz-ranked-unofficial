@@ -6,10 +6,7 @@ input,select,textarea{font-size:max(16px,1em)}
 .tabs{
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-x:contain;
-  scroll-snap-type:x proximity;
-  scrollbar-width:thin;
 }
-.tabs>button,.tabs>[role="button"],.tabs>a{scroll-snap-align:center}
 #hs-beta-back-top{
   position:fixed;
   right:14px;
@@ -28,9 +25,58 @@ input,select,textarea{font-size:max(16px,1em)}
   justify-content:center;
 }
 #hs-beta-back-top.hs-show{display:flex}
+@media (max-width:900px){
+  .wrap nav.tabs,.tabs{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    align-items:stretch!important;
+    justify-content:stretch!important;
+    overflow:visible!important;
+    padding:6px!important;
+    scroll-snap-type:none!important;
+  }
+  .wrap nav.tabs>button,.tabs>button,
+  .wrap nav.tabs>[role="button"],.tabs>[role="button"],
+  .wrap nav.tabs>a,.tabs>a{
+    width:100%!important;
+    min-width:0!important;
+    min-height:44px!important;
+    margin:0!important;
+    padding:7px 5px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    line-height:1.15!important;
+    touch-action:manipulation;
+  }
+}
 @media (max-width:640px){
-  .tabs{justify-content:flex-start!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:4px}
-  .tabs>button,.tabs>[role="button"],.tabs>a{flex:0 0 auto;min-height:42px}
-  button,select,input[type="button"],input[type="submit"]{min-height:42px}
+  .wrap nav.tabs,.tabs{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+    padding:5px!important;
+  }
+  .wrap nav.tabs>button,.tabs>button,
+  .wrap nav.tabs>[role="button"],.tabs>[role="button"],
+  .wrap nav.tabs>a,.tabs>a{
+    min-height:46px!important;
+    font-size:11px!important;
+    letter-spacing:.2px!important;
+  }
+  button,select,input[type="button"],input[type="submit"]{min-height:44px}
+  .card{scroll-margin-top:12px}
+}
+@media (max-width:360px){
+  .wrap nav.tabs>button,.tabs>button,
+  .wrap nav.tabs>[role="button"],.tabs>[role="button"],
+  .wrap nav.tabs>a,.tabs>a{
+    padding-left:3px!important;
+    padding-right:3px!important;
+    font-size:10.5px!important;
+  }
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
