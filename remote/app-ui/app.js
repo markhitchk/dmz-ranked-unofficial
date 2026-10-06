@@ -488,7 +488,12 @@
     const showBeta = channel === "BETA";
     const operator = getOperatorName();
     const signature = channel + "|" + APP_LOGO_URL + "|" + operator;
-    if (message.dataset.hsProfessionalWelcome === signature) return;
+    const existingWelcome = message.querySelector(".dmz-hs-welcome");
+    if (
+      message.dataset.hsProfessionalWelcome === signature &&
+      existingWelcome &&
+      clean(existingWelcome.textContent)
+    ) return;
 
     const welcome = document.createElement("div");
     welcome.className = "dmz-hs-welcome";
@@ -1063,6 +1068,10 @@
   });
 
   window.setInterval(() => {
+    // The native top message can be injected/rebuilt independently of the App
+    // page, so always repair its dynamic Welcome line first.
+    enhanceWelcomeMessage();
+
     const appTab = document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`);
     const appSection = document.getElementById(TAB);
     const stats = document.getElementById("dmz-hs-active-user-stats");
