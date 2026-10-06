@@ -1887,8 +1887,8 @@ public class MainActivity extends Activity {
 
         boolean desktop = preferences != null && preferences.getBoolean(PREF_DESKTOP, false);
         WebSettings settings = webView.getSettings();
-        String appIdentity = "DMZRankedApp/1.0.55 (HarleysStudios; AndroidClient; "
-                + getPackageName() + ")";
+        String appIdentity = "DMZRankedApp/" + remoteAppVersionName()
+                + " (HarleysStudios; AndroidClient; " + getPackageName() + ")";
 
         if (desktop) {
             String chromeToken = "Chrome/120.0.0.0";
