@@ -2186,13 +2186,15 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
     width:100%;
   }
   .hs-app-modal{
-    align-items:flex-end;
-    padding:10px;
+    align-items:center;
+    justify-content:center;
+    padding:14px;
   }
   .hs-app-modal-card{
-    width:100%;
-    max-height:88vh;
-    border-radius:14px 14px 10px 10px;
+    width:min(520px,100%);
+    max-height:84vh;
+    margin:auto;
+    border-radius:14px;
   }
   .hs-app-modal-choice-grid{
     grid-template-columns:1fr;
