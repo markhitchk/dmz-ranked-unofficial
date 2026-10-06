@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "DMZRanked";
     private static final String HOME_URL = "https://dmzranked.com/";
     private static final String PAYPAL_SHARE_URL = "https://share.google/9nj1GcaYNu3qJTTeu";
+    private static final String HARLEYS_STUDIOS_KOFI_URL = "https://ko-fi.com/harleytg_#checkoutModal";
     private static final String APP_SUPPORT_DISCORD_URL = "https://discord.gg/kdHneTZkyd";
     private static final String MAIN_DISCORD_URL = "https://discord.gg/jTaTHqw45F";
     private static final String BETA_GROUP_URL = "https://groups.google.com/g/dmz-ranked";
@@ -1803,7 +1804,7 @@ public class MainActivity extends Activity {
             if (isAllowedExternalLink(uri)) {
                 openExternal(uri);
             } else {
-                Toast.makeText(this, "External link blocked. Allowed links are the approved PayPal, DMZ Ranked Discord invites, and app beta group.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "External link blocked. Allowed links are the approved PayPal, Harley's Studios Ko-fi, DMZ Ranked Discord invites, and app beta group.", Toast.LENGTH_SHORT).show();
             }
             return true;
         }
@@ -1822,6 +1823,7 @@ public class MainActivity extends Activity {
         if (uri == null) return false;
         String value = uri.toString();
         if (value.startsWith(PAYPAL_SHARE_URL)
+                || value.startsWith(HARLEYS_STUDIOS_KOFI_URL)
                 || value.startsWith(APP_SUPPORT_DISCORD_URL)
                 || value.startsWith(MAIN_DISCORD_URL)
                 || value.startsWith(BETA_GROUP_URL)) {
@@ -1840,6 +1842,10 @@ public class MainActivity extends Activity {
 
         if (host.equals("groups.google.com") || host.equals("www.groups.google.com")) {
             return path.equals("/g/dmz-ranked") || path.startsWith("/g/dmz-ranked/");
+        }
+
+        if (host.equals("ko-fi.com") || host.equals("www.ko-fi.com")) {
+            return path.equals("/harleytg_") || path.startsWith("/harleytg_/");
         }
 
         return false;
