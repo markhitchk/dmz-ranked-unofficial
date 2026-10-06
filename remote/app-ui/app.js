@@ -486,8 +486,23 @@
 
     const channel = appChannelLabel();
     const showBeta = channel === "BETA";
-    const signature = channel + "|" + APP_LOGO_URL;
+    const operator = getOperatorName();
+    const signature = channel + "|" + APP_LOGO_URL + "|" + operator;
     if (message.dataset.hsProfessionalWelcome === signature) return;
+
+    const welcome = document.createElement("div");
+    welcome.className = "dmz-hs-welcome";
+    welcome.id = "dmz-hs-welcome";
+    if (operator) {
+      welcome.appendChild(document.createTextNode("Welcome back, "));
+      const name = document.createElement("span");
+      name.className = "dmz-hs-name";
+      name.textContent = operator;
+      welcome.appendChild(name);
+      welcome.appendChild(document.createTextNode("!"));
+    } else {
+      welcome.textContent = "Welcome, Guest!";
+    }
 
     const thanks = document.createElement("div");
     thanks.className = "dmz-hs-thanks";
@@ -523,6 +538,7 @@
     note.textContent = "App-only display override — this does not modify or affect the dmzranked.com website.";
 
     while (message.firstChild) message.removeChild(message.firstChild);
+    message.appendChild(welcome);
     message.appendChild(thanks);
     message.appendChild(appLine);
     message.appendChild(note);
@@ -869,6 +885,7 @@
   }
 
   function updateWelcome() {
+    enhanceWelcomeMessage();
     const welcome = document.getElementById("hs-unofficial-welcome");
     if (!welcome) return;
     const operator = getOperatorName();
