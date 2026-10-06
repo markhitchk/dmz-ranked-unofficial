@@ -4,6 +4,34 @@ plugins {
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
+def generatedAppUiAssetsDir = file("$buildDir/generated/dmzAppUiAssets")
+def sourceRemoteAppUiDir = file("../remote/app-ui")
+
+tasks.register("generateDmzRemoteUiFallback") {
+    inputs.files(
+            new File(sourceRemoteAppUiDir, "app.css"),
+            new File(sourceRemoteAppUiDir, "app.js")
+    )
+    outputs.dir(generatedAppUiAssetsDir)
+
+    doLast {
+        def cssSource = new File(sourceRemoteAppUiDir, "app.css")
+        def jsSource = new File(sourceRemoteAppUiDir, "app.js")
+        if (!cssSource.exists() || !jsSource.exists()) {
+            throw new GradleException("Missing canonical remote/app-ui fallback sources")
+        }
+
+        def outputDir = new File(generatedAppUiAssetsDir, "dmz-app-ui")
+        outputDir.mkdirs()
+        copy {
+            from(sourceRemoteAppUiDir)
+            include("app.css", "app.js")
+            into(outputDir)
+        }
+        println("Generated bundled DMZ app UI fallback from remote/app-ui")
+    }
+}
+
 
 tasks.register("generateDmzLogo") {
     inputs.file(sourceLogoFile)
@@ -191,6 +219,7 @@ android {
     sourceSets {
         main {
             res.srcDir generatedLogoResDir
+            assets.srcDir generatedAppUiAssetsDir
         }
     }
 
@@ -227,6 +256,7 @@ android {
 
 tasks.named("preBuild").configure {
     dependsOn("generateDmzLogo")
+    dependsOn("generateDmzRemoteUiFallback")
 }
 
 
