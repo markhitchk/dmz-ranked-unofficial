@@ -1681,8 +1681,68 @@
       });
     }
 
+    /* Scope the site's SR preview so the app can fix only this one card.
+       No site values or structure are changed; classes are added for styling only. */
+    function markRaidSrSummary(){
+      var log=q("#log");
+      if(!log)return;
+
+      var labels=[
+        {key:"current",text:"current sr / rank"},
+        {key:"fee",text:"deployment fee"},
+        {key:"earned",text:"sr earned this raid"},
+        {key:"net",text:"net change"},
+        {key:"new",text:"new sr / rank"}
+      ];
+      var candidates=qa("div,section,article,fieldset",log);
+      var card=null;
+      var bestLength=Infinity;
+
+      candidates.forEach(function(el){
+        var txt=clean(el.textContent).toLowerCase();
+        if(!labels.every(function(item){return txt.indexOf(item.text)!==-1;}))return;
+        if(txt.length<bestLength){
+          card=el;
+          bestLength=txt.length;
+        }
+      });
+      if(!card)return;
+
+      qa(".hs-app-raid-sr-summary",log).forEach(function(el){
+        if(el!==card)el.classList.remove("hs-app-raid-sr-summary");
+      });
+      card.classList.add("hs-app-raid-sr-summary");
+
+      labels.forEach(function(item){
+        var match=null;
+        var matchLength=Infinity;
+        qa("*",card).forEach(function(el){
+          var txt=clean(el.textContent).toLowerCase();
+          if(txt.indexOf(item.text)!==0)return;
+          if(txt.length<matchLength){
+            match=el;
+            matchLength=txt.length;
+          }
+        });
+        if(!match)return;
+
+        var row=match;
+        while(row.parentElement&&row.parentElement!==card){
+          var parent=row.parentElement;
+          var parentText=clean(parent.textContent).toLowerCase();
+          var includesOther=labels.some(function(other){
+            return other.key!==item.key&&parentText.indexOf(other.text)!==-1;
+          });
+          if(includesOther)break;
+          row=parent;
+        }
+        row.classList.add("hs-app-raid-sr-row","hs-app-raid-sr-"+item.key);
+      });
+    }
+
     function refresh(){
       fixSupportLinks();
+      markRaidSrSummary();
       ensureAppTools();
       ensurePinCover();
       updatePinUi();
