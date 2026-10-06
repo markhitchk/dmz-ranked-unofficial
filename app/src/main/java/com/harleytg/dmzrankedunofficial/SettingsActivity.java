@@ -190,6 +190,10 @@ public class SettingsActivity extends Activity {
         if (betaProgramSection != null) {
             betaProgramSection.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
         }
+        View widgetSection = findViewById(R.id.widgetSection);
+        if (widgetSection != null) {
+            widgetSection.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
+        }
 
         PackageInfo packageInfo = getPackageInfoSafe();
         String versionName = packageInfo == null || packageInfo.versionName == null
@@ -324,6 +328,11 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.betaDiscordCard).setOnClickListener(v -> openExternal(APP_SUPPORT_DISCORD_URL));
         findViewById(R.id.dmzTickerBuilderCard).setOnClickListener(v -> openExternal(DMZ_TICKER_BUILDER_URL));
         findViewById(R.id.dmzThemedObsBuilderCard).setOnClickListener(v -> openExternal(DMZ_THEMED_OBS_BUILDER_URL));
+        findViewById(R.id.addHomeWidgetCard).setOnClickListener(v -> requestPinDmzWidget());
+        findViewById(R.id.refreshWidgetsCard).setOnClickListener(v -> {
+            DmzRankedWidgetProvider.requestUpdateAll(this);
+            Toast.makeText(this, "Refreshing DMZ Ranked widgets…", Toast.LENGTH_SHORT).show();
+        });
 
         EditText settingsSearch = findViewById(R.id.settingsSearch);
         settingsSearch.addTextChangedListener(new TextWatcher() {
@@ -393,6 +402,36 @@ public class SettingsActivity extends Activity {
             appUpdateManager.unregisterListener(installStateUpdatedListener);
         }
         super.onStop();
+    }
+
+
+    private void requestPinDmzWidget() {
+        try {
+            android.appwidget.AppWidgetManager manager =
+                    android.appwidget.AppWidgetManager.getInstance(this);
+            android.content.ComponentName provider =
+                    new android.content.ComponentName(this, DmzRankedWidgetProvider.class);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    && manager.isRequestPinAppWidgetSupported()) {
+                boolean requested = manager.requestPinAppWidget(provider, null, null);
+                if (requested) {
+                    Toast.makeText(this,
+                            "Choose where to place the DMZ Ranked widget.",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            Toast.makeText(this,
+                    "Open your Android launcher’s Widgets menu and add DMZ Ranked.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not request widget pin", error);
+            Toast.makeText(this,
+                    "Open your Android launcher’s Widgets menu and add DMZ Ranked.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private void setContentSize(String size) {
@@ -608,6 +647,19 @@ public class SettingsActivity extends Activity {
                         "appearance animation animations motion fade transition smooth");
         findViewById(R.id.appearanceSection).setVisibility(appearanceMatch ? View.VISIBLE : View.GONE);
 
+        boolean widgetMatch = false;
+        if (getPackageName().endsWith(".beta")) {
+            widgetMatch =
+                    showIfMatches(R.id.addHomeWidgetCard, q,
+                            "widget home screen pin add rank sr standing operator beta")
+                    | showIfMatches(R.id.refreshWidgetsCard, q,
+                            "widget refresh update reload live cached operator rank sr");
+            findViewById(R.id.widgetSection)
+                    .setVisibility(widgetMatch ? View.VISIBLE : View.GONE);
+        } else {
+            findViewById(R.id.widgetSection).setVisibility(View.GONE);
+        }
+
         boolean appMatch =
                 showIfMatches(R.id.desktopSiteCard, q,
                         "desktop website site layout pc view user agent wide viewport")
@@ -719,7 +771,7 @@ public class SettingsActivity extends Activity {
                         "danger reset app settings defaults");
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
-        boolean any = aboutMatch || appearanceMatch || appMatch || operatorMatch
+        boolean any = aboutMatch || appearanceMatch || widgetMatch || appMatch || operatorMatch
                 || transferMatch || notificationMatch || updateMatch || actionMatch || betaProgramMatch
                 || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
@@ -929,6 +981,7 @@ public class SettingsActivity extends Activity {
                             .putString(PREF_OPERATOR_SOURCE, "App operator picker")
                             .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                             .apply();
+                    DmzRankedWidgetProvider.requestUpdateAll(this);
 
                     Intent result = new Intent()
                             .putExtra(EXTRA_ACTION, ACTION_SELECT_OPERATOR)

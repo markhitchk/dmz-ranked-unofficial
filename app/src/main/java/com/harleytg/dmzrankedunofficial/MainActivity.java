@@ -525,6 +525,7 @@ public class MainActivity extends Activity {
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
                         installBetaCustomTabs(view);
+                        installBetaQol(view);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
@@ -909,6 +910,9 @@ public class MainActivity extends Activity {
                                         .putBoolean(PREF_OPERATOR_PROTECTED, false);
                             }
                             editor.apply();
+                            if (operatorChanged) {
+                                DmzRankedWidgetProvider.requestUpdateAll(MainActivity.this);
+                            }
                             if (preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true)) {
                                 maybeAutoSaveOperator(name);
                             }
@@ -1104,6 +1108,7 @@ public class MainActivity extends Activity {
                                 .putString(PREF_SELECTED_OPERATOR, operatorName)
                                 .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                                 .apply();
+                        DmzRankedWidgetProvider.requestUpdateAll(MainActivity.this);
                     }
                     Toast.makeText(MainActivity.this,
                             "Restored " + (operatorName.isEmpty() ? "saved operator" : operatorName)
@@ -1906,6 +1911,31 @@ public class MainActivity extends Activity {
         }
     }
 
+
+    private void installBetaQol(WebView view) {
+        if (view == null || !getPackageName().endsWith(".beta")) {
+            return;
+        }
+
+        try {
+            String css = readAssetText("dmz_qol/beta_qol.css");
+            String javascript = readAssetText("dmz_qol/beta_qol.js");
+            String script = "(function(){try{"
+                    + "var sid='hs-beta-qol-style';"
+                    + "if(!document.getElementById(sid)){"
+                    + "var st=document.createElement('style');st.id=sid;"
+                    + "st.textContent=" + JSONObject.quote(css) + ";"
+                    + "(document.head||document.documentElement).appendChild(st);"
+                    + "}"
+                    + javascript
+                    + "return 'beta-qol-installed';"
+                    + "}catch(e){return 'beta-qol-error:'+String(e&&e.message||e);}})()";
+            view.evaluateJavascript(script, null);
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not install beta QoL layer", error);
+        }
+    }
+
     private void applyDesktopViewportIfNeeded(WebView view) {
         if (view == null || preferences == null || !preferences.getBoolean(PREF_DESKTOP, false)) {
             return;
@@ -2264,6 +2294,7 @@ public class MainActivity extends Activity {
                                 .putString(PREF_OPERATOR_SOURCE, "App operator picker")
                                 .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                                 .apply();
+                        DmzRankedWidgetProvider.requestUpdateAll(this);
                     }
                     Toast.makeText(this,
                             "Switching to " + selectedOperator + "…",

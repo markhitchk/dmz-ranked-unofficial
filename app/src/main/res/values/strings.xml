@@ -58,4 +58,4 @@
 
     <string name="website">Website: dmzranked.com</string>
     <string name="unofficial_notice">Unofficial client. DMZ Ranked website content and third-party trademarks belong to their respective owners.</string>
-</resources>
+    <string name="widget_description">DMZ Ranked operator rank, SR, standing, and live status.</string>\n</resources>
