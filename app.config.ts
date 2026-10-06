@@ -19,10 +19,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       backgroundColor: '#080A09',
       barStyle: 'light-content'
     },
-    androidNavigationBar: {
-      backgroundColor: '#080A09',
-      barStyle: 'light-content'
-    },
     ios: {
       bundleIdentifier: packageId,
       buildNumber: '165',
