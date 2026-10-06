@@ -964,6 +964,20 @@
         '</div>' +
       '</div>' +
 
+      '<div class="card hs-app-whats-new-card">' +
+        '<div class="hs-app-heading-row">' +
+          '<div><div class="hs-app-eyebrow">Latest app update</div><h2 class="section-title">What\'s New</h2></div>' +
+          '<span class="hs-app-update-build">1.0.58 · 162</span>' +
+        '</div>' +
+        '<div class="hs-app-whats-new-list">' +
+          '<div class="hs-app-whats-new-item"><span class="hs-app-whats-new-icon">↗</span><div><strong>Website Donate Button</strong><span>The header Support button can now open the donation URL configured by dmzranked.com in your browser.</span></div></div>' +
+          '<div class="hs-app-whats-new-item"><span class="hs-app-whats-new-icon">✓</span><div><strong>Protected Autofill</strong><span>Saved operators now use a compact Harley\'s Studios protected-autofill card with device verification and PIN controls.</span></div></div>' +
+          '<div class="hs-app-whats-new-item"><span class="hs-app-whats-new-icon">⚡</span><div><strong>Faster App Loading</strong><span>The app no longer waits on slow website resources before showing usable content and applying app overrides.</span></div></div>' +
+          '<div class="hs-app-whats-new-item"><span class="hs-app-whats-new-icon">◈</span><div><strong>CSS Override Reliability</strong><span>App-only styling now repairs itself if the website rebuilds part of the page.</span></div></div>' +
+        '</div>' +
+        '<div class="hs-app-whats-new-foot">Installed build: <b>' + appBuildLabel() + '</b> · Channel: <b>' + appChannelLabel() + '</b></div>' +
+      '</div>' +
+
       '<div class="card hs-app-features-card">' +
         '<div class="hs-app-heading-row">' +
           '<div><div class="hs-app-eyebrow">Built for mobile</div><h2 class="section-title">App Features</h2></div>' +
