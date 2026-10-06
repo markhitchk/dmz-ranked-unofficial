@@ -2305,3 +2305,92 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
     max-width:190px;
   }
 }
+
+
+/* DMZ Ranked What's New Card v1 */
+#unofficial-app .hs-app-whats-new-card{
+  overflow:hidden;
+  border-top-color:rgba(95,207,122,.52);
+  background:
+    radial-gradient(90% 180% at 100% 0%,rgba(95,207,122,.08),transparent 60%),
+    var(--panel,rgba(17,23,25,.86));
+}
+#unofficial-app .hs-app-update-build{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:25px;
+  padding:4px 8px;
+  border:1px solid rgba(95,207,122,.38);
+  border-radius:5px;
+  background:rgba(23,75,38,.42);
+  color:#b8efc5;
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:9px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.65px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+#unofficial-app .hs-app-whats-new-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+#unofficial-app .hs-app-whats-new-item{
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr);
+  gap:9px;
+  align-items:start;
+  min-width:0;
+  padding:10px;
+  border:1px solid var(--line2,rgba(255,255,255,.07));
+  border-radius:8px;
+  background:rgba(0,0,0,.20);
+}
+#unofficial-app .hs-app-whats-new-icon{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border:1px solid rgba(230,169,43,.28);
+  border-radius:7px;
+  background:rgba(230,169,43,.08);
+  color:var(--gold-b,#f5c451);
+  font-family:var(--f-display,'Oswald','Arial Narrow',system-ui,sans-serif);
+  font-size:15px;
+  font-weight:900;
+}
+#unofficial-app .hs-app-whats-new-item strong{
+  display:block;
+  margin:0 0 2px;
+  color:var(--txt,#e9ede9);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:12px;
+  font-weight:800;
+}
+#unofficial-app .hs-app-whats-new-item span:not(.hs-app-whats-new-icon){
+  display:block;
+  color:var(--muted,#9aa39b);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:10.5px;
+  line-height:1.35;
+}
+#unofficial-app .hs-app-whats-new-foot{
+  margin-top:9px;
+  padding-top:8px;
+  border-top:1px solid var(--line2,rgba(255,255,255,.07));
+  color:var(--muted2,#727b73);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:10px;
+}
+#unofficial-app .hs-app-whats-new-foot b{
+  color:var(--txt,#e9ede9);
+}
+@media(max-width:620px){
+  #unofficial-app .hs-app-whats-new-list{
+    grid-template-columns:1fr;
+  }
+}
