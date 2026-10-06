@@ -1843,7 +1843,7 @@ public class MainActivity extends Activity {
 
         boolean desktop = preferences != null && preferences.getBoolean(PREF_DESKTOP, false);
         WebSettings settings = webView.getSettings();
-        String appIdentity = "DMZRankedApp/1.0.33 (HarleysStudios; AndroidClient; "
+        String appIdentity = "DMZRankedApp/1.0.55 (HarleysStudios; AndroidClient; "
                 + getPackageName() + ")";
 
         if (desktop) {
