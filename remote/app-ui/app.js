@@ -707,12 +707,48 @@
     renderTabNotification(button);
   }
 
+  function siteNavLooksRight(nav) {
+    if (!nav) return false;
+    const expected = [
+      "LEADERBOARD", "HOW TO PLAY", "LOG A RAID", "COMMUNITY", "CHAMPIONSHIP",
+      "HISTORY", "RULES", "UPDATES", "OVERLAYS", "CONTACT"
+    ];
+    const controls = Array.from(nav.querySelectorAll("button,[role=\"button\"],a"));
+    let matches = 0;
+    controls.forEach((control) => {
+      const label = clean(control.textContent).toUpperCase();
+      if (expected.indexOf(label) >= 0) matches += 1;
+    });
+    return matches >= 4;
+  }
+
   function findSiteNav() {
-    return document.querySelector(".wrap nav.tabs");
+    const preferred = document.querySelector(".wrap nav.tabs");
+    if (siteNavLooksRight(preferred)) {
+      preferred.classList.add("hs-site-tabs");
+      return preferred;
+    }
+
+    const candidates = Array.from(document.querySelectorAll("nav.tabs,.tabs"));
+    for (const candidate of candidates) {
+      if (!siteNavLooksRight(candidate)) continue;
+      candidate.classList.add("hs-site-tabs");
+      return candidate;
+    }
+
+    if (preferred) {
+      preferred.classList.add("hs-site-tabs");
+      return preferred;
+    }
+    return null;
   }
 
   function findWrap(nav) {
-    return (nav && nav.closest(".wrap")) || document.querySelector(".wrap");
+    return (nav && nav.closest(".wrap")) ||
+      document.querySelector(".wrap") ||
+      (nav && nav.parentElement) ||
+      document.querySelector("main") ||
+      document.body;
   }
 
   function updateWelcome() {
@@ -726,7 +762,19 @@
 
   function ensureSection(nav) {
     let section = document.getElementById(TAB);
-    if (section) return section;
+    if (section) {
+      const complete = Boolean(
+        section.querySelector("#hs-app-message-list") &&
+        section.querySelector("#hs-unofficial-welcome") &&
+        section.querySelector(".hs-app-messages")
+      );
+      if (complete) {
+        section.setAttribute("data-hs-app-section", "true");
+        return section;
+      }
+      section.remove();
+      section = null;
+    }
 
     const wrap = findWrap(nav);
     if (!wrap) return null;
@@ -734,6 +782,7 @@
     section = document.createElement("section");
     section.id = TAB;
     section.setAttribute("aria-label", "DMZ Ranked App [Unofficial]");
+    section.setAttribute("data-hs-app-section", "true");
     section.innerHTML =
       '<div class="card hs-app-messages">' +
         '<div class="hs-app-heading-row">' +
@@ -786,11 +835,25 @@
   }
 
   function activateOurTab(button, section) {
-    document.querySelectorAll("[data-tab]").forEach((item) => item.classList.remove("active"));
-    document.querySelectorAll("section").forEach((item) => item.classList.remove("active"));
+    const nav = findSiteNav();
+    const wrap = findWrap(nav);
+
+    document.querySelectorAll("[data-tab]").forEach((item) => {
+      item.classList.remove("active");
+      if (item.hasAttribute("aria-selected")) item.setAttribute("aria-selected", "false");
+    });
+    (wrap || document).querySelectorAll("section").forEach((item) => item.classList.remove("active"));
+
     button.classList.add("active");
+    button.setAttribute("aria-selected", "true");
+    section.hidden = false;
+    section.removeAttribute("aria-hidden");
+    section.style.removeProperty("display");
+    section.style.removeProperty("visibility");
     section.classList.add("active");
+
     updateWelcome();
+    ensureGlobalStats();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -805,6 +868,7 @@
 
     const nav = findSiteNav();
     if (!nav) return;
+    nav.classList.add("hs-site-tabs");
 
     let button = nav.querySelector(`[${TAB_ATTR}]`);
     if (!button) {
@@ -828,12 +892,12 @@
   ensureTab();
 
   const observer = new MutationObserver(() => {
-    if (!document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`) || !document.getElementById(TAB) || !document.getElementById("dmz-hs-active-user-stats")) {
+    if (!document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`) || !document.getElementById(TAB) || !document.getElementById("dmz-hs-active-user-stats")) {
       ensureTab();
     } else {
       ensureGlobalStats();
       syncCompactSeasonHeader();
-      const appTab = document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`);
+      const appTab = document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`);
       renderTabNotification(appTab);
     }
   });
@@ -845,9 +909,10 @@
   });
 
   window.setInterval(() => {
+    ensureTab();
     updateWelcome();
     syncCompactSeasonHeader();
-    const appTab = document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`);
+    const appTab = document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`);
     renderTabNotification(appTab);
   }, 1500);
   window.__dmzHsBetaTabsRefresh = ensureTab;
