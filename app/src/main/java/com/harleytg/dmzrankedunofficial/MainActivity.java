@@ -541,6 +541,25 @@ public class MainActivity extends Activity {
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
+
+                        // Loading must fail open. If the site's LIVE/SYNCED/PLAYERS
+                        // DOM changes or evaluateJavascript callbacks stall, never
+                        // leave the native loading overlay covering a usable page.
+                        final int loadingFailSafeToken = token;
+                        view.postDelayed(() -> {
+                            if (isFinishing() || loadingFailSafeToken != loadingStatusPollToken) return;
+                            try {
+                                String currentUrl = view.getUrl();
+                                if (currentUrl == null || !isDmzUrl(Uri.parse(currentUrl))) return;
+                            } catch (Throwable ignored) {
+                                return;
+                            }
+                            if (loadingOverlay != null && loadingOverlay.getVisibility() == View.VISIBLE) {
+                                updateLoadingVerbose("Site loaded • continuing…");
+                                hideLoadingScreen();
+                            }
+                        }, 8000L);
+
                         applySavedOperatorToWebsite(0);
                         startSiteNotificationMonitor();
                         startOperatorMonitor();
