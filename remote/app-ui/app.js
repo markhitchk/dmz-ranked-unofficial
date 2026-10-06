@@ -1537,13 +1537,18 @@
       var cover=q("#hs-app-pin-cover");
       var name=currentOperator();
       var state=name?securityState():{protected:false,verified:false};
+      var log=q("#log");
+      var input=q("#playerName");
+      var field=input&&input.closest?input.closest(".field"):null;
+      if(log)log.classList.toggle("hs-app-has-operator",!!name);
+      if(field)field.classList.toggle("hs-app-operator-covered",!!name);
       var statusText=!name
         ?"Choose a new or existing operator to manage PIN protection."
         :!state.protected
-          ?name+" is not PIN protected yet."
+          ?name+" · not PIN protected yet."
           :state.verified
-            ?name+" is protected and verified on this device."
-            :name+" is PIN protected. Unlock this device to log raids.";
+            ?name+" · protected & verified on this device."
+            :name+" · PIN protected. Unlock this device to log raids.";
 
       if(cover){
         var stateEl=cover.querySelector(".hs-pin-cover-state");
@@ -1569,11 +1574,25 @@
       if(!field)return;
       var cover=q("#hs-app-pin-cover");
       if(!cover){
+        var info=window.__DMZ_APP_INFO||{};
+        var logo=clean(info.logoUrl)||"file:///android_res/drawable/dmz_ranked_logo.png";
         cover=document.createElement("div");
         cover.id="hs-app-pin-cover";
         cover.innerHTML=
-          "<div class='hs-pin-cover-copy'><span class='hs-pin-cover-kicker'>Covered by Harley's Studios DMZ Ranked App</span><span class='hs-pin-cover-state'>Checking operator protection…</span></div>"+
+          "<div class='hs-pin-cover-brand'>"+
+            "<img class='hs-pin-cover-logo' alt='DMZ Ranked app logo'>"+
+            "<div class='hs-pin-cover-copy'>"+
+              "<span class='hs-pin-cover-kicker'>Covered by Harley's Studios</span>"+
+              "<span class='hs-pin-cover-appname'>DMZ Ranked App</span>"+
+              "<span class='hs-pin-cover-state'>Checking operator protection…</span>"+
+            "</div>"+
+          "</div>"+
           "<button type='button' class='hs-pin-cover-action'>MANAGE PIN</button>";
+        var img=cover.querySelector(".hs-pin-cover-logo");
+        if(img){
+          img.src=logo;
+          img.onerror=function(){this.style.display="none";};
+        }
         field.appendChild(cover);
       }
       updatePinUi();
@@ -1624,6 +1643,23 @@
       if(support){
         support.setAttribute("target","_self");
         support.setAttribute("rel","noopener noreferrer");
+
+        // The website owns the donation URL and may use PayPal, Ko-fi, or
+        // another HTTPS donation provider. Hand only this trusted header
+        // support click to the native app so Android can open the configured
+        // URL externally without weakening the general WebView allow-list.
+        if(!support.getAttribute("data-hs-support-bridge")){
+          support.setAttribute("data-hs-support-bridge","1");
+          support.addEventListener("click",function(ev){
+            var href=clean(support.getAttribute("href")||support.href);
+            if(!/^https?:\/\//i.test(href))return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            try{
+              window.location.href="dmzranked-support://open?url="+encodeURIComponent(href);
+            }catch(e){}
+          },true);
+        }
       }
       qa("a[href*='ko-fi.com/harleytg_']").forEach(function(link){
         link.setAttribute("target","_self");
