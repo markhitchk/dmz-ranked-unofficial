@@ -234,16 +234,18 @@ public class MainActivity extends Activity {
             "var id='dmz-harleys-studios-app-message',msg=document.getElementById(id);" +
             "if(!msg){" +
             "msg=document.createElement('div');msg.id=id;msg.setAttribute('role','note');msg.setAttribute('aria-label','Harley\\'s Studios DMZ Ranked Unofficial App message');" +
-            "var welcome=document.createElement('div');welcome.className='dmz-hs-welcome';welcome.id='dmz-hs-welcome';" +
-            "var copy=document.createElement('div');copy.className='dmz-hs-copy';copy.innerHTML='<span class=\\'dmz-hs-dot\\'>●</span>Thanks for using the DMZ Ranked Android app.';" +
-            "var note=document.createElement('div');note.className='dmz-hs-note';note.textContent='Mobile enhancements active · dmzranked.com remains unchanged';" +
-            "msg.appendChild(welcome);msg.appendChild(copy);msg.appendChild(note);" +
+            "var thanks=document.createElement('div');thanks.className='dmz-hs-thanks';thanks.innerHTML='Thank you for using <span class=\\'dmz-hs-name\\'>Harley\\'s Studios</span>';" +
+            "var appLine=document.createElement('div');appLine.className='dmz-hs-app-line';" +
+            "var logo=document.createElement('img');logo.className='dmz-hs-app-logo';logo.alt='DMZ Ranked app logo';logo.src='file:///android_res/drawable/dmz_ranked_logo.png';appLine.appendChild(logo);" +
+            "var appTitle=document.createElement('span');appTitle.className='dmz-hs-app-title';appTitle.textContent='DMZ Ranked Unofficial App';appLine.appendChild(appTitle);" +
+            "var ch='';try{ch=String((window.__DMZ_APP_INFO&&window.__DMZ_APP_INFO.channel)||'').toUpperCase();}catch(e){}if(!ch){try{ch=/com\\.harleytg\\.dmzranked\\.beta/i.test(navigator.userAgent||'')?'BETA':'STABLE';}catch(e){ch='STABLE';}}" +
+            "if(ch==='BETA'){var bb=document.createElement('span');bb.className='dmz-hs-app-beta';bb.textContent='BETA';appLine.appendChild(bb);}" +
+            "var note=document.createElement('div');note.className='dmz-hs-note';note.textContent='App-only display override — this does not modify or affect the dmzranked.com website.';" +
+            "msg.appendChild(thanks);msg.appendChild(appLine);msg.appendChild(note);" +
             "var header=document.querySelector('header,.site-header,#header,.header,.topbar');" +
             "if(header&&header.parentNode){header.insertAdjacentElement('afterend',msg);}else{var body=document.body||document.documentElement;if(body.firstChild)body.insertBefore(msg,body.firstChild);else body.appendChild(msg);}" +
             "}" +
-            "window.__dmzHsUpdateMessage=function(){try{var n=getName();var w=document.getElementById('dmz-hs-welcome');if(!w)return;while(w.firstChild)w.removeChild(w.firstChild);var prefix=document.createTextNode(n?'Welcome back, ':'Welcome, Guest!');w.appendChild(prefix);if(n){var sp=document.createElement('span');sp.className='dmz-hs-name';sp.textContent=n;w.appendChild(sp);w.appendChild(document.createTextNode('!'));}}catch(e){}};" +
-            "window.__dmzHsUpdateMessage();" +
-            "if(!window.__dmzHsMessageTimer){window.__dmzHsMessageTimer=setInterval(function(){try{window.__dmzHsUpdateMessage();}catch(e){}},1500);}" +
+            "window.__dmzHsUpdateMessage=function(){return true;};" +
             "return 'installed-top';" +
             "}catch(e){return 'error:'+String(e&&e.message||e);}})()";
 
