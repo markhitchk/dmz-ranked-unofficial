@@ -901,18 +901,25 @@
       renderTabNotification(appTab);
     }
   });
+  // Child-list changes are enough to recover the injected App tab/page.
+  // Do NOT observe style/class attributes here: syncCompactSeasonHeader() updates
+  // its own style/class values, and observing those attributes can create a
+  // self-triggering MutationObserver loop that starves WebView rendering.
   observer.observe(document.documentElement, {
     childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["class", "style", "hidden", "aria-hidden"]
+    subtree: true
   });
 
   window.setInterval(() => {
-    ensureTab();
+    const appTab = document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`);
+    const appSection = document.getElementById(TAB);
+    const stats = document.getElementById("dmz-hs-active-user-stats");
+    if (!appTab || !appSection || !stats) {
+      ensureTab();
+      return;
+    }
     updateWelcome();
     syncCompactSeasonHeader();
-    const appTab = document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`);
     renderTabNotification(appTab);
   }, 1500);
   window.__dmzHsBetaTabsRefresh = ensureTab;
