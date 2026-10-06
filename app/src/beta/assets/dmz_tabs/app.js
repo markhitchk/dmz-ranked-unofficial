@@ -315,13 +315,20 @@
       rows.push(["Connection", "Live standings are unavailable right now. The website can still be used normally."]);
     }
     rows.push(["Mobile QoL", "App navigation uses a touch-friendly grid in Beta for faster one-handed access."]);
-    list.innerHTML = rows.map((row) =>
-      '<div class="hs-app-message-item"><span class="hs-app-message-label">' +
-      row[0] +
-      '</span><span class="hs-app-message-copy">' +
-      row[1] +
-      '</span></div>'
-    ).join("");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    rows.forEach((row) => {
+      const item = document.createElement("div");
+      item.className = "hs-app-message-item";
+      const label = document.createElement("span");
+      label.className = "hs-app-message-label";
+      label.textContent = row[0];
+      const copy = document.createElement("span");
+      copy.className = "hs-app-message-copy";
+      copy.textContent = row[1];
+      item.appendChild(label);
+      item.appendChild(copy);
+      list.appendChild(item);
+    });
   }
 
   async function updateStats(force) {
@@ -333,8 +340,8 @@
       setStatsState("empty", "", null);
       return;
     }
-    if (!force && operator === lastStatsOperator && lastStats && now - lastStatsFetchMs < 60000) {
-      setStatsState("live", operator, lastStats);
+    if (!force && operator === lastStatsOperator && now - lastStatsFetchMs < 60000) {
+      setStatsState(lastStats ? "live" : "error", operator, lastStats);
       return;
     }
     if (statsRequestInFlight) return;
@@ -342,6 +349,7 @@
     setStatsState("loading", operator, null);
     try {
       const stats = await fetchStats(operator);
+      if (clean(getOperatorName()).toLowerCase() !== clean(operator).toLowerCase()) return;
       lastStatsOperator = operator;
       lastStats = stats;
       lastStatsFetchMs = Date.now();
