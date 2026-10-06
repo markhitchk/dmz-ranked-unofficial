@@ -45,10 +45,33 @@
 
   const PUBLIC_STATE_URL = "https://dmzranked.com/api/v1/data/public-state";
   const SNAPSHOT_URL = "https://dmzranked.com/leaderboard.json";
-  const BADGE_SOURCE_URL = "https://dmz-ticker.netlify.app/";
   const APP_INFO = (window.__DMZ_APP_INFO && typeof window.__DMZ_APP_INFO === "object") ? window.__DMZ_APP_INFO : {};
   const APP_LOGO_URL = clean(APP_INFO.logoUrl) || "file:///android_res/drawable/dmz_ranked_logo.png";
-  let badgeMapPromise = null;
+
+  // Exact rank emblems used by dmzranked.com's leaderboard/profile UI.
+  // Keep these tied to the website assets so Current/My Operator matches the site,
+  // rather than depending on the separate OBS/ticker badge bundle.
+  const SITE_RANK_BADGES = {
+    Bronze1: "/assets/legacy/leaderboard-015-2808c49bc0d5.webp",
+    Bronze2: "/assets/legacy/leaderboard-016-aab15b196781.webp",
+    Bronze3: "/assets/legacy/leaderboard-017-2f667e976d25.webp",
+    Silver1: "/assets/legacy/leaderboard-018-3670db732b01.webp",
+    Silver2: "/assets/legacy/leaderboard-019-fabeb4b98e63.webp",
+    Silver3: "/assets/legacy/leaderboard-020-024fab70c140.webp",
+    Gold1: "/assets/legacy/leaderboard-021-ae25abe446ef.webp",
+    Gold2: "/assets/legacy/leaderboard-022-1871fb11f48a.webp",
+    Gold3: "/assets/legacy/leaderboard-023-d87ab61f5656.webp",
+    Platinum1: "/assets/legacy/leaderboard-024-11058ef86ddc.webp",
+    Platinum2: "/assets/legacy/leaderboard-025-b6dedd8835ef.webp",
+    Platinum3: "/assets/legacy/leaderboard-026-969f97d0f03d.webp",
+    Diamond1: "/assets/legacy/leaderboard-027-f69ddb397114.webp",
+    Diamond2: "/assets/legacy/leaderboard-028-4d6d5c4cc2b6.webp",
+    Diamond3: "/assets/legacy/leaderboard-029-39c25e869058.webp",
+    Crimson1: "/assets/legacy/leaderboard-030-a0647cc76270.webp",
+    Crimson2: "/assets/legacy/leaderboard-031-836e8c92b2f4.webp",
+    Crimson3: "/assets/legacy/leaderboard-032-1ddce018435d.webp",
+    Iridescent: "/assets/legacy/leaderboard-033-c86a3f83ab50.webp"
+  };
   const TIERS = [
     { name: "Iridescent", min: 6000, fee: 100 },
     { name: "Crimson", min: 5000, fee: 75 },
@@ -124,11 +147,9 @@
       : "tier-default";
   }
 
-  function badgeKey(rankLabel, standing) {
+  function badgeKey(rankLabel) {
     const label = clean(rankLabel).toUpperCase();
-    if (label.indexOf("IRIDESCENT") === 0) {
-      return standing >= 1 && standing <= 3 ? "Top" : "Iridescent";
-    }
+    if (label.indexOf("IRIDESCENT") === 0) return "Iridescent";
     const parts = label.split(/\s+/);
     if (parts.length < 2) return "";
     const division = parts[1] === "I" ? "1" : parts[1] === "II" ? "2" : parts[1] === "III" ? "3" : "";
@@ -138,24 +159,7 @@
   }
 
   function loadBadgeMap() {
-    if (badgeMapPromise) return badgeMapPromise;
-    badgeMapPromise = fetch(BADGE_SOURCE_URL, { cache: "force-cache" })
-      .then((response) => {
-        if (!response.ok) throw new Error("Badge HTTP " + response.status);
-        return response.text();
-      })
-      .then((html) => {
-        const marker = html.indexOf("const BADGE");
-        const start = marker < 0 ? -1 : html.indexOf("{", marker);
-        const end = start < 0 ? -1 : html.indexOf("};", start);
-        if (start < 0 || end <= start) throw new Error("Badge map missing");
-        return JSON.parse(html.substring(start, end + 1));
-      })
-      .catch((error) => {
-        badgeMapPromise = null;
-        throw error;
-      });
-    return badgeMapPromise;
+    return Promise.resolve(SITE_RANK_BADGES);
   }
 
   async function renderRankBadge(stats) {
@@ -167,20 +171,16 @@
     image.removeAttribute("src");
     fallback.hidden = false;
     fallback.className = "hs-stat-rank-fallback " + rankTierClass(stats && stats.rankLabel);
-    fallback.textContent = stats
-      ? (stats.position >= 1 && stats.position <= 3 && /^Iridescent/i.test(stats.rankLabel)
-          ? "TOP " + stats.position
-          : stats.rankLabel)
-      : "DMZ";
+    fallback.textContent = stats ? stats.rankLabel : "DMZ";
 
     if (!stats) return;
-    const key = badgeKey(stats.rankLabel, stats.position);
+    const key = badgeKey(stats.rankLabel);
     if (!key) return;
 
     try {
       const badges = await loadBadgeMap();
       const source = badges && badges[key];
-      if (!source || !/^data:image\//i.test(source)) return;
+      if (!source) return;
       if (!lastStats || lastStats.rankLabel !== stats.rankLabel || lastStats.position !== stats.position) return;
       image.onload = () => {
         image.hidden = false;
@@ -190,7 +190,7 @@
         image.hidden = true;
         fallback.hidden = false;
       };
-      image.src = source;
+      image.src = new URL(source, "https://dmzranked.com/").href;
     } catch (_) {
       image.hidden = true;
       fallback.hidden = false;
@@ -539,7 +539,7 @@
     if (!button) return;
     const channel = appChannelLabel();
     button.classList.add("hs-unofficial-tab");
-    button.setAttribute("aria-label", "DMZ Ranked App");
+    button.setAttribute("aria-label", "DMZ Ranked App [Unofficial]");
     while (button.firstChild) button.removeChild(button.firstChild);
 
     const logo = document.createElement("img");
@@ -550,17 +550,20 @@
 
     const label = document.createElement("span");
     label.className = "hs-unofficial-tab-label";
-    label.textContent = "DMZ Ranked App";
-
-    const badge = document.createElement("span");
-    badge.className = "hs-unofficial-tab-channel" + (channel === "STABLE" ? " stable" : "");
-    badge.setAttribute("data-hs-channel-badge", "true");
-    badge.textContent = channel;
+    label.textContent = "DMZ Ranked App [Unofficial]";
 
     button.appendChild(logo);
     button.appendChild(label);
-    button.appendChild(badge);
-    badge.classList.toggle("stable", channel === "STABLE");
+
+    // The navigation tag is intentionally Beta-only. Stable keeps the same
+    // transparent logo + Unofficial label without an extra release badge.
+    if (channel === "BETA") {
+      const badge = document.createElement("span");
+      badge.className = "hs-unofficial-tab-channel";
+      badge.setAttribute("data-hs-channel-badge", "true");
+      badge.textContent = "BETA";
+      button.appendChild(badge);
+    }
   }
 
   function findSiteNav() {
@@ -589,7 +592,7 @@
 
     section = document.createElement("section");
     section.id = TAB;
-    section.setAttribute("aria-label", "DMZ Ranked App");
+    section.setAttribute("aria-label", "DMZ Ranked App [Unofficial]");
     section.innerHTML =
       '<div class="card hs-app-messages">' +
         '<div class="hs-app-heading-row">' +
@@ -601,12 +604,12 @@
       '</div>' +
 
       '<div class="sect-hero camp">' +
-        '<h2>DMZ Ranked App<small>Harley\'s Studios · Android ' + appChannelLabel() + '</small></h2>' +
+        '<h2>DMZ Ranked App [Unofficial]<small>Harley\'s Studios · Android ' + appChannelLabel() + '</small></h2>' +
       '</div>' +
 
       '<div class="card">' +
         '<h2 class="section-title" id="hs-unofficial-welcome">Welcome, Guest.</h2>' +
-        '<p class="hs-app-intro"><b>DMZ Ranked App</b> is Harley\'s Studios Android experience built around dmzranked.com. This page contains app-only information and tools while the DMZ Ranked website continues to run normally.</p>' +
+        '<p class="hs-app-intro"><b>DMZ Ranked App [Unofficial]</b> is Harley\'s Studios Android experience built around dmzranked.com. This page contains app-only information and tools while the DMZ Ranked website continues to run normally.</p>' +
         '<div class="hs-app-meta">' +
           '<span class="hs-app-pill' + channelClass() + '" data-hs-channel-badge>' + appChannelLabel() + '</span>' +
           '<span class="hs-app-pill">' + appBuildLabel() + '</span>' +
