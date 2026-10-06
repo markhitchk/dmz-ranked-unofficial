@@ -26,7 +26,7 @@ input,select,textarea{font-size:max(16px,1em)}
 }
 #hs-beta-back-top.hs-show{display:flex}
 @media (max-width:900px){
-  .wrap nav.tabs,.tabs{
+  .wrap nav.tabs{
     display:grid!important;
     grid-template-columns:repeat(3,minmax(0,1fr))!important;
     gap:6px!important;
@@ -36,9 +36,9 @@ input,select,textarea{font-size:max(16px,1em)}
     padding:6px!important;
     scroll-snap-type:none!important;
   }
-  .wrap nav.tabs>button,.tabs>button,
-  .wrap nav.tabs>[role="button"],.tabs>[role="button"],
-  .wrap nav.tabs>a,.tabs>a{
+  .wrap nav.tabs>button,
+  .wrap nav.tabs>[role="button"],
+  .wrap nav.tabs>a{
     width:100%!important;
     min-width:0!important;
     min-height:44px!important;
@@ -55,14 +55,14 @@ input,select,textarea{font-size:max(16px,1em)}
   }
 }
 @media (max-width:640px){
-  .wrap nav.tabs,.tabs{
+  .wrap nav.tabs{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:6px!important;
     padding:5px!important;
   }
-  .wrap nav.tabs>button,.tabs>button,
-  .wrap nav.tabs>[role="button"],.tabs>[role="button"],
-  .wrap nav.tabs>a,.tabs>a{
+  .wrap nav.tabs>button,
+  .wrap nav.tabs>[role="button"],
+  .wrap nav.tabs>a{
     min-height:46px!important;
     font-size:11px!important;
     letter-spacing:.2px!important;
@@ -71,9 +71,9 @@ input,select,textarea{font-size:max(16px,1em)}
   .card{scroll-margin-top:12px}
 }
 @media (max-width:360px){
-  .wrap nav.tabs>button,.tabs>button,
-  .wrap nav.tabs>[role="button"],.tabs>[role="button"],
-  .wrap nav.tabs>a,.tabs>a{
+  .wrap nav.tabs>button,
+  .wrap nav.tabs>[role="button"],
+  .wrap nav.tabs>a{
     padding-left:3px!important;
     padding-right:3px!important;
     font-size:10.5px!important;
