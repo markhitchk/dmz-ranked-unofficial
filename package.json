@@ -29,7 +29,6 @@
     "expo-device": "~57.0.2",
     "expo-keep-awake": "~57.0.2",
     "expo-linear-gradient": "~57.0.2",
-    "expo-modules-core": "~57.0.21",
     "expo-notifications": "~57.0.22",
     "expo-task-manager": "~57.0.21",
     "react": "19.2.3",
@@ -46,5 +45,10 @@
   },
   "engines": {
     "node": ">=22.13.0"
+  },
+  "overrides": {
+    "sp-react-native-in-app-updates": {
+      "react-native-device-info": "15.0.2"
+    }
   }
 }
