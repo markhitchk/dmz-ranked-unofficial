@@ -45,6 +45,8 @@ import android.widget.TextView;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -74,6 +76,12 @@ public class MainActivity extends Activity {
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2003;
     private static final int PLAY_UPDATE_REQUEST = 2004;
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v3_heads_up";
+    private static final String REMOTE_APP_UI_CSS_URL = "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.css";
+    private static final String REMOTE_APP_UI_JS_URL = "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.js";
+    private static final String REMOTE_APP_UI_CSS_MARKER = "DMZ Ranked Remote App UI v1";
+    private static final String REMOTE_APP_UI_JS_MARKER = "DMZ Ranked Remote App UI v1";
+    private static final int REMOTE_APP_UI_TIMEOUT_MS = 5000;
+    private static final int REMOTE_APP_UI_MAX_BYTES = 512 * 1024;
 
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_DESKTOP = "desktop_site";
@@ -92,10 +100,13 @@ public class MainActivity extends Activity {
     private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
     private static final String PREF_CONTENT_SIZE = "content_size";
     private static final String PREF_APP_ANIMATIONS = "app_animations";
+    private static final String PREF_REMOTE_APP_UI_CSS = "remote_app_ui_css";
+    private static final String PREF_REMOTE_APP_UI_JS = "remote_app_ui_js";
+    private static final String PREF_REMOTE_APP_UI_UPDATED_MS = "remote_app_ui_updated_ms";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
-            "var labels=['LEADERBOARD','HOW TO PLAY','LOG A RAID','COMMUNITY','CHAMPIONSHIP','HISTORY','RULES','UPDATES','OVERLAYS','CONTACT','UNOFFICIAL APP'];" +
+            "var labels=['LEADERBOARD','HOW TO PLAY','LOG A RAID','COMMUNITY','CHAMPIONSHIP','HISTORY','RULES','UPDATES','OVERLAYS','CONTACT','UNOFFICIAL APP','DMZ RANKED APP'];" +
             "function norm(v){return String(v||'').replace(/\\s+/g,' ').trim().toUpperCase();}" +
             "function known(v){return labels.indexOf(norm(v))>=0?norm(v):null;}" +
             "function labelFrom(el){var n=el;for(var i=0;i<7&&n;i++,n=n.parentElement){var a=null;try{a=known(n.getAttribute&&(n.getAttribute('aria-label')||n.getAttribute('data-tab')||n.getAttribute('data-section')||n.getAttribute('data-page')||n.getAttribute('title')));}catch(e){}if(a){return a;}var t=null;try{t=known(n.innerText||n.textContent);}catch(e){}if(t){return t;}}return null;}" +
@@ -524,8 +535,7 @@ public class MainActivity extends Activity {
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
-                        installBetaCustomTabs(view);
-                        installBetaQol(view);
+                        installRemoteAppUi(view);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
@@ -1874,67 +1884,153 @@ public class MainActivity extends Activity {
         }
     }
 
-    private String readAssetText(String assetPath) throws Exception {
-        try (InputStream input = getAssets().open(assetPath);
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[4096];
-            int count;
-            while ((count = input.read(buffer)) != -1) {
-                output.write(buffer, 0, count);
+    private boolean isBetaPackage() {
+        return getPackageName() != null && getPackageName().endsWith(".beta");
+    }
+
+    private String remoteAppVersionName() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return info.versionName == null ? "" : info.versionName;
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    private long remoteAppVersionCode() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return info.getLongVersionCode();
             }
-            return output.toString(StandardCharsets.UTF_8.name());
+            return info.versionCode;
+        } catch (Throwable ignored) {
+            return -1L;
         }
     }
 
-    private void installBetaCustomTabs(WebView view) {
-        if (view == null || !getPackageName().endsWith(".beta")) {
-            return;
-        }
-
+    private String downloadRemoteAppUiText(String urlValue, String requiredMarker) throws Exception {
+        HttpURLConnection connection = null;
         try {
-            String css = readAssetText("dmz_tabs/style.css");
-            String javascript = readAssetText("dmz_tabs/app.js");
-            String script = "(function(){try{"
-                    + "var sid='hs-beta-tabs-style';"
-                    + "if(!document.getElementById(sid)){"
-                    + "var st=document.createElement('style');st.id=sid;"
-                    + "st.textContent=" + JSONObject.quote(css) + ";"
-                    + "(document.head||document.documentElement).appendChild(st);"
-                    + "}"
-                    + "window.__dmzHsBetaTabAssets=true;"
-                    + javascript
-                    + "return 'beta-tabs-installed';"
-                    + "}catch(e){return 'beta-tabs-error:'+String(e&&e.message||e);}})()";
-            view.evaluateJavascript(script, null);
-        } catch (Throwable error) {
-            Log.d(TAG, "Could not install beta custom tabs", error);
+            URL url = new URL(urlValue + "?ts=" + System.currentTimeMillis());
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(REMOTE_APP_UI_TIMEOUT_MS);
+            connection.setReadTimeout(REMOTE_APP_UI_TIMEOUT_MS);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+            connection.setRequestProperty("Pragma", "no-cache");
+            connection.setRequestProperty("User-Agent", "DMZRankedApp-RemoteUI/" + remoteAppVersionName());
+
+            int code = connection.getResponseCode();
+            if (code < 200 || code >= 300) {
+                throw new IllegalStateException("Remote UI HTTP " + code);
+            }
+
+            try (InputStream input = connection.getInputStream();
+                 ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[4096];
+                int count;
+                int total = 0;
+                while ((count = input.read(buffer)) != -1) {
+                    total += count;
+                    if (total > REMOTE_APP_UI_MAX_BYTES) {
+                        throw new IllegalStateException("Remote UI file is too large");
+                    }
+                    output.write(buffer, 0, count);
+                }
+                String text = output.toString(StandardCharsets.UTF_8.name());
+                if (text.trim().isEmpty() || !text.contains(requiredMarker)) {
+                    throw new IllegalStateException("Remote UI validation failed");
+                }
+                return text;
+            }
+        } finally {
+            if (connection != null) connection.disconnect();
         }
     }
 
+    private void installRemoteAppUi(WebView view) {
+        if (view == null) return;
 
-    private void installBetaQol(WebView view) {
-        if (view == null || !getPackageName().endsWith(".beta")) {
-            return;
-        }
+        final String pageUrl = view.getUrl();
+        new Thread(() -> {
+            String css = null;
+            String javascript = null;
+            boolean fresh = false;
 
-        try {
-            String css = readAssetText("dmz_qol/beta_qol.css");
-            String javascript = readAssetText("dmz_qol/beta_qol.js");
-            String script = "(function(){try{"
-                    + "var sid='hs-beta-qol-style';"
-                    + "if(!document.getElementById(sid)){"
-                    + "var st=document.createElement('style');st.id=sid;"
-                    + "st.textContent=" + JSONObject.quote(css) + ";"
-                    + "(document.head||document.documentElement).appendChild(st);"
-                    + "}"
-                    + javascript
-                    + "return 'beta-qol-installed';"
-                    + "}catch(e){return 'beta-qol-error:'+String(e&&e.message||e);}})()";
-            view.evaluateJavascript(script, null);
-        } catch (Throwable error) {
-            Log.d(TAG, "Could not install beta QoL layer", error);
-        }
+            try {
+                css = downloadRemoteAppUiText(REMOTE_APP_UI_CSS_URL, REMOTE_APP_UI_CSS_MARKER);
+                javascript = downloadRemoteAppUiText(REMOTE_APP_UI_JS_URL, REMOTE_APP_UI_JS_MARKER);
+                fresh = true;
+            } catch (Throwable remoteError) {
+                Log.d(TAG, "Remote app UI download failed; trying cached copy", remoteError);
+                try {
+                    SharedPreferences appUiPrefs = preferences != null
+                            ? preferences
+                            : getSharedPreferences(PREFS, MODE_PRIVATE);
+                    css = appUiPrefs.getString(PREF_REMOTE_APP_UI_CSS, null);
+                    javascript = appUiPrefs.getString(PREF_REMOTE_APP_UI_JS, null);
+                } catch (Throwable ignored) {
+                }
+            }
+
+            if (css == null || javascript == null
+                    || !css.contains(REMOTE_APP_UI_CSS_MARKER)
+                    || !javascript.contains(REMOTE_APP_UI_JS_MARKER)) {
+                Log.d(TAG, "No valid remote or cached app UI is available");
+                return;
+            }
+
+            final String finalCss = css;
+            final String finalJavascript = javascript;
+            final boolean cacheFresh = fresh;
+
+            view.post(() -> {
+                try {
+                    String currentUrl = view.getUrl();
+                    if (pageUrl == null || currentUrl == null || !pageUrl.equals(currentUrl)
+                            || !isDmzUrl(Uri.parse(currentUrl))) {
+                        return;
+                    }
+
+                    JSONObject info = new JSONObject();
+                    info.put("channel", isBetaPackage() ? "BETA" : "STABLE");
+                    info.put("packageName", getPackageName());
+                    info.put("versionName", remoteAppVersionName());
+                    long versionCode = remoteAppVersionCode();
+                    info.put("versionCode", versionCode >= 0 ? String.valueOf(versionCode) : "");
+                    info.put("logoUrl", "file:///android_res/drawable/dmz_ranked_logo.png");
+                    info.put("notificationIcon", "ic_notification_dmz");
+                    info.put("source", "github-main");
+
+                    String script = "(function(){try{"
+                            + "window.__DMZ_APP_INFO=" + info.toString() + ";"
+                            + "var sid='hs-remote-app-ui-style';"
+                            + "var st=document.getElementById(sid);"
+                            + "if(!st){st=document.createElement('style');st.id=sid;(document.head||document.documentElement).appendChild(st);}"
+                            + "st.textContent=" + JSONObject.quote(finalCss) + ";"
+                            + finalJavascript
+                            + "return 'remote-app-ui-installed';"
+                            + "}catch(e){return 'remote-app-ui-error:'+String(e&&e.message||e);}})()";
+                    view.evaluateJavascript(script, null);
+
+                    if (cacheFresh) {
+                        SharedPreferences appUiPrefs = preferences != null
+                                ? preferences
+                                : getSharedPreferences(PREFS, MODE_PRIVATE);
+                        appUiPrefs.edit()
+                                .putString(PREF_REMOTE_APP_UI_CSS, finalCss)
+                                .putString(PREF_REMOTE_APP_UI_JS, finalJavascript)
+                                .putLong(PREF_REMOTE_APP_UI_UPDATED_MS, System.currentTimeMillis())
+                                .apply();
+                    }
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not install remote app UI", error);
+                }
+            });
+        }, "DMZ-Remote-App-UI").start();
     }
+
 
     private void applyDesktopViewportIfNeeded(WebView view) {
         if (view == null || preferences == null || !preferences.getBoolean(PREF_DESKTOP, false)) {
