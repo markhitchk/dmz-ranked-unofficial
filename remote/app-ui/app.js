@@ -487,6 +487,7 @@
     const channel = appChannelLabel();
     const showBeta = channel === "BETA";
     const operator = getOperatorName();
+    message.setAttribute("data-hs-operator", operator || "");
     const signature = channel + "|" + APP_LOGO_URL + "|" + operator;
     const existingWelcome = message.querySelector(".dmz-hs-welcome");
     if (
