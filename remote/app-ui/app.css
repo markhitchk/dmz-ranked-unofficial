@@ -2212,3 +2212,96 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
     width:100%;
   }
 }
+
+
+/* DMZ Ranked Compact Operator Cover v2
+   Once the app has an operator saved, replace the website's repeated picker /
+   text field / saved-device note with one small app-owned identity card. */
+#log.hs-app-has-operator #pickWrap{
+  display:none!important;
+}
+#log .field.hs-app-operator-covered > label[for="playerName"],
+#log .field.hs-app-operator-covered > #playerName,
+#log .field.hs-app-operator-covered > #playerList,
+#log .field.hs-app-operator-covered > .note{
+  display:none!important;
+}
+#log .field.hs-app-operator-covered{
+  margin-bottom:12px!important;
+}
+#hs-app-pin-cover{
+  min-height:58px;
+  margin-top:0!important;
+  padding:8px 9px!important;
+  gap:9px!important;
+  border-radius:8px!important;
+  background:linear-gradient(110deg,rgba(230,169,43,.07),transparent 58%),rgba(8,13,14,.78)!important;
+}
+#hs-app-pin-cover .hs-pin-cover-brand{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+#hs-app-pin-cover .hs-pin-cover-logo{
+  display:block;
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  object-fit:contain;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.5));
+}
+#hs-app-pin-cover .hs-pin-cover-copy{
+  min-width:0;
+}
+#hs-app-pin-cover .hs-pin-cover-kicker{
+  font-size:8px!important;
+  line-height:1.05;
+  letter-spacing:.65px!important;
+}
+#hs-app-pin-cover .hs-pin-cover-appname{
+  display:block;
+  margin-top:1px;
+  color:var(--txt,#e9ede9);
+  font-family:var(--f-display,'Oswald','Arial Narrow',system-ui,sans-serif);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:.45px;
+  text-transform:uppercase;
+}
+#hs-app-pin-cover .hs-pin-cover-state{
+  margin-top:2px!important;
+  overflow:hidden;
+  color:var(--muted,#9aa39b)!important;
+  font-size:10px!important;
+  line-height:1.15!important;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#hs-app-pin-cover .hs-pin-cover-action{
+  min-height:32px!important;
+  padding:6px 10px!important;
+  flex:0 0 auto;
+  border-radius:7px!important;
+  font-size:10px!important;
+  letter-spacing:.45px!important;
+}
+@media(max-width:430px){
+  #hs-app-pin-cover{
+    align-items:center!important;
+    flex-direction:row!important;
+  }
+  #hs-app-pin-cover .hs-pin-cover-logo{
+    width:30px;
+    height:30px;
+    flex-basis:30px;
+  }
+  #hs-app-pin-cover .hs-pin-cover-action{
+    width:auto!important;
+    min-width:82px;
+  }
+  #hs-app-pin-cover .hs-pin-cover-state{
+    max-width:190px;
+  }
+}
