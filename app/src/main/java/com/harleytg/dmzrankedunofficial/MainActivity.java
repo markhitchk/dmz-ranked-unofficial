@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
     private static final String REMOTE_APP_UI_JS_URL = "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.js";
     private static final String REMOTE_APP_UI_CSS_MARKER = "DMZ Ranked Remote App UI v1";
     private static final String REMOTE_APP_UI_JS_MARKER = "DMZ Ranked Remote App UI v1";
-    private static final int REMOTE_APP_UI_TIMEOUT_MS = 8000;
+    private static final int REMOTE_APP_UI_TIMEOUT_MS = 3500;
     private static final int REMOTE_APP_UI_MAX_BYTES = 512 * 1024;
     private static final String BUNDLED_APP_UI_CSS_ASSET = "dmz-app-ui/app.css";
     private static final String BUNDLED_APP_UI_JS_ASSET = "dmz-app-ui/app.js";
@@ -313,6 +313,9 @@ public class MainActivity extends Activity {
     private boolean playUpdateCheckInFlight;
     private boolean updateReadyDialogShown;
     private long foregroundAnnouncedUpdateBuild = -1L;
+    private volatile int appUiPageToken;
+    private volatile boolean appUiInstallInFlight;
+    private volatile boolean appUiInstalledForPage;
 
     private final Runnable titleMetaRotator = new Runnable() {
         @Override
@@ -526,6 +529,9 @@ public class MainActivity extends Activity {
                 super.onPageStarted(view, url, favicon);
                 if (url != null && isDmzUrl(Uri.parse(url))) {
                     final int startToken = ++loadingStatusPollToken;
+                    final int startAppUiToken = ++appUiPageToken;
+                    appUiInstallInFlight = false;
+                    appUiInstalledForPage = false;
                     operatorMonitorToken++;
                     siteNotificationMonitorToken++;
                     siteNotificationBaselineReady = false;
@@ -546,7 +552,17 @@ public class MainActivity extends Activity {
                         }
                         if (loadingOverlay != null
                                 && loadingOverlay.getVisibility() == View.VISIBLE) {
-                            updateLoadingVerbose("Website is taking longer than expected • opening page…");
+                            if (!appUiInstalledForPage) {
+                                updateLoadingVerbose("Website ready • finishing app interface…");
+                                if (!appUiInstallInFlight) {
+                                    installRemoteAppUi(view, startAppUiToken, () -> {
+                                        if (startAppUiToken != appUiPageToken || isFinishing()) return;
+                                        updateLoadingVerbose("App interface ready.");
+                                        hideLoadingScreen();
+                                    });
+                                }
+                                return;
+                            }
                             hideLoadingScreen();
                         }
                     }, 10000L);
@@ -559,30 +575,22 @@ public class MainActivity extends Activity {
                 try {
                     if (url == null || !isDmzUrl(Uri.parse(url))) return;
 
-                    // A page can be visually ready while a tracker/image/request is
-                    // still pending. Install app overrides as soon as committed
-                    // content is visible instead of waiting for every resource.
+                    // Keep the native loading screen above the WebView until the
+                    // streamed app CSS + JS have actually been injected. This prevents
+                    // the website from flashing its unmodified layout and then changing
+                    // a second later when the override download finishes.
                     applyDesktopViewportIfNeeded(view);
                     view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                     view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                     view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
-                    installRemoteAppUi(view);
-                    applySavedOperatorToWebsite(0);
-
-                    view.postDelayed(() -> {
-                        if (isFinishing()) return;
-                        try {
-                            String currentUrl = view.getUrl();
-                            if (currentUrl == null || !isDmzUrl(Uri.parse(currentUrl))) return;
-                        } catch (Throwable ignored) {
-                            return;
-                        }
-                        if (loadingOverlay != null
-                                && loadingOverlay.getVisibility() == View.VISIBLE) {
-                            updateLoadingVerbose("Page visible • applying app interface…");
-                            hideLoadingScreen();
-                        }
-                    }, 650L);
+                    final int uiToken = appUiPageToken;
+                    updateLoadingVerbose("Applying DMZ Ranked app interface…");
+                    installRemoteAppUi(view, uiToken, () -> {
+                        if (uiToken != appUiPageToken || isFinishing()) return;
+                        applySavedOperatorToWebsite(0);
+                        updateLoadingVerbose("App interface ready.");
+                        hideLoadingScreen();
+                    });
                 } catch (Throwable error) {
                     Log.d(TAG, "Could not install app UI on visible page", error);
                 }
@@ -598,7 +606,16 @@ public class MainActivity extends Activity {
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
-                        installRemoteAppUi(view);
+                        final int uiToken = appUiPageToken;
+                        if (!appUiInstalledForPage && !appUiInstallInFlight) {
+                            updateLoadingVerbose("Applying DMZ Ranked app interface…");
+                            installRemoteAppUi(view, uiToken, () -> {
+                                if (uiToken != appUiPageToken || isFinishing()) return;
+                                applySavedOperatorToWebsite(0);
+                                updateLoadingVerbose("App interface ready.");
+                                hideLoadingScreen();
+                            });
+                        }
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
@@ -870,8 +887,13 @@ public class MainActivity extends Activity {
             if ((hasLive && hasSynced && hasPlayers) || attempt >= 20) {
                 if (!hasSynced && loadingSyncedText != null) loadingSyncedText.setText("SYNCED");
                 if (!hasPlayers && loadingPlayersText != null) loadingPlayersText.setText("PLAYERS");
-                updateLoadingVerbose(hasLive ? "Live data connected." : "Site connected.");
-                hideLoadingScreenDelayed(850);
+                if (appUiInstalledForPage) {
+                    updateLoadingVerbose(hasLive ? "Live data connected." : "Site connected.");
+                    hideLoadingScreenDelayed(220);
+                } else {
+                    updateLoadingVerbose((hasLive ? "Live data connected" : "Site connected")
+                            + " • applying app interface…");
+                }
                 return;
             }
 
@@ -2093,25 +2115,19 @@ public class MainActivity extends Activity {
         return value != null && value.contains(marker) ? value : null;
     }
 
-    private void scheduleRemoteAppUiRetry(WebView view, int attempt) {
-        if (view == null || attempt >= 2) return;
-        view.postDelayed(() -> {
-            try {
-                String currentUrl = view.getUrl();
-                if (currentUrl != null && isDmzUrl(Uri.parse(currentUrl))) {
-                    installRemoteAppUi(view, attempt + 1);
-                }
-            } catch (Throwable ignored) {
-            }
-        }, attempt == 0 ? 1800L : 4500L);
-    }
-
     private void installRemoteAppUi(WebView view) {
-        installRemoteAppUi(view, 0);
+        installRemoteAppUi(view, appUiPageToken, null);
     }
 
-    private void installRemoteAppUi(WebView view, int attempt) {
-        if (view == null) return;
+    private void installRemoteAppUi(WebView view, int pageToken, Runnable onInstalled) {
+        if (view == null || pageToken != appUiPageToken) return;
+        if (appUiInstalledForPage) {
+            if (onInstalled != null) view.post(onInstalled);
+            return;
+        }
+        if (appUiInstallInFlight) return;
+
+        appUiInstallInFlight = true;
 
         new Thread(() -> {
             SharedPreferences appUiPrefs = preferences != null
@@ -2123,8 +2139,10 @@ public class MainActivity extends Activity {
             boolean freshCss = false;
             boolean freshJs = false;
 
-            // CSS and JavaScript are resolved independently. A temporary failure
-            // fetching one file no longer disables every app tab/page/override.
+            // Resolve the complete app interface while the native loading screen is
+            // still visible. Remote GitHub content is preferred; cached/bundled
+            // content is only an immediate failure fallback and is never swapped in
+            // later after the page has already been shown.
             try {
                 css = downloadRemoteAppUiText(REMOTE_APP_UI_CSS_URL, REMOTE_APP_UI_CSS_MARKER);
                 freshCss = true;
@@ -2155,11 +2173,21 @@ public class MainActivity extends Activity {
                 }
             }
 
+            if (pageToken != appUiPageToken) {
+                appUiInstallInFlight = false;
+                return;
+            }
+
             if (css == null || javascript == null
                     || !css.contains(REMOTE_APP_UI_CSS_MARKER)
                     || !javascript.contains(REMOTE_APP_UI_JS_MARKER)) {
-                Log.d(TAG, "No valid remote, cached, or bundled app UI is available");
-                scheduleRemoteAppUiRetry(view, attempt);
+                Log.d(TAG, "No valid app UI is available for this page");
+                view.post(() -> {
+                    if (pageToken != appUiPageToken) return;
+                    appUiInstallInFlight = false;
+                    updateLoadingVerbose("App interface unavailable • opening website…");
+                    hideLoadingScreen();
+                });
                 return;
             }
 
@@ -2169,11 +2197,15 @@ public class MainActivity extends Activity {
             final boolean saveJs = freshJs;
 
             view.post(() -> {
+                if (pageToken != appUiPageToken || isFinishing()) {
+                    appUiInstallInFlight = false;
+                    return;
+                }
+
                 try {
                     String currentUrl = view.getUrl();
-                    // Do not require the exact URL captured before the network
-                    // fetch. DMZ Ranked can change its URL/history while loading.
                     if (currentUrl == null || !isDmzUrl(Uri.parse(currentUrl))) {
+                        appUiInstallInFlight = false;
                         return;
                     }
 
@@ -2200,25 +2232,36 @@ public class MainActivity extends Activity {
                             + "}catch(e){return 'remote-app-ui-error:'+String(e&&e.message||e);}})()";
 
                     view.evaluateJavascript(script, result -> {
+                        if (pageToken != appUiPageToken) return;
+                        appUiInstallInFlight = false;
+
                         String decoded = result == null ? "" : result;
                         if (decoded.contains("remote-app-ui-error")) {
-                            Log.d(TAG, "Remote app UI JavaScript reported an install error: " + decoded);
-                            scheduleRemoteAppUiRetry(view, attempt);
+                            Log.d(TAG, "App UI JavaScript reported an install error: " + decoded);
+                            updateLoadingVerbose("App interface error • opening website…");
+                            hideLoadingScreen();
+                            return;
                         }
-                    });
 
-                    if (saveCss || saveJs) {
-                        SharedPreferences.Editor editor = appUiPrefs.edit();
-                        if (saveCss) editor.putString(PREF_REMOTE_APP_UI_CSS, finalCss);
-                        if (saveJs) editor.putString(PREF_REMOTE_APP_UI_JS, finalJavascript);
-                        editor.putLong(PREF_REMOTE_APP_UI_UPDATED_MS, System.currentTimeMillis()).apply();
-                    }
+                        appUiInstalledForPage = true;
+
+                        if (saveCss || saveJs) {
+                            SharedPreferences.Editor editor = appUiPrefs.edit();
+                            if (saveCss) editor.putString(PREF_REMOTE_APP_UI_CSS, finalCss);
+                            if (saveJs) editor.putString(PREF_REMOTE_APP_UI_JS, finalJavascript);
+                            editor.putLong(PREF_REMOTE_APP_UI_UPDATED_MS, System.currentTimeMillis()).apply();
+                        }
+
+                        if (onInstalled != null) onInstalled.run();
+                    });
                 } catch (Throwable error) {
-                    Log.d(TAG, "Could not install remote app UI", error);
-                    scheduleRemoteAppUiRetry(view, attempt);
+                    appUiInstallInFlight = false;
+                    Log.d(TAG, "Could not install app UI", error);
+                    updateLoadingVerbose("App interface error • opening website…");
+                    hideLoadingScreen();
                 }
             });
-        }, "DMZ-Remote-App-UI-" + attempt).start();
+        }, "DMZ-Remote-App-UI").start();
     }
 
     private void applyDesktopViewportIfNeeded(WebView view) {
