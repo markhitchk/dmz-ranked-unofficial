@@ -860,51 +860,62 @@
     section.setAttribute("aria-label", "DMZ Ranked App [Unofficial]");
     section.setAttribute("data-hs-app-section", "true");
     section.innerHTML =
-      '<div class="card hs-app-messages">' +
-        '<div class="hs-app-heading-row">' +
-          '<div><div class="hs-app-eyebrow">App messages</div><h2 class="section-title">Messages</h2></div>' +
-          '<span class="hs-exclusive-badge">APP EXCLUSIVE</span>' +
+      '<div class="hs-app-page-hero">' +
+        '<div class="hs-app-page-hero-top">' +
+          '<div class="hs-app-page-title-wrap">' +
+            '<div class="hs-app-eyebrow">Harley\'s Studios Android</div>' +
+            '<h2 class="hs-app-page-title">DMZ Ranked App <span>[Unofficial]</span></h2>' +
+          '</div>' +
+          '<span class="hs-app-channel-badge" data-hs-channel-badge>' + appChannelLabel() + '</span>' +
         '</div>' +
-        '<div class="hs-exclusive-note"><b>DMZ Ranked App Exclusive System</b> — these messages are created by the Android app for app status and QoL information. They are not official dmzranked.com announcements.</div>' +
-        '<div id="hs-app-message-list" class="hs-app-message-list"></div>' +
-      '</div>' +
-
-      '<div class="sect-hero camp">' +
-        '<h2>DMZ Ranked App [Unofficial]<small>Harley\'s Studios · Android ' + appChannelLabel() + '</small></h2>' +
-      '</div>' +
-
-      '<div class="card">' +
-        '<h2 class="section-title" id="hs-unofficial-welcome">Welcome, Guest.</h2>' +
-        '<p class="hs-app-intro"><b>DMZ Ranked App [Unofficial]</b> is Harley\'s Studios Android experience built around dmzranked.com. This page contains app-only information and tools while the DMZ Ranked website continues to run normally.</p>' +
-        '<div class="hs-app-meta">' +
-          '<span class="hs-app-pill' + channelClass() + '" data-hs-channel-badge>' + appChannelLabel() + '</span>' +
+        '<div class="hs-app-page-tagline">Climb the ranks · Earn SR · Prove you\'re the best</div>' +
+        '<div class="hs-app-page-welcome" id="hs-unofficial-welcome">Welcome, Guest.</div>' +
+        '<p class="hs-app-page-summary">App-only status, tools and mobile quality-of-life features for dmzranked.com.</p>' +
+        '<div class="hs-app-meta hs-app-page-meta">' +
           '<span class="hs-app-pill">' + appBuildLabel() + '</span>' +
           '<span class="hs-app-pill">Harley\'s Studios</span>' +
         '</div>' +
       '</div>' +
 
-      '<div class="card">' +
-        '<h2 class="section-title">App Status</h2>' +
-        '<div class="hs-app-row"><div class="hs-app-label">Website</div><div class="hs-app-value"><span class="hs-app-status"><span class="hs-app-dot"></span>dmzranked.com loaded in the app</span></div></div>' +
-        '<div class="hs-app-row"><div class="hs-app-label">Release channel</div><div class="hs-app-value">' + appChannelCopy() + '</div></div>' +
-        '<div class="hs-app-row"><div class="hs-app-label">Build</div><div class="hs-app-value">' + appBuildLabel() + '</div></div>' +
-        '<div class="hs-app-row"><div class="hs-app-label">Developer</div><div class="hs-app-value">Harley\'s Studios</div></div>' +
+      '<div class="hs-app-dashboard-grid">' +
+        '<div class="card hs-app-status-card">' +
+          '<div class="hs-app-heading-row">' +
+            '<div><div class="hs-app-eyebrow">Connection & build</div><h2 class="section-title">App Status</h2></div>' +
+          '</div>' +
+          '<div class="hs-app-status-grid">' +
+            '<div class="hs-app-status-tile"><span class="hs-app-label">Website</span><strong><span class="hs-app-dot"></span>dmzranked.com</strong><small>Loaded in app</small></div>' +
+            '<div class="hs-app-status-tile"><span class="hs-app-label">Channel</span><strong>' + appChannelCopy() + '</strong><small>' + appChannelLabel() + '</small></div>' +
+            '<div class="hs-app-status-tile"><span class="hs-app-label">Build</span><strong>' + appBuildLabel() + '</strong><small>Current install</small></div>' +
+            '<div class="hs-app-status-tile"><span class="hs-app-label">Developer</span><strong>Harley\'s Studios</strong><small>Unofficial Android app</small></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card hs-app-messages">' +
+          '<div class="hs-app-heading-row">' +
+            '<div><div class="hs-app-eyebrow">App messages</div><h2 class="section-title">Messages</h2></div>' +
+            '<span class="hs-exclusive-badge">APP EXCLUSIVE</span>' +
+          '</div>' +
+          '<div class="hs-exclusive-note"><b>App Exclusive System</b> · Android app status and QoL information. These are not official dmzranked.com announcements.</div>' +
+          '<div id="hs-app-message-list" class="hs-app-message-list"></div>' +
+        '</div>' +
       '</div>' +
 
-      '<div class="card">' +
-        '<h2 class="section-title">App Features</h2>' +
-        '<ul class="hs-app-list">' +
-          '<li><b>Mobile grid navigation</b> makes every website section easier to reach without horizontal scrolling.</li>' +
-          '<li><b>Active operator stats</b> bring rank, SR, position, and last raid change to the top of this app-only page.</li>' +
-          '<li><b>Android notifications</b> surface reports, reviews, approvals, raids, updates, and system alerts.</li>' +
-          '<li><b>Operator detection</b> lets app-only features recognize the operator saved on this device.</li>' +
-        '</ul>' +
+      '<div class="card hs-app-features-card">' +
+        '<div class="hs-app-heading-row">' +
+          '<div><div class="hs-app-eyebrow">Built for mobile</div><h2 class="section-title">App Features</h2></div>' +
+        '</div>' +
+        '<div class="hs-app-feature-grid">' +
+          '<div class="hs-app-feature"><strong>Mobile Navigation</strong><span>Touch-friendly grid with no horizontal tab scrolling.</span></div>' +
+          '<div class="hs-app-feature"><strong>Operator Stats</strong><span>Rank, SR, position and latest raid at a glance.</span></div>' +
+          '<div class="hs-app-feature"><strong>Notifications</strong><span>Reports, reviews, approvals, raids, updates and app alerts.</span></div>' +
+          '<div class="hs-app-feature"><strong>Operator Detection</strong><span>Recognizes the operator saved on this device for app-only features.</span></div>' +
+        '</div>' +
       '</div>' +
 
-      '<div class="card hs-app-notice">' +
-        '<h2 class="section-title">About This Page</h2>' +
-        '<p>This DMZ Ranked App tab exists only inside Harley\'s Studios Android app. It is injected by the Android Beta app and does not edit, upload to, or modify the dmzranked.com website.</p>' +
-      '</div>';
+      '<details class="card hs-app-about">' +
+        '<summary>About this app page</summary>' +
+        '<p>This tab exists only inside Harley\'s Studios DMZ Ranked Android app. It adds app-only information and tools without editing or modifying the dmzranked.com website.</p>' +
+      '</details>';
 
     wrap.appendChild(section);
     return section;
