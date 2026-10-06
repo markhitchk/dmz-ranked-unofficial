@@ -334,24 +334,34 @@ nav.tabs button.hs-unofficial-tab.active{
 
 /* App-only navigation identity. Only the Unofficial App tab is decorated. */
 nav.tabs button.hs-unofficial-tab{
+  position:relative;
   display:flex;
   align-items:center;
   justify-content:center;
   gap:7px;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
+  overflow:visible!important;
+  padding-left:12px!important;
+  padding-right:44px!important;
 }
 nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-logo{
+  display:block!important;
   width:24px;
   height:24px;
   flex:0 0 24px;
+  opacity:1!important;
+  visibility:visible!important;
   object-fit:contain;
   filter:drop-shadow(0 0 5px rgba(230,169,43,.28));
 }
 nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-logo.failed{
-  display:none;
+  display:none!important;
 }
 nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-label{
   min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-channel,
 #unofficial-app .hs-app-channel-badge,
@@ -379,6 +389,84 @@ nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-channel.stable,
   color:#dff7e5;
   border-color:rgba(95,207,122,.48);
   background:rgba(23,75,38,.72);
+}
+
+/* App tab mirrors the website's own active red-dot / review notifications. */
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify{
+  position:absolute;
+  top:6px;
+  right:8px;
+  z-index:6;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  min-width:19px;
+  height:19px;
+  padding:0 5px;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:999px;
+  background:linear-gradient(180deg,#ff5f62 0%,#d71920 58%,#a9080d 100%);
+  color:#fff;
+  box-shadow:0 0 0 2px rgba(7,10,11,.9),0 0 10px rgba(235,38,45,.58);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:10px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:0;
+  text-shadow:0 1px 1px rgba(0,0,0,.5);
+  font-variant-numeric:tabular-nums;
+  pointer-events:none;
+}
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify[hidden]{
+  display:none!important;
+}
+
+/* Upgrade dmzranked.com's existing red notification dots using only an app-side
+   CSS override. The website still owns when each indicator is shown/hidden. */
+.wrap nav.tabs .tab-dot,
+.wrap .subtabs .tab-dot,
+.wrap .sub-tabs .tab-dot{
+  position:relative!important;
+  display:inline-block;
+  box-sizing:border-box;
+  width:10px!important;
+  min-width:10px!important;
+  height:10px!important;
+  min-height:10px!important;
+  margin-left:6px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.34)!important;
+  border-radius:999px!important;
+  background:#e1262c!important;
+  box-shadow:0 0 0 2px rgba(7,10,11,.78),0 0 9px rgba(225,38,44,.72)!important;
+  vertical-align:middle;
+}
+.wrap nav.tabs .tab-dot[style*="display:none"],
+.wrap nav.tabs .tab-dot[style*="display: none"],
+.wrap .subtabs .tab-dot[style*="display:none"],
+.wrap .subtabs .tab-dot[style*="display: none"],
+.wrap .sub-tabs .tab-dot[style*="display:none"],
+.wrap .sub-tabs .tab-dot[style*="display: none"]{
+  display:none!important;
+}
+
+/* Keep the site's numeric Under Review badge visually consistent. */
+.wrap #reviewCount.sub-badge{
+  min-width:18px;
+  height:18px;
+  margin-left:6px;
+  padding:0 5px;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:999px;
+  background:linear-gradient(180deg,#ff5f62,#b80f15);
+  color:#fff;
+  box-shadow:0 0 8px rgba(225,38,44,.5);
+  font-size:10px;
+  font-weight:900;
+  line-height:18px;
 }
 
 /* Active user standings lives directly below the Harley's Studios app message.
@@ -841,6 +929,10 @@ input,select,textarea{font-size:max(16px,1em)}
     grid-column:1/-1!important;
     min-height:48px!important;
   }
+}
+@media (max-width:640px){
+  nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-logo{width:20px;height:20px;flex-basis:20px}
+  nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify{top:6px;right:7px}
 }
 @media (max-width:640px){
   .wrap nav.tabs{
