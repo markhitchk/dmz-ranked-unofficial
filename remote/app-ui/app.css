@@ -391,31 +391,27 @@ nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-channel.stable,
   background:rgba(23,75,38,.72);
 }
 
-/* App tab mirrors the website's own active red-dot / review notifications. */
+/* App tab mirrors dmzranked.com's own top-level notification dot state.
+   Keep this as the same small red dot language used by Community / Updates. */
 nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify{
-  position:absolute;
-  top:6px;
-  right:8px;
-  z-index:6;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
+  position:relative!important;
+  top:auto!important;
+  right:auto!important;
+  z-index:auto!important;
+  display:inline-block!important;
   box-sizing:border-box;
-  min-width:19px;
-  height:19px;
-  padding:0 5px;
-  border:1px solid rgba(255,255,255,.24);
-  border-radius:999px;
-  background:linear-gradient(180deg,#ff5f62 0%,#d71920 58%,#a9080d 100%);
-  color:#fff;
-  box-shadow:0 0 0 2px rgba(7,10,11,.9),0 0 10px rgba(235,38,45,.58);
-  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
-  font-size:10px;
-  font-weight:900;
-  line-height:1;
-  letter-spacing:0;
-  text-shadow:0 1px 1px rgba(0,0,0,.5);
-  font-variant-numeric:tabular-nums;
+  width:10px!important;
+  min-width:10px!important;
+  height:10px!important;
+  min-height:10px!important;
+  flex:0 0 10px;
+  margin:0 0 0 2px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.34)!important;
+  border-radius:50%!important;
+  background:#ef5350!important;
+  box-shadow:0 0 7px rgba(239,83,80,.8)!important;
+  animation:dotpulse 1.8s ease-in-out infinite;
   pointer-events:none;
 }
 nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify[hidden]{
@@ -1241,5 +1237,109 @@ body > .modal .rcard{
 }
 body > .modal .modal-backdrop{
   z-index:0;
+}
+
+/* App-only compact site hero.
+   The season/countdown values are mirrored from dmzranked.com's #seasonBanner /
+   #seasonBar; this only changes their presentation inside the Android app. */
+#hs-compact-season-header.hs-season-in-hero{
+  width:min(720px,100%);
+  min-height:66px;
+  margin:9px auto 0;
+  text-align:left;
+}
+#hs-compact-season-header.hs-season-in-hero .hs-compact-season-count{
+  text-align:right;
+}
+
+@media(max-width:700px){
+  header.top .hero{
+    min-height:0!important;
+    align-items:stretch!important;
+  }
+  header.top .hero-inner{
+    max-width:100%!important;
+    padding:10px 12px 10px!important;
+  }
+  header.top .brand-logo{
+    width:86px!important;
+    height:42px!important;
+    margin:0 auto!important;
+  }
+  header.top h1{
+    margin-top:1px!important;
+    font-size:29px!important;
+    line-height:.98!important;
+    letter-spacing:2px!important;
+  }
+  header.top .sub{
+    margin-top:4px!important;
+    font-size:9.5px!important;
+    letter-spacing:2.2px!important;
+  }
+  header.top .rule-line{
+    width:48px!important;
+    height:2px!important;
+    margin-top:6px!important;
+  }
+  header.top .statusbar{
+    gap:4px!important;
+    margin-top:7px!important;
+  }
+  header.top .statusbar .pill{
+    padding:3px 7px!important;
+    font-size:9.5px!important;
+    letter-spacing:.25px!important;
+  }
+  #hs-compact-season-header.hs-season-in-hero{
+    min-height:58px;
+    margin-top:7px;
+    margin-bottom:0;
+    padding:6px 8px;
+    gap:6px;
+    border-radius:7px;
+    box-shadow:0 5px 14px rgba(0,0,0,.25);
+  }
+  #hs-compact-season-header.hs-season-in-hero .hs-compact-season-kicker{
+    font-size:7px;
+    letter-spacing:1px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .hs-compact-season-name{
+    font-size:15px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .hs-compact-season-range{
+    margin-top:2px;
+    font-size:8.5px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .cd-lab{
+    margin-bottom:2px;
+    font-size:6px;
+    letter-spacing:.65px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .cd-row{
+    gap:2px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .cd-seg{
+    min-width:25px;
+    padding:3px 2px 2px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .cd-seg b{
+    font-size:12px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .cd-seg i{
+    font-size:5.5px;
+    letter-spacing:.3px;
+  }
+}
+
+@media(max-width:390px){
+  header.top .hero-inner{padding-inline:9px!important}
+  header.top h1{font-size:26px!important}
+  #hs-compact-season-header.hs-season-in-hero{
+    grid-template-columns:minmax(0,1fr) 112px;
+  }
+  #hs-compact-season-header.hs-season-in-hero .cd-seg{
+    min-width:24px;
+  }
 }
 
