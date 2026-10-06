@@ -53,6 +53,10 @@ input,select,textarea{font-size:max(16px,1em)}
     line-height:1.15!important;
     touch-action:manipulation;
   }
+  .wrap nav.tabs>button.hs-unofficial-tab{
+    grid-column:1/-1!important;
+    min-height:48px!important;
+  }
 }
 @media (max-width:640px){
   .wrap nav.tabs{
