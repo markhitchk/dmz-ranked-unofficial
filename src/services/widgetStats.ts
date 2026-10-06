@@ -368,7 +368,7 @@ export async function getWidgetStats(operator: string): Promise<WidgetStats | nu
   }
 }
 
-export function tierColor(rankLabel: string): string {
+export function tierColor(rankLabel: string): `#${string}` {
   const label = clean(rankLabel).toUpperCase();
   if (label.startsWith('IRIDESCENT')) return '#C9B3FF';
   if (label.startsWith('CRIMSON')) return '#E5484D';
