@@ -1751,6 +1751,32 @@
       });
       if(!card)return;
 
+      /* Website preview writes "0 · <span class='badge'>…</span>" directly into
+         a <b>. Wrap that loose text node so CSS can keep it separate from the
+         badge on narrow screens. Re-run safely after every website refresh. */
+      ["pv-cur","pv-new"].forEach(function(id){
+        var value=q("#"+id);
+        if(!value)return;
+        var row=value.parentElement;
+        if(row)row.classList.add("hs-app-rank-preview-row");
+
+        var existing=value.querySelector(".hs-app-sr-number");
+        if(existing)return;
+
+        var textNodes=Array.prototype.slice.call(value.childNodes).filter(function(node){
+          return node.nodeType===3&&clean(node.textContent);
+        });
+        if(!textNodes.length)return;
+
+        var sr=document.createElement("span");
+        sr.className="hs-app-sr-number";
+        sr.textContent=textNodes.map(function(node){return node.textContent;}).join("").replace(/\s+/g," ").trim();
+        value.insertBefore(sr,value.firstChild);
+        textNodes.forEach(function(node){
+          if(node.parentNode===value)value.removeChild(node);
+        });
+      });
+
       Array.prototype.slice.call(log.querySelectorAll(".hs-app-raid-sr-summary")).forEach(function(el){
         if(el!==card)el.classList.remove("hs-app-raid-sr-summary");
       });
