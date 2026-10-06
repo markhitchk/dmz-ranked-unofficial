@@ -1463,19 +1463,58 @@
       if(focus)setTimeout(function(){try{focus.focus();}catch(e){}},120);
     }
 
-    function finishExisting(name){
+    async function finishExisting(name,pin,body,submit){
       name=clean(name);
-      if(!name)return;
+      pin=clean(pin);
+      if(!name)return false;
+      if(!/^\d{3,8}$/.test(pin)){
+        if(body)statusLine(body,"Enter the existing 3–8 digit operator PIN.",true);
+        return false;
+      }
+
       setOperator(name);
-      markFirstRun();
-      closeModal("hs-app-get-started");
       openWebsiteTab("log");
-      setTimeout(function(){
+      clearSiteMessage();
+      if(submit)submit.disabled=true;
+      if(body)statusLine(body,"Checking operator and PIN…",false);
+
+      try{
+        await wait(220);
         var state=securityState();
+
+        if(state.protected&&!state.verified){
+          var sitePin=q("#namePin");
+          if(!sitePin||typeof window.unlockName!=="function"){
+            throw new Error("DMZ Ranked PIN controls are still loading. Try again in a moment.");
+          }
+          sitePin.value=pin;
+          await Promise.resolve(window.unlockName());
+          await wait(300);
+          try{if(typeof window.updateNameStatus==="function")window.updateNameStatus();}catch(e){}
+          await wait(180);
+
+          var result=siteMessage();
+          state=securityState();
+          if(result.error||!state.verified){
+            if(body)statusLine(body,result.text||"That PIN did not unlock this operator. Check the PIN and try again.",true);
+            if(submit)submit.disabled=false;
+            return false;
+          }
+        }
+
+        markFirstRun();
+        closeModal("hs-app-get-started");
         updatePinUi();
-        if(state.protected&&!state.verified)showPinModal("unlock",name);
-        else if(!state.protected)showPinModal("set",name);
-      },180);
+
+        if(!state.protected){
+          setTimeout(function(){showPinModal("set",name);},120);
+        }
+        return true;
+      }catch(error){
+        if(body)statusLine(body,clean(error&&error.message)||"Could not verify this operator PIN.",true);
+        if(submit)submit.disabled=false;
+        return false;
+      }
     }
 
     function showGetStarted(force){
@@ -1519,9 +1558,10 @@
         body.innerHTML=
           "<div class='hs-app-modal-field'><label>Existing operator</label><select id='hs-app-existing-select'><option value=''>— select operator —</option></select></div>"+
           "<div class='hs-app-modal-field'><label>Or type the exact operator name</label><input id='hs-app-existing-name' type='text' maxlength='80' autocomplete='off' placeholder='Operator name'></div>"+
-          "<p class='hs-app-modal-note'>If the operator is protected, the app will ask for its existing PIN next.</p>"+
+          "<div class='hs-app-modal-field'><label>Existing operator PIN</label><input id='hs-app-existing-pin' type='password' inputmode='numeric' maxlength='8' autocomplete='off' placeholder='Enter existing PIN'></div>"+
+          "<p class='hs-app-modal-note'>Enter the PIN already protecting this operator. Existing DMZ Ranked PINs may be 3–8 digits.</p>"+
           "<div class='hs-app-modal-status'></div>"+
-          "<div class='hs-app-modal-actions'><button type='button' class='hs-app-modal-btn ghost' id='hs-app-onboarding-back'>Back</button><button type='button' class='hs-app-modal-btn' id='hs-app-existing-continue'>Continue</button></div>";
+          "<div class='hs-app-modal-actions'><button type='button' class='hs-app-modal-btn ghost' id='hs-app-onboarding-back'>Back</button><button type='button' class='hs-app-modal-btn' id='hs-app-existing-continue'>Verify & Continue</button></div>";
         var select=q("#hs-app-existing-select");
         list.forEach(function(name){
           var option=document.createElement("option");
@@ -1532,10 +1572,13 @@
         });
         if(current&&!select.value)q("#hs-app-existing-name").value=current;
         q("#hs-app-onboarding-back").addEventListener("click",function(){showGetStarted(force);});
-        q("#hs-app-existing-continue").addEventListener("click",function(){
+        q("#hs-app-existing-continue").addEventListener("click",async function(){
+          var submit=q("#hs-app-existing-continue");
           var name=clean(select.value)||clean(q("#hs-app-existing-name")&&q("#hs-app-existing-name").value);
+          var pin=clean(q("#hs-app-existing-pin")&&q("#hs-app-existing-pin").value);
           if(!name){statusLine(body,"Choose or type your existing operator name.",true);return;}
-          finishExisting(name);
+          if(!/^\d{3,8}$/.test(pin)){statusLine(body,"Enter the existing 3–8 digit operator PIN.",true);return;}
+          await finishExisting(name,pin,body,submit);
         });
       }
 
