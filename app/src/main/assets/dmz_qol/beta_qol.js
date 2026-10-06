@@ -24,6 +24,7 @@
     updateTop();
 
     function centerActiveTab(){
+      if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches)return;
       var tabs=q('.tabs');
       if(!tabs)return;
       var active=q('.tabs .active,.tabs [aria-selected="true"],.tabs .selected,.tabs .current');
