@@ -1163,6 +1163,11 @@
     function q(sel){try{return document.querySelector(sel);}catch(e){return null;}}
     function qa(sel){try{return Array.prototype.slice.call(document.querySelectorAll(sel));}catch(e){return [];}}
     function clean(v){return String(v==null?"":v).replace(/\s+/g," ").trim();}
+    function setTextIfChanged(el,value){
+      if(!el)return;
+      value=String(value==null?"":value);
+      if(el.textContent!==value)el.textContent=value;
+    }
     function wait(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
     function getStore(key){try{return localStorage.getItem(key)||"";}catch(e){return "";}}
     function setStore(key,value){try{localStorage.setItem(key,value);}catch(e){}}
@@ -1543,9 +1548,9 @@
       if(cover){
         var stateEl=cover.querySelector(".hs-pin-cover-state");
         var action=cover.querySelector(".hs-pin-cover-action");
-        if(stateEl)stateEl.textContent=statusText;
+        setTextIfChanged(stateEl,statusText);
         if(action){
-          action.textContent=!name?"GET STARTED":!state.protected?"SET PIN":state.verified?"CHANGE PIN":"UNLOCK";
+          setTextIfChanged(action,!name?"GET STARTED":!state.protected?"SET PIN":state.verified?"CHANGE PIN":"UNLOCK");
           action.onclick=function(){
             if(!name)showGetStarted(true);
             else showPinModal(!state.protected?"set":state.verified?"change":"unlock",name);
@@ -1553,9 +1558,9 @@
         }
       }
       var appState=q("#hs-app-operator-state");
-      if(appState)appState.textContent=statusText;
+      setTextIfChanged(appState,statusText);
       var manage=q("#hs-app-manage-pin");
-      if(manage)manage.textContent=!name?"Get Started":!state.protected?"Set PIN":state.verified?"Change PIN":"Unlock Operator";
+      setTextIfChanged(manage,!name?"Get Started":!state.protected?"Set PIN":state.verified?"Change PIN":"Unlock Operator");
     }
 
     function ensurePinCover(){
@@ -1646,9 +1651,70 @@
       if(ev.target&&(ev.target.id==="playerName"||ev.target.id==="playerPick"))setTimeout(updatePinUi,80);
     },true);
 
-    var observer=new MutationObserver(function(){refresh();});
+    var refreshQueued=false;
+    function queueRefresh(){
+      if(refreshQueued)return;
+      refreshQueued=true;
+      setTimeout(function(){
+        refreshQueued=false;
+        refresh();
+      },90);
+    }
+    var observer=new MutationObserver(function(mutations){
+      for(var i=0;i<mutations.length;i++){
+        var target=mutations[i]&&mutations[i].target;
+        var el=target&&target.nodeType===1?target:target&&target.parentElement;
+        if(el&&el.closest&&(
+          el.closest("#hs-app-pin-cover")||
+          el.closest("#hs-app-operator-tools")||
+          el.closest("#hs-app-support-card")||
+          el.closest(".hs-app-modal")
+        ))continue;
+        queueRefresh();
+        break;
+      }
+    });
     observer.observe(document.documentElement,{childList:true,subtree:true});
     setInterval(refresh,1800);
     refresh();
+  }catch(e){}
+})();
+
+
+/* DMZ Ranked Remote CSS Guard v1
+   Keep the Android app override stylesheet attached if dmzranked.com replaces
+   or rebuilds its document head during navigation/render updates. */
+(function(){
+  try{
+    if(window.__hsRemoteCssGuardV1)return;
+    window.__hsRemoteCssGuardV1=true;
+    var STYLE_ID="hs-remote-app-ui-style";
+    var initial=document.getElementById(STYLE_ID);
+    var cssText=initial&&initial.textContent?initial.textContent:"";
+    if(!cssText)return;
+    window.__DMZ_APP_CSS_TEXT=cssText;
+    var scheduled=false;
+    function ensureCss(){
+      scheduled=false;
+      var style=document.getElementById(STYLE_ID);
+      if(!style){
+        style=document.createElement("style");
+        style.id=STYLE_ID;
+        style.textContent=window.__DMZ_APP_CSS_TEXT||cssText;
+        (document.head||document.documentElement).appendChild(style);
+      }else if(!style.textContent){
+        style.textContent=window.__DMZ_APP_CSS_TEXT||cssText;
+      }
+      document.documentElement.setAttribute("data-dmz-app-css","active");
+    }
+    function schedule(){
+      if(scheduled)return;
+      scheduled=true;
+      setTimeout(ensureCss,40);
+    }
+    var cssObserver=new MutationObserver(schedule);
+    cssObserver.observe(document.documentElement,{childList:true,subtree:true});
+    setInterval(ensureCss,2500);
+    ensureCss();
   }catch(e){}
 })();
