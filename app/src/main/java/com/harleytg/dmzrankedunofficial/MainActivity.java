@@ -1849,6 +1849,31 @@ public class MainActivity extends Activity {
         String scheme = uri.getScheme();
         if (scheme == null) return false;
 
+        // App-side bridge used only by dmzranked.com's configured header
+        // Support/Donate button. The site controls that button's HTTPS URL, so
+        // open it externally without treating every random webpage link as safe.
+        if ("dmzranked-support".equalsIgnoreCase(scheme)) {
+            try {
+                String targetValue = uri.getQueryParameter("url");
+                Uri target = targetValue == null ? null : Uri.parse(targetValue);
+                String targetScheme = target == null ? null : target.getScheme();
+                if (target != null
+                        && ("https".equalsIgnoreCase(targetScheme)
+                        || "http".equalsIgnoreCase(targetScheme))) {
+                    openExternal(target);
+                } else {
+                    Toast.makeText(this,
+                            "The website donation link is invalid.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            } catch (Throwable error) {
+                Toast.makeText(this,
+                        "Could not open the website donation link.",
+                        Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
+
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
             if (isDmzUrl(uri)) {
                 return false;
@@ -1898,7 +1923,12 @@ public class MainActivity extends Activity {
         }
 
         if (host.equals("ko-fi.com") || host.equals("www.ko-fi.com")) {
-            return path.equals("/harleytg_") || path.startsWith("/harleytg_/");
+            return true;
+        }
+
+        if (host.equals("paypal.me") || host.equals("www.paypal.me")
+                || host.equals("paypal.com") || host.equals("www.paypal.com")) {
+            return true;
         }
 
         return false;
