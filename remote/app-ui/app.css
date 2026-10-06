@@ -1823,3 +1823,14 @@ body > .modal .modal-backdrop{
   }
 }
 
+/* Guarantee the dynamic Welcome line is always the first visible row. */
+#dmz-harleys-studios-app-message > .dmz-hs-welcome{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  order:-10!important;
+  width:100%!important;
+  min-height:17px!important;
+  margin:0 0 1px!important;
+}
+
