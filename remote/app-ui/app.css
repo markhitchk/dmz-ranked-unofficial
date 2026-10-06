@@ -1804,3 +1804,22 @@ body > .modal .modal-backdrop{
   #dmz-harleys-studios-app-message .dmz-hs-note{font-size:8.8px!important}
 }
 
+/* Dynamic welcome line restored above the three-line app identity message. */
+#dmz-harleys-studios-app-message .dmz-hs-welcome{
+  margin:0 0 1px!important;
+  color:#fff!important;
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif)!important;
+  font-size:15px!important;
+  font-weight:800!important;
+  line-height:1.15!important;
+  text-align:center!important;
+}
+#dmz-harleys-studios-app-message .dmz-hs-welcome .dmz-hs-name{
+  color:var(--gold-b,#f5c451)!important;
+}
+@media(max-width:520px){
+  #dmz-harleys-studios-app-message .dmz-hs-welcome{
+    font-size:14px!important;
+  }
+}
+
