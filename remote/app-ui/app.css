@@ -1834,3 +1834,31 @@ body > .modal .modal-backdrop{
   margin:0 0 1px!important;
 }
 
+/* CSS safety-net for cached/stale app.js builds.
+   The real .dmz-hs-welcome row wins when present; otherwise CSS still shows a
+   first-row welcome. data-hs-operator lets the current override show the user. */
+#dmz-harleys-studios-app-message::before{
+  content:"Welcome, Guest!";
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  order:-20!important;
+  width:100%!important;
+  margin:0 0 1px!important;
+  color:#fff!important;
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif)!important;
+  font-size:15px!important;
+  font-weight:800!important;
+  line-height:1.15!important;
+  text-align:center!important;
+}
+#dmz-harleys-studios-app-message[data-hs-operator]:not([data-hs-operator=""])::before{
+  content:"Welcome back, " attr(data-hs-operator) "!";
+}
+#dmz-harleys-studios-app-message:has(> .dmz-hs-welcome)::before{
+  display:none!important;
+}
+@media(max-width:520px){
+  #dmz-harleys-studios-app-message::before{font-size:14px!important}
+}
+
