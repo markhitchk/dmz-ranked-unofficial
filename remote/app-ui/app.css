@@ -2398,10 +2398,10 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
 }
 
 
-/* DMZ Ranked Log a Raid SR Summary Fix v3
-   Target the site's actual #preview markup directly:
-   .rowline > span + b, with rank badge nested inside #pv-cur/#pv-new.
-   Scoped only to Log a Raid on mobile. */
+/* DMZ Ranked Log a Raid SR Summary Fix v4
+   Scoped only to Log a Raid's live SR preview.
+   app.js wraps the SR text node so the number and rank badge can be laid out
+   independently instead of competing inside the same <b>. */
 @media (max-width:700px){
   #log #preview{
     box-sizing:border-box!important;
@@ -2414,7 +2414,7 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
     display:grid!important;
     grid-template-columns:minmax(0,1fr) auto!important;
     align-items:center!important;
-    column-gap:18px!important;
+    gap:8px 14px!important;
     width:100%!important;
     min-width:0!important;
     padding:8px 0!important;
@@ -2429,29 +2429,40 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
 
   #log #preview .rowline > b{
     min-width:0!important;
+    max-width:100%!important;
     margin:0!important;
     justify-self:end!important;
     text-align:right!important;
     white-space:nowrap!important;
   }
 
-  /* The rank value is a text node ("0 ·") plus the badge.
-     Make that container its own flex row so the text can never sit under
-     or collide with the badge. */
   #log #preview #pv-cur,
   #log #preview #pv-new{
-    display:inline-flex!important;
+    display:flex!important;
     align-items:center!important;
     justify-content:flex-end!important;
-    gap:9px!important;
+    gap:10px!important;
+    min-width:0!important;
+    max-width:100%!important;
+    white-space:nowrap!important;
+    line-height:1!important;
+  }
+
+  #log #preview .hs-app-sr-number{
+    display:inline-block!important;
+    flex:0 0 auto!important;
+    min-width:max-content!important;
     white-space:nowrap!important;
     line-height:1!important;
   }
 
   #log #preview #pv-cur .badge,
   #log #preview #pv-new .badge{
+    position:relative!important;
     flex:0 0 auto!important;
+    max-width:100%!important;
     margin:0!important;
+    transform:none!important;
     vertical-align:middle!important;
   }
 
@@ -2464,19 +2475,38 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
   }
 }
 
-@media (max-width:420px){
-  #log #preview .rowline{
-    column-gap:12px!important;
+/* On phone widths, give Current/New rank their own second line.
+   This completely removes the possibility of the SR text colliding with the
+   rank chip while leaving the other preview rows as compact two-column rows. */
+@media (max-width:480px){
+  #log #preview .rowline.hs-app-rank-preview-row{
+    grid-template-columns:1fr!important;
+    gap:7px!important;
+    padding-top:9px!important;
+    padding-bottom:9px!important;
+  }
+
+  #log #preview .rowline.hs-app-rank-preview-row > span:first-child{
+    grid-column:1!important;
+    grid-row:1!important;
+  }
+
+  #log #preview .rowline.hs-app-rank-preview-row > b{
+    grid-column:1!important;
+    grid-row:2!important;
+    justify-self:end!important;
+    width:auto!important;
+    max-width:100%!important;
   }
 
   #log #preview #pv-cur,
   #log #preview #pv-new{
-    gap:6px!important;
+    gap:8px!important;
   }
 
   #log #preview #pv-cur .badge,
   #log #preview #pv-new .badge{
-    padding-right:8px!important;
+    padding:2px 8px 2px 5px!important;
     font-size:10px!important;
     letter-spacing:.55px!important;
   }
