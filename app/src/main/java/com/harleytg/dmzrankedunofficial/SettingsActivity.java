@@ -929,6 +929,7 @@ public class SettingsActivity extends Activity {
                             .putString(PREF_OPERATOR_SOURCE, "App operator picker")
                             .putLong(PREF_OPERATOR_SYNC_MS, System.currentTimeMillis())
                             .apply();
+                    DmzRankedWidgetProvider.requestUpdateAll(this);
 
                     Intent result = new Intent()
                             .putExtra(EXTRA_ACTION, ACTION_SELECT_OPERATOR)
