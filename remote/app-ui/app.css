@@ -2394,3 +2394,63 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
     grid-template-columns:1fr;
   }
 }
+
+
+/* DMZ Ranked Log a Raid SR Summary Fix v1
+   Deliberately scoped to the one SR calculation card marked by app.js.
+   This avoids changing the rest of dmzranked.com's cards, fields and rows. */
+@media (max-width:700px){
+  #log .hs-app-raid-sr-summary{
+    box-sizing:border-box!important;
+    padding:12px 14px!important;
+    overflow:hidden!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row{
+    box-sizing:border-box!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:12px!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:38px!important;
+    margin:0!important;
+    padding:7px 0!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row > *{
+    min-width:0!important;
+    margin-top:0!important;
+    margin-bottom:0!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row > :first-child{
+    flex:1 1 auto!important;
+    text-align:left!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row > :last-child{
+    flex:0 0 auto!important;
+    margin-left:auto!important;
+    text-align:right!important;
+    white-space:nowrap!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-current,
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-new{
+    min-height:48px!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-current img,
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-new img{
+    max-width:38px!important;
+    max-height:42px!important;
+    object-fit:contain!important;
+  }
+
+  #log .hs-app-raid-sr-summary .hs-app-raid-sr-net{
+    margin-top:3px!important;
+    padding-top:10px!important;
+  }
+}
