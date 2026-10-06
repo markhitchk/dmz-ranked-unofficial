@@ -1113,13 +1113,18 @@
     updateTop();
 
     function centerActiveTab(){
-      if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches)return;
       var tabs=q('.tabs');
-      if(!tabs)return;
+      if(!tabs||!visible(tabs))return;
       var active=q('.tabs .active,.tabs [aria-selected="true"],.tabs .selected,.tabs .current');
-      if(active&&visible(active)){
-        try{active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}catch(e){}
-      }
+      if(!active||!visible(active))return;
+      // Do not use element.scrollIntoView() here. In Android desktop mode the
+      // document is intentionally wider than the phone and scrollIntoView()
+      // can move the whole page horizontally back toward the active tab.
+      if(tabs.scrollWidth<=tabs.clientWidth+4)return;
+      var left=active.offsetLeft-((tabs.clientWidth-active.offsetWidth)/2);
+      var max=Math.max(0,tabs.scrollWidth-tabs.clientWidth);
+      left=Math.max(0,Math.min(max,left));
+      try{tabs.scrollTo({left:left,behavior:'smooth'});}catch(e){tabs.scrollLeft=left;}
     }
     document.addEventListener('click',function(ev){
       var t=ev.target&&ev.target.closest?ev.target.closest('.tabs button,.tabs a,.tabs [role="button"]'):null;
@@ -1140,4 +1145,510 @@
 
     return 'installed';
   }catch(e){return 'error:'+String(e&&e.message||e);}
+})();
+
+
+/* DMZ Ranked App Account/PIN UI v1
+   App-only first-run setup, dedicated operator PIN manager and Ko-fi card.
+   DMZ Ranked's existing player/PIN functions remain the source of truth. */
+(function(){
+  try{
+    if(window.__hsAppAccountUiInstalled)return;
+    window.__hsAppAccountUiInstalled=true;
+
+    var FIRST_RUN_KEY="hs_dmz_app_get_started_v1";
+    var KOFI_URL="https://ko-fi.com/harleytg_#checkoutModal";
+    var firstRunQueued=false;
+
+    function q(sel){try{return document.querySelector(sel);}catch(e){return null;}}
+    function qa(sel){try{return Array.prototype.slice.call(document.querySelectorAll(sel));}catch(e){return [];}}
+    function clean(v){return String(v==null?"":v).replace(/\s+/g," ").trim();}
+    function wait(ms){return new Promise(function(resolve){setTimeout(resolve,ms);});}
+    function getStore(key){try{return localStorage.getItem(key)||"";}catch(e){return "";}}
+    function setStore(key,value){try{localStorage.setItem(key,value);}catch(e){}}
+    function firstRunDone(){return getStore(FIRST_RUN_KEY)==="1";}
+    function markFirstRun(){setStore(FIRST_RUN_KEY,"1");}
+
+    function currentOperator(){
+      var input=q("#playerName");
+      var value=clean(input&&(input.value||input.getAttribute("value")));
+      return value||clean(getStore("dmz_myname"));
+    }
+
+    function operatorOptions(){
+      var out=[],seen={};
+      var pick=q("#playerPick");
+      if(pick&&pick.options){
+        Array.prototype.forEach.call(pick.options,function(opt,index){
+          if(index===0)return;
+          var value=clean(opt.value||opt.textContent),key=value.toLowerCase();
+          if(value&&!seen[key]){seen[key]=true;out.push(value);}
+        });
+      }
+      qa("#playerList option").forEach(function(opt){
+        var value=clean(opt.value||opt.textContent),key=value.toLowerCase();
+        if(value&&!seen[key]){seen[key]=true;out.push(value);}
+      });
+      return out;
+    }
+
+    function setOperator(name){
+      name=clean(name);
+      if(!name)return false;
+      var input=q("#playerName");
+      if(input){
+        input.value=name;
+        input.dispatchEvent(new Event("input",{bubbles:true}));
+        input.dispatchEvent(new Event("change",{bubbles:true}));
+      }
+      var pick=q("#playerPick");
+      if(pick&&pick.options){
+        for(var i=0;i<pick.options.length;i++){
+          var value=clean(pick.options[i].value||pick.options[i].textContent);
+          if(value.toLowerCase()===name.toLowerCase()){
+            pick.selectedIndex=i;
+            pick.dispatchEvent(new Event("change",{bubbles:true}));
+            break;
+          }
+        }
+      }
+      setStore("dmz_myname",name);
+      try{if(typeof window.updateNameStatus==="function")window.updateNameStatus();}catch(e){}
+      return true;
+    }
+
+    function openWebsiteTab(tab){
+      var control=q("nav.tabs [data-tab='"+tab+"']")||q("[data-tab='"+tab+"']");
+      if(!control)return false;
+      try{control.click();return true;}catch(e){return false;}
+    }
+
+    function securityState(){
+      try{if(typeof window.updateNameStatus==="function")window.updateNameStatus();}catch(e){}
+      var sec=q("#nameSec");
+      var text=clean(sec&&(sec.innerText||sec.textContent));
+      var cls=clean(sec&&sec.className);
+      return {
+        protected:/\bprot\b/i.test(cls)||/\bprotected\b/i.test(text),
+        verified:/\bverified\b/i.test(text),
+        text:text
+      };
+    }
+
+    function clearSiteMessage(){
+      var msg=q("#logMsg");
+      if(!msg)return;
+      msg.className="msg";
+      msg.innerHTML="";
+    }
+
+    function siteMessage(){
+      var msg=q("#logMsg");
+      if(!msg)return {text:"",ok:false,error:false};
+      var text=clean(msg.innerText||msg.textContent);
+      var cls=" "+clean(msg.className)+" ";
+      return {
+        text:text,
+        ok:cls.indexOf(" ok ")>=0,
+        error:cls.indexOf(" err ")>=0||cls.indexOf(" warn ")>=0
+      };
+    }
+
+    function closeModal(id){
+      var modal=q("#"+id);
+      if(modal&&modal.parentNode)modal.parentNode.removeChild(modal);
+      document.documentElement.classList.remove("hs-app-modal-open");
+    }
+
+    function buildModal(id,title,subtitle,onDismiss){
+      closeModal(id);
+      var overlay=document.createElement("div");
+      overlay.id=id;
+      overlay.className="hs-app-modal";
+      overlay.innerHTML=
+        "<div class='hs-app-modal-backdrop' data-hs-modal-close='1'></div>"+
+        "<div class='hs-app-modal-card' role='dialog' aria-modal='true'>"+
+          "<div class='hs-app-modal-head'>"+
+            "<div><div class='hs-app-modal-eyebrow'>Harley's Studios · DMZ Ranked App</div>"+
+            "<h2 class='hs-app-modal-title'></h2><p class='hs-app-modal-subtitle'></p></div>"+
+            "<button type='button' class='hs-app-modal-close' data-hs-modal-close='1' aria-label='Close'>×</button>"+
+          "</div>"+
+          "<div class='hs-app-modal-body'></div>"+
+        "</div>";
+      overlay.querySelector(".hs-app-modal-title").textContent=title;
+      overlay.querySelector(".hs-app-modal-subtitle").textContent=subtitle||"";
+      overlay.querySelectorAll("[data-hs-modal-close]").forEach(function(btn){
+        btn.addEventListener("click",function(){
+          if(typeof onDismiss==="function")onDismiss();
+          closeModal(id);
+        });
+      });
+      (document.body||document.documentElement).appendChild(overlay);
+      document.documentElement.classList.add("hs-app-modal-open");
+      return overlay;
+    }
+
+    function statusLine(body,text,error){
+      var status=body.querySelector(".hs-app-modal-status");
+      if(!status)return;
+      status.textContent=text||"";
+      status.className="hs-app-modal-status"+(text?" show":"")+(error?" err":"");
+    }
+
+    function pinModeForCurrent(){
+      if(!currentOperator())return "set";
+      var state=securityState();
+      if(!state.protected)return "set";
+      return state.verified?"change":"unlock";
+    }
+
+    function showPinModal(mode,name){
+      name=clean(name||currentOperator());
+      if(!name){showGetStarted(true);return;}
+      setOperator(name);
+      openWebsiteTab("log");
+
+      var title=mode==="unlock"?"Unlock Operator":mode==="change"?"Change Operator PIN":"Set Operator PIN";
+      var modal=buildModal(
+        "hs-app-pin-modal",
+        title,
+        "PIN controls are handled by the Harley's Studios app UI while DMZ Ranked keeps the existing PIN protection underneath."
+      );
+      var body=modal.querySelector(".hs-app-modal-body");
+      var needsCurrent=mode==="change";
+      var unlockOnly=mode==="unlock";
+
+      var intro=document.createElement("p");
+      intro.className="hs-app-modal-note";
+      intro.textContent="Operator: "+name;
+      body.appendChild(intro);
+
+      if(needsCurrent){
+        var currentWrap=document.createElement("div");
+        currentWrap.className="hs-app-modal-field";
+        currentWrap.innerHTML="<label>Current PIN</label><input id='hs-app-current-pin' type='password' inputmode='numeric' maxlength='8' autocomplete='off' placeholder='Current PIN'>";
+        body.appendChild(currentWrap);
+      }
+
+      if(unlockOnly){
+        var unlockWrap=document.createElement("div");
+        unlockWrap.className="hs-app-modal-field";
+        unlockWrap.innerHTML="<label>Operator PIN</label><input id='hs-app-unlock-pin' type='password' inputmode='numeric' maxlength='8' autocomplete='off' placeholder='Enter PIN'>";
+        body.appendChild(unlockWrap);
+      }else{
+        var newWrap=document.createElement("div");
+        newWrap.className="hs-app-modal-field";
+        newWrap.innerHTML="<label>New PIN</label><input id='hs-app-new-pin' type='password' inputmode='numeric' maxlength='8' autocomplete='new-password' placeholder='4–8 digits'>";
+        body.appendChild(newWrap);
+        var confirmWrap=document.createElement("div");
+        confirmWrap.className="hs-app-modal-field";
+        confirmWrap.innerHTML="<label>Confirm PIN</label><input id='hs-app-confirm-pin' type='password' inputmode='numeric' maxlength='8' autocomplete='new-password' placeholder='Re-enter PIN'>";
+        body.appendChild(confirmWrap);
+        var pinNote=document.createElement("p");
+        pinNote.className="hs-app-modal-note";
+        pinNote.textContent="New app-created PINs use 4–8 digits. Existing older PINs can still be unlocked.";
+        body.appendChild(pinNote);
+      }
+
+      var status=document.createElement("div");
+      status.className="hs-app-modal-status";
+      body.appendChild(status);
+
+      var actions=document.createElement("div");
+      actions.className="hs-app-modal-actions";
+      actions.innerHTML="<button type='button' class='hs-app-modal-btn ghost' data-hs-cancel='1'>Cancel</button>"+
+        "<button type='button' class='hs-app-modal-btn' id='hs-app-pin-submit'>"+(unlockOnly?"Unlock":needsCurrent?"Update PIN":"Protect Operator")+"</button>";
+      body.appendChild(actions);
+      actions.querySelector("[data-hs-cancel]").addEventListener("click",function(){closeModal("hs-app-pin-modal");});
+
+      var submit=actions.querySelector("#hs-app-pin-submit");
+      submit.addEventListener("click",async function(){
+        setOperator(name);
+        clearSiteMessage();
+        submit.disabled=true;
+        statusLine(body,unlockOnly?"Verifying PIN…":"Saving PIN…",false);
+
+        try{
+          if(unlockOnly){
+            var pin=clean(q("#hs-app-unlock-pin")&&q("#hs-app-unlock-pin").value);
+            if(!/^\d{3,8}$/.test(pin)){
+              statusLine(body,"Enter the existing 3–8 digit operator PIN.",true);
+              submit.disabled=false;
+              return;
+            }
+            var sitePin=q("#namePin");
+            if(!sitePin||typeof window.unlockName!=="function")throw new Error("DMZ Ranked PIN controls are still loading. Try again in a moment.");
+            sitePin.value=pin;
+            await Promise.resolve(window.unlockName());
+          }else{
+            var currentPin=needsCurrent?clean(q("#hs-app-current-pin")&&q("#hs-app-current-pin").value):"";
+            var p1=clean(q("#hs-app-new-pin")&&q("#hs-app-new-pin").value);
+            var p2=clean(q("#hs-app-confirm-pin")&&q("#hs-app-confirm-pin").value);
+            if(needsCurrent&&!/^\d{3,8}$/.test(currentPin)){
+              statusLine(body,"Enter your current operator PIN first.",true);
+              submit.disabled=false;
+              return;
+            }
+            if(!/^\d{4,8}$/.test(p1)){
+              statusLine(body,"Use a 4–8 digit new PIN.",true);
+              submit.disabled=false;
+              return;
+            }
+            if(p1!==p2){
+              statusLine(body,"The new PIN and confirmation do not match.",true);
+              submit.disabled=false;
+              return;
+            }
+            if(typeof window.openSetPin!=="function"||typeof window.saveSetPin!=="function")throw new Error("DMZ Ranked PIN controls are still loading. Try again in a moment.");
+            window.openSetPin(needsCurrent);
+            var siteCurrent=q("#curPin"),siteNew=q("#newPin"),siteConfirm=q("#newPin2");
+            if(siteCurrent)siteCurrent.value=currentPin;
+            if(siteNew)siteNew.value=p1;
+            if(siteConfirm)siteConfirm.value=p2;
+            await Promise.resolve(window.saveSetPin());
+          }
+
+          await wait(300);
+          try{if(typeof window.updateNameStatus==="function")window.updateNameStatus();}catch(e){}
+          await wait(220);
+          var result=siteMessage();
+          var state=securityState();
+
+          if(result.error){
+            statusLine(body,result.text||"The PIN could not be updated.",true);
+            submit.disabled=false;
+            return;
+          }
+          if(unlockOnly&&!state.verified){
+            statusLine(body,result.text||"PIN verification did not complete. Check the PIN and try again.",true);
+            submit.disabled=false;
+            return;
+          }
+          if(!unlockOnly&&!state.protected){
+            statusLine(body,result.text||"PIN protection did not save. Try again.",true);
+            submit.disabled=false;
+            return;
+          }
+
+          statusLine(body,result.text||(unlockOnly?"Operator unlocked on this device.":"PIN protection updated."),false);
+          await wait(500);
+          closeModal("hs-app-pin-modal");
+          updatePinUi();
+        }catch(error){
+          statusLine(body,clean(error&&error.message)||"Could not update the operator PIN.",true);
+          submit.disabled=false;
+        }
+      });
+
+      var focus=body.querySelector("input");
+      if(focus)setTimeout(function(){try{focus.focus();}catch(e){}},120);
+    }
+
+    function finishExisting(name){
+      name=clean(name);
+      if(!name)return;
+      setOperator(name);
+      markFirstRun();
+      closeModal("hs-app-get-started");
+      openWebsiteTab("log");
+      setTimeout(function(){
+        var state=securityState();
+        updatePinUi();
+        if(state.protected&&!state.verified)showPinModal("unlock",name);
+        else if(!state.protected)showPinModal("set",name);
+      },180);
+    }
+
+    function showGetStarted(force){
+      var modal=buildModal(
+        "hs-app-get-started",
+        "Get Started",
+        "Set up a new operator or reconnect an existing DMZ Ranked operator on this device.",
+        force?null:markFirstRun
+      );
+      var body=modal.querySelector(".hs-app-modal-body");
+      body.innerHTML=
+        "<div class='hs-app-modal-choice-grid'>"+
+          "<button type='button' class='hs-app-modal-choice' id='hs-app-new-user'><strong>New User</strong><span>Create or enter your operator name, then protect it with an app-guided PIN.</span></button>"+
+          "<button type='button' class='hs-app-modal-choice' id='hs-app-existing-user'><strong>Existing User</strong><span>Restore an operator already on DMZ Ranked and unlock its PIN on this device.</span></button>"+
+        "</div>"+
+        "<div class='hs-app-modal-status'></div>"+
+        "<div class='hs-app-modal-actions'><button type='button' class='hs-app-modal-btn ghost' id='hs-app-onboarding-skip'>"+(force?"Close":"Skip for now")+"</button></div>";
+
+      function renderNew(){
+        body.innerHTML=
+          "<div class='hs-app-modal-field'><label>Operator name</label><input id='hs-app-new-operator' type='text' maxlength='80' autocomplete='off' placeholder='Your operator name'></div>"+
+          "<p class='hs-app-modal-note'>This uses the same operator name field as DMZ Ranked. The app will then open its dedicated PIN setup.</p>"+
+          "<div class='hs-app-modal-status'></div>"+
+          "<div class='hs-app-modal-actions'><button type='button' class='hs-app-modal-btn ghost' id='hs-app-onboarding-back'>Back</button><button type='button' class='hs-app-modal-btn' id='hs-app-new-continue'>Continue</button></div>";
+        q("#hs-app-onboarding-back").addEventListener("click",function(){showGetStarted(force);});
+        q("#hs-app-new-continue").addEventListener("click",function(){
+          var name=clean(q("#hs-app-new-operator")&&q("#hs-app-new-operator").value);
+          if(!name){statusLine(body,"Enter an operator name first.",true);return;}
+          setOperator(name);
+          markFirstRun();
+          closeModal("hs-app-get-started");
+          openWebsiteTab("log");
+          setTimeout(function(){showPinModal("set",name);},180);
+        });
+        setTimeout(function(){var input=q("#hs-app-new-operator");if(input)input.focus();},80);
+      }
+
+      function renderExisting(){
+        var list=operatorOptions();
+        var current=currentOperator();
+        body.innerHTML=
+          "<div class='hs-app-modal-field'><label>Existing operator</label><select id='hs-app-existing-select'><option value=''>— select operator —</option></select></div>"+
+          "<div class='hs-app-modal-field'><label>Or type the exact operator name</label><input id='hs-app-existing-name' type='text' maxlength='80' autocomplete='off' placeholder='Operator name'></div>"+
+          "<p class='hs-app-modal-note'>If the operator is protected, the app will ask for its existing PIN next.</p>"+
+          "<div class='hs-app-modal-status'></div>"+
+          "<div class='hs-app-modal-actions'><button type='button' class='hs-app-modal-btn ghost' id='hs-app-onboarding-back'>Back</button><button type='button' class='hs-app-modal-btn' id='hs-app-existing-continue'>Continue</button></div>";
+        var select=q("#hs-app-existing-select");
+        list.forEach(function(name){
+          var option=document.createElement("option");
+          option.value=name;
+          option.textContent=name;
+          if(current&&current.toLowerCase()===name.toLowerCase())option.selected=true;
+          select.appendChild(option);
+        });
+        if(current&&!select.value)q("#hs-app-existing-name").value=current;
+        q("#hs-app-onboarding-back").addEventListener("click",function(){showGetStarted(force);});
+        q("#hs-app-existing-continue").addEventListener("click",function(){
+          var name=clean(select.value)||clean(q("#hs-app-existing-name")&&q("#hs-app-existing-name").value);
+          if(!name){statusLine(body,"Choose or type your existing operator name.",true);return;}
+          finishExisting(name);
+        });
+      }
+
+      q("#hs-app-new-user").addEventListener("click",renderNew);
+      q("#hs-app-existing-user").addEventListener("click",renderExisting);
+      q("#hs-app-onboarding-skip").addEventListener("click",function(){
+        if(!force)markFirstRun();
+        closeModal("hs-app-get-started");
+      });
+    }
+
+    function updatePinUi(){
+      var cover=q("#hs-app-pin-cover");
+      var name=currentOperator();
+      var state=name?securityState():{protected:false,verified:false};
+      var statusText=!name
+        ?"Choose a new or existing operator to manage PIN protection."
+        :!state.protected
+          ?name+" is not PIN protected yet."
+          :state.verified
+            ?name+" is protected and verified on this device."
+            :name+" is PIN protected. Unlock this device to log raids.";
+
+      if(cover){
+        var stateEl=cover.querySelector(".hs-pin-cover-state");
+        var action=cover.querySelector(".hs-pin-cover-action");
+        if(stateEl)stateEl.textContent=statusText;
+        if(action){
+          action.textContent=!name?"GET STARTED":!state.protected?"SET PIN":state.verified?"CHANGE PIN":"UNLOCK";
+          action.onclick=function(){
+            if(!name)showGetStarted(true);
+            else showPinModal(!state.protected?"set":state.verified?"change":"unlock",name);
+          };
+        }
+      }
+      var appState=q("#hs-app-operator-state");
+      if(appState)appState.textContent=statusText;
+      var manage=q("#hs-app-manage-pin");
+      if(manage)manage.textContent=!name?"Get Started":!state.protected?"Set PIN":state.verified?"Change PIN":"Unlock Operator";
+    }
+
+    function ensurePinCover(){
+      var input=q("#playerName");
+      var field=input&&input.closest?input.closest(".field"):null;
+      if(!field)return;
+      var cover=q("#hs-app-pin-cover");
+      if(!cover){
+        cover=document.createElement("div");
+        cover.id="hs-app-pin-cover";
+        cover.innerHTML=
+          "<div class='hs-pin-cover-copy'><span class='hs-pin-cover-kicker'>Covered by Harley's Studios DMZ Ranked App</span><span class='hs-pin-cover-state'>Checking operator protection…</span></div>"+
+          "<button type='button' class='hs-pin-cover-action'>MANAGE PIN</button>";
+        field.appendChild(cover);
+      }
+      updatePinUi();
+    }
+
+    function ensureAppTools(){
+      var app=q("#unofficial-app");
+      if(!app)return;
+      if(!q("#hs-app-operator-tools")){
+        var account=document.createElement("div");
+        account.id="hs-app-operator-tools";
+        account.className="card hs-app-account-card";
+        account.innerHTML=
+          "<div class='hs-app-heading-row'><div><div class='hs-app-eyebrow'>First-time setup & security</div><h2 class='section-title'>Operator & PIN</h2></div><span class='hs-exclusive-badge'>APP EXCLUSIVE</span></div>"+
+          "<p class='hs-app-account-copy'>New to the app or moving an existing operator to this device? Use Get Started. The app replaces the website's inline PIN controls with a dedicated PIN flow.</p>"+
+          "<div class='hs-app-account-state' id='hs-app-operator-state'>Checking operator…</div>"+
+          "<div class='hs-app-actions'><button type='button' class='hs-app-action-btn' id='hs-app-get-started-btn'>Get Started</button><button type='button' class='hs-app-action-btn ghost' id='hs-app-manage-pin'>Manage PIN</button></div>";
+
+        var support=document.createElement("div");
+        support.id="hs-app-support-card";
+        support.className="card hs-app-support-card";
+        support.innerHTML=
+          "<div class='hs-app-heading-row'><div><div class='hs-app-eyebrow'>Support the Android app</div><h2 class='section-title'>Harley's Studios</h2></div></div>"+
+          "<p class='hs-app-support-copy'>Support development and maintenance of the unofficial DMZ Ranked Android app through Harley's Studios on Ko-fi.</p>"+
+          "<a class='hs-kofi-btn' id='hs-app-kofi' href='"+KOFI_URL+"' target='_self' rel='noopener noreferrer'>☕ Support on Ko-fi</a>";
+
+        var before=app.querySelector(".hs-app-about");
+        if(before){
+          app.insertBefore(account,before);
+          app.insertBefore(support,before);
+        }else{
+          app.appendChild(account);
+          app.appendChild(support);
+        }
+
+        q("#hs-app-get-started-btn").addEventListener("click",function(){showGetStarted(true);});
+        q("#hs-app-manage-pin").addEventListener("click",function(){
+          var name=currentOperator();
+          if(!name)showGetStarted(true);
+          else showPinModal(pinModeForCurrent(),name);
+        });
+      }
+      updatePinUi();
+    }
+
+    function fixSupportLinks(){
+      var support=q("#supportBtn");
+      if(support){
+        support.setAttribute("target","_self");
+        support.setAttribute("rel","noopener noreferrer");
+      }
+      qa("a[href*='ko-fi.com/harleytg_']").forEach(function(link){
+        link.setAttribute("target","_self");
+        link.setAttribute("rel","noopener noreferrer");
+      });
+    }
+
+    function refresh(){
+      fixSupportLinks();
+      ensureAppTools();
+      ensurePinCover();
+      updatePinUi();
+      if(!firstRunDone()&&!firstRunQueued&&!q("#hs-app-get-started")){
+        firstRunQueued=true;
+        setTimeout(function(){
+          if(!firstRunDone()&&!q("#hs-app-get-started"))showGetStarted(false);
+        },900);
+      }
+    }
+
+    document.addEventListener("input",function(ev){
+      if(ev.target&&ev.target.id==="playerName")setTimeout(updatePinUi,40);
+    },true);
+    document.addEventListener("change",function(ev){
+      if(ev.target&&(ev.target.id==="playerName"||ev.target.id==="playerPick"))setTimeout(updatePinUi,80);
+    },true);
+
+    var observer=new MutationObserver(function(){refresh();});
+    observer.observe(document.documentElement,{childList:true,subtree:true});
+    setInterval(refresh,1800);
+    refresh();
+  }catch(e){}
 })();
