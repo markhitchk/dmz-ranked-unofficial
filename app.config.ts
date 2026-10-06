@@ -1,10 +1,29 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
+import type { WithAndroidWidgetsParams } from 'react-native-android-widget';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const isBeta = process.env.APP_VARIANT === 'beta';
   const packageId = isBeta
     ? 'com.harleytg.dmzranked.beta'
     : 'com.harleytg.dmzranked';
+
+  const widgetConfig: WithAndroidWidgetsParams = {
+    widgets: [
+      {
+        name: 'DMZRanked',
+        label: isBeta ? 'DMZ Ranked [Beta]' : 'DMZ Ranked',
+        description:
+          'DMZ Ranked operator rank, SR, standing, and live status.',
+        minWidth: '110dp',
+        minHeight: '56dp',
+        targetCellWidth: 2,
+        targetCellHeight: 1,
+        resizeMode: 'horizontal|vertical',
+        previewImage: './assets/dmz_ranked_logo.png',
+        updatePeriodMillis: 1800000
+      }
+    ]
+  };
 
   return {
     ...config,
@@ -22,7 +41,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       bundleIdentifier: packageId,
       buildNumber: '165',
-      supportsTablet: true
+      supportsTablet: true,
+      infoPlist: {
+        LSApplicationQueriesSchemes: ['itms-apps']
+      }
     },
     android: {
       package: packageId,
@@ -36,6 +58,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       predictiveBackGestureEnabled: false
     },
     plugins: [
+      ['react-native-android-widget', widgetConfig],
       [
         'expo-notifications',
         {

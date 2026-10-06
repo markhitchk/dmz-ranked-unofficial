@@ -8,6 +8,7 @@ import {
   View
 } from 'react-native';
 import * as Application from 'expo-application';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, condensedFont } from '../theme';
 import type { AppChannel } from '../types';
 
@@ -39,13 +40,11 @@ export function LoadingOverlay({
 
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulse, {
-            toValue: 1.06,
-            duration: 620,
-            useNativeDriver: true
-          })
-        ]),
+        Animated.timing(pulse, {
+          toValue: 1.06,
+          duration: 620,
+          useNativeDriver: true
+        }),
         Animated.timing(pulse, {
           toValue: 1,
           duration: 620,
@@ -60,7 +59,13 @@ export function LoadingOverlay({
   const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
 
   return (
-    <View style={styles.overlay} pointerEvents="none">
+    <LinearGradient
+      colors={['#0B0F0C', '#101513', colors.black]}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.overlay}
+      pointerEvents="none"
+    >
       <View style={styles.center}>
         <Animated.View
           style={{
@@ -88,12 +93,17 @@ export function LoadingOverlay({
         </Text>
 
         <View style={styles.track}>
-          <View style={[styles.fill, { width: `${safeProgress}%` }]} />
+          <LinearGradient
+            colors={[colors.goldDark, colors.gold]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={[styles.fill, { width: `${safeProgress}%` }]}
+          />
         </View>
 
         {verbose ? <Text style={styles.verbose}>{status}</Text> : null}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -103,8 +113,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    left: 0,
-    backgroundColor: colors.black
+    left: 0
   },
   center: {
     flex: 1,
@@ -130,9 +139,7 @@ const styles = StyleSheet.create({
     minWidth: 44,
     textAlign: 'center',
     backgroundColor: colors.gold,
-    borderColor: colors.goldDark,
-    borderWidth: 1,
-    borderRadius: 4,
+    borderRadius: 6,
     color: colors.black,
     fontFamily: condensedFont,
     fontSize: 11,
@@ -153,12 +160,12 @@ const styles = StyleSheet.create({
     height: 4,
     marginTop: 18,
     overflow: 'hidden',
-    borderRadius: 2,
-    backgroundColor: '#252B28'
+    borderRadius: 3,
+    backgroundColor: '#1D2325'
   },
   fill: {
-    height: '100%',
-    backgroundColor: colors.gold
+    height: 4,
+    borderRadius: 3
   },
   verbose: {
     marginTop: 10,

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <provider android:authorities="com.harleytg.dmzranked.migration" />
+        <provider android:authorities="com.harleytg.dmzranked.beta.migration" />
+    </queries>
+
+    <application>
+        <provider
+            android:name="expo.modules.dmzmigration.DmzMigrationProvider"
+            android:authorities="${applicationId}.migration"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+    </application>
+</manifest>

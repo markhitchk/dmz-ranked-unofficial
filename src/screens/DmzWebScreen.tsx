@@ -30,6 +30,11 @@ import {
   parseBridgeMessage
 } from '../services/webBridge';
 import { showWebsiteNotification } from '../services/notifications';
+import {
+  buildOperatorRestoreScript,
+  getOperatorBackup,
+  saveOperatorBackup
+} from '../services/operatorBackup';
 
 const HOME_URL = 'https://dmzranked.com/';
 const PAYPAL_SHARE_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
@@ -46,6 +51,8 @@ export type DmzWebHandle = {
   clearCache: () => void;
   clearWebsiteData: () => void;
   refreshOperator: () => void;
+  captureOperatorBackup: () => void;
+  restoreOperatorBackup: (operatorName: string) => Promise<boolean>;
   openAppTab: () => void;
 };
 
@@ -58,6 +65,7 @@ type Props = {
     key: K,
     value: AppSettings[K]
   ) => void;
+  onOperatorBackupSaved?: (operatorName: string) => void;
 };
 
 function isInternal(url: string): boolean {
@@ -84,10 +92,19 @@ function isAllowedExternal(url: string): boolean {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
     const path = parsed.pathname;
-    if (host === 'discord.gg' || host === 'www.discord.gg' || host === 'discord.com') {
-      return path.includes('kdHneTZkyd') || path.includes('jTaTHqw45F');
+    if (
+      host === 'discord.gg' ||
+      host === 'www.discord.gg' ||
+      host === 'discord.com'
+    ) {
+      return (
+        path.includes('kdHneTZkyd') || path.includes('jTaTHqw45F')
+      );
     }
-    if (host === 'groups.google.com' || host === 'www.groups.google.com') {
+    if (
+      host === 'groups.google.com' ||
+      host === 'www.groups.google.com'
+    ) {
       return path === '/g/dmz-ranked' || path.startsWith('/g/dmz-ranked/');
     }
     if (host === 'ko-fi.com' || host === 'www.ko-fi.com') return true;
@@ -118,13 +135,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       channel,
       onOpenSettings,
       onLoadingChange,
-      onUpdateSetting
+      onUpdateSetting,
+      onOperatorBackupSaved
     },
     ref
   ) {
     const webRef = useRef<WebView>(null);
     const initialUrl = useRef(
-      settings.rememberLastPage ? settings.lastPageUrl || HOME_URL : HOME_URL
+      settings.rememberLastPage
+        ? settings.lastPageUrl || HOME_URL
+        : HOME_URL
     );
     const [loading, setLoading] = useState(true);
     const [overlayVisible, setOverlayVisible] = useState(true);
@@ -149,6 +169,29 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       );
     }, []);
 
+    const captureOperatorBackup = useCallback(() => {
+      webRef.current?.injectJavaScript(
+        'if(window.__dmzRnCaptureBackup){window.__dmzRnCaptureBackup();}true;'
+      );
+    }, []);
+
+    const restoreOperatorBackup = useCallback(
+      async (operatorName: string): Promise<boolean> => {
+        const record = await getOperatorBackup(operatorName);
+        if (!record) return false;
+        const script = buildOperatorRestoreScript(record);
+        if (!script) return false;
+        webRef.current?.injectJavaScript(
+          script +
+            ';if(window.__dmzRnReadOperator){window.__dmzRnReadOperator();}location.reload();true;'
+        );
+        onUpdateSetting('selectedOperator', record.operator);
+        onUpdateSetting('operatorProtected', record.protected);
+        return true;
+      },
+      [onUpdateSetting]
+    );
+
     useImperativeHandle(
       ref,
       () => ({
@@ -165,13 +208,15 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           );
         },
         refreshOperator,
+        captureOperatorBackup,
+        restoreOperatorBackup,
         openAppTab: () => {
           webRef.current?.injectJavaScript(
             `(function(){var wanted=['UNOFFICIAL APP','DMZ RANKED APP','DMZ RANKED APP [UNOFFICIAL]'];var list=document.querySelectorAll('button,a,[role=button],[data-tab]');for(var i=0;i<list.length;i++){var t=String(list[i].innerText||list[i].textContent||'').replace(/\\s+/g,' ').trim().toUpperCase();if(wanted.indexOf(t)>=0){list[i].click();break;}}return true;})();true;`
           );
         }
       }),
-      [refreshOperator]
+      [captureOperatorBackup, refreshOperator, restoreOperatorBackup]
     );
 
     const showOverlay = useCallback(
@@ -225,8 +270,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       }
 
       refreshOperator();
+      if (settings.operatorAutoSave) {
+        setTimeout(captureOperatorBackup, 500);
+      }
       hideOverlay();
-    }, [applyRemoteUi, hideOverlay, refreshOperator]);
+    }, [
+      applyRemoteUi,
+      captureOperatorBackup,
+      hideOverlay,
+      refreshOperator,
+      settings.operatorAutoSave
+    ]);
 
     const handleMessage = useCallback(
       (event: { nativeEvent: { data: string } }) => {
@@ -247,17 +301,48 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
 
         if (message.type === 'operator') {
-          if (typeof message.name === 'string' && message.name.trim()) {
-            onUpdateSetting('selectedOperator', message.name.trim());
+          const nextName =
+            typeof message.name === 'string' ? message.name.trim() : '';
+          if (nextName) {
+            onUpdateSetting('selectedOperator', nextName);
           }
           onUpdateSetting('operatorVerified', Boolean(message.verified));
           onUpdateSetting('operatorProtected', Boolean(message.protected));
           if (typeof message.source === 'string') {
             onUpdateSetting('operatorSource', message.source);
           }
+          if (nextName && settings.operatorAutoSave) {
+            setTimeout(captureOperatorBackup, 180);
+          }
+          return;
+        }
+
+        if (
+          message.type === 'operator-backup' &&
+          typeof message.name === 'string' &&
+          message.name.trim() &&
+          message.snapshot?.storage
+        ) {
+          void saveOperatorBackup(message.name, {
+            origin: message.snapshot.origin,
+            storage: message.snapshot.storage,
+            protected: Boolean(message.snapshot.protected),
+            verified: Boolean(message.snapshot.verified)
+          }).then(saved => {
+            if (saved) {
+              onOperatorBackupSaved?.(message.name!.trim());
+            }
+          });
         }
       },
-      [onOpenSettings, onUpdateSetting, settings.siteNotifications]
+      [
+        captureOperatorBackup,
+        onOpenSettings,
+        onOperatorBackupSaved,
+        onUpdateSetting,
+        settings.operatorAutoSave,
+        settings.siteNotifications
+      ]
     );
 
     const handleNavigation = useCallback(
@@ -269,35 +354,44 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       [onUpdateSetting, settings.rememberLastPage]
     );
 
-    const handleShouldStart = useCallback((request: { url: string }) => {
-      const url = request.url;
-      if (isInternal(url) || url === 'about:blank') return true;
+    const handleShouldStart = useCallback(
+      (request: { url: string }) => {
+        const url = request.url;
+        if (isInternal(url) || url === 'about:blank') return true;
 
-      if (url.toLowerCase().startsWith('dmzranked-support:')) {
-        try {
-          const target = new URL(url).searchParams.get('url');
-          if (target && /^https?:/i.test(target)) {
-            void Linking.openURL(target);
-          } else {
-            Alert.alert('DMZ Ranked', 'The website donation link is invalid.');
+        if (url.toLowerCase().startsWith('dmzranked-support:')) {
+          try {
+            const target = new URL(url).searchParams.get('url');
+            if (target && /^https?:/i.test(target)) {
+              void Linking.openURL(target);
+            } else {
+              Alert.alert(
+                'DMZ Ranked',
+                'The website donation link is invalid.'
+              );
+            }
+          } catch {
+            Alert.alert(
+              'DMZ Ranked',
+              'Could not open the website donation link.'
+            );
           }
-        } catch {
-          Alert.alert('DMZ Ranked', 'Could not open the website donation link.');
+          return false;
         }
-        return false;
-      }
 
-      if (/^https?:/i.test(url) && isAllowedExternal(url)) {
-        void Linking.openURL(url);
-        return false;
-      }
+        if (/^https?:/i.test(url) && isAllowedExternal(url)) {
+          void Linking.openURL(url);
+          return false;
+        }
 
-      Alert.alert(
-        'External link blocked',
-        'Allowed links are the approved PayPal, Harley\'s Studios Ko-fi, DMZ Ranked Discord invites, and app beta group.'
-      );
-      return false;
-    }, []);
+        Alert.alert(
+          'External link blocked',
+          "Allowed links are the approved PayPal, Harley's Studios Ko-fi, DMZ Ranked Discord invites, and app beta group."
+        );
+        return false;
+      },
+      []
+    );
 
     const retry = useCallback(async () => {
       const state = await NetInfo.fetch();
@@ -348,6 +442,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             setOverlayVisible(false);
             setFailed(true);
           }}
+          onFileDownload={() =>
+            Alert.alert(
+              'DMZ Ranked',
+              'Downloads are disabled in this unofficial client.'
+            )
+          }
           allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
         />
 
@@ -407,7 +507,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: '#252B28'
+    backgroundColor: '#1D2325'
   },
   topFill: { height: 2, backgroundColor: colors.gold },
   offline: {

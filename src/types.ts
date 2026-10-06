@@ -12,6 +12,7 @@ export type AppSettings = {
   appAnimations: boolean;
   contentSize: ContentSize;
   operatorAutoSave: boolean;
+  webviewDebug: boolean;
   lastPageUrl: string;
   selectedOperator: string;
   operatorVerified: boolean;
@@ -30,6 +31,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   appAnimations: true,
   contentSize: 'standard',
   operatorAutoSave: true,
+  webviewDebug: false,
   lastPageUrl: 'https://dmzranked.com/',
   selectedOperator: '',
   operatorVerified: false,
@@ -47,5 +49,15 @@ export type BridgeMessage =
       verified?: boolean;
       protected?: boolean;
       source?: string;
+    }
+  | {
+      type: 'operator-backup';
+      name?: string;
+      snapshot?: {
+        origin?: string;
+        storage?: Record<string, string>;
+        protected?: boolean;
+        verified?: boolean;
+      };
     }
   | { type: 'log'; message?: string };

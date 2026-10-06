@@ -9,6 +9,7 @@ import {
   View
 } from 'react-native';
 import * as Application from 'expo-application';
+import { DmzIcon } from './DmzIcon';
 import { colors, condensedFont } from '../theme';
 import type { AppChannel } from '../types';
 
@@ -60,6 +61,7 @@ export function AppHeader({
         }).start();
       });
     }, 4200);
+
     return () => clearInterval(timer);
   }, [animations, messageIndex, messages.length, metaOpacity]);
 
@@ -103,7 +105,6 @@ export function AppHeader({
           </Animated.Text>
           {channel === 'beta' ? <Text style={styles.beta}>BETA</Text> : null}
         </View>
-
         <Animated.Text
           numberOfLines={1}
           style={[styles.meta, { opacity: metaOpacity }]}
@@ -120,8 +121,10 @@ export function AppHeader({
         android_ripple={{ color: '#333333', borderless: true }}
         style={styles.settingsButton}
       >
-        <Text style={styles.settingsIcon}>⚙</Text>
+        <DmzIcon name="settings" size={28} color={colors.gold} />
       </Pressable>
+
+      <View style={styles.goldLine} />
     </View>
   );
 }
@@ -133,9 +136,15 @@ const styles = StyleSheet.create({
     paddingRight: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.toolbar,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#232725'
+    backgroundColor: colors.toolbar
+  },
+  goldLine: {
+    position: 'absolute',
+    height: 2,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.gold
   },
   logo: { width: 46, height: 46 },
   titleBlock: {
@@ -159,9 +168,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.black,
     backgroundColor: colors.gold,
-    borderColor: colors.goldDark,
-    borderWidth: 1,
-    borderRadius: 4,
+    borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 2,
     fontFamily: condensedFont,
@@ -180,10 +187,5 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center'
-  },
-  settingsIcon: {
-    color: colors.white,
-    fontSize: 25,
-    lineHeight: 28
   }
 });
