@@ -80,8 +80,10 @@ public class MainActivity extends Activity {
     private static final String REMOTE_APP_UI_JS_URL = "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.js";
     private static final String REMOTE_APP_UI_CSS_MARKER = "DMZ Ranked Remote App UI v1";
     private static final String REMOTE_APP_UI_JS_MARKER = "DMZ Ranked Remote App UI v1";
-    private static final int REMOTE_APP_UI_TIMEOUT_MS = 5000;
+    private static final int REMOTE_APP_UI_TIMEOUT_MS = 8000;
     private static final int REMOTE_APP_UI_MAX_BYTES = 512 * 1024;
+    private static final String BUNDLED_APP_UI_CSS_ASSET = "dmz-app-ui/app.css";
+    private static final String BUNDLED_APP_UI_JS_ASSET = "dmz-app-ui/app.js";
 
     private static final String PREFS = "dmz_ranked_settings";
     private static final String PREF_DESKTOP = "desktop_site";
@@ -1949,47 +1951,114 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String readBundledAppUiText(String assetPath, String requiredMarker) throws Exception {
+        try (InputStream input = getAssets().open(assetPath);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int count;
+            int total = 0;
+            while ((count = input.read(buffer)) != -1) {
+                total += count;
+                if (total > REMOTE_APP_UI_MAX_BYTES) {
+                    throw new IllegalStateException("Bundled app UI file is too large");
+                }
+                output.write(buffer, 0, count);
+            }
+            String text = output.toString(StandardCharsets.UTF_8.name());
+            if (text.trim().isEmpty() || !text.contains(requiredMarker)) {
+                throw new IllegalStateException("Bundled app UI validation failed");
+            }
+            return text;
+        }
+    }
+
+    private String cachedAppUiText(SharedPreferences appUiPrefs, String key, String marker) {
+        if (appUiPrefs == null) return null;
+        String value = appUiPrefs.getString(key, null);
+        return value != null && value.contains(marker) ? value : null;
+    }
+
+    private void scheduleRemoteAppUiRetry(WebView view, int attempt) {
+        if (view == null || attempt >= 2) return;
+        view.postDelayed(() -> {
+            try {
+                String currentUrl = view.getUrl();
+                if (currentUrl != null && isDmzUrl(Uri.parse(currentUrl))) {
+                    installRemoteAppUi(view, attempt + 1);
+                }
+            } catch (Throwable ignored) {
+            }
+        }, attempt == 0 ? 1800L : 4500L);
+    }
+
     private void installRemoteAppUi(WebView view) {
+        installRemoteAppUi(view, 0);
+    }
+
+    private void installRemoteAppUi(WebView view, int attempt) {
         if (view == null) return;
 
-        final String pageUrl = view.getUrl();
         new Thread(() -> {
+            SharedPreferences appUiPrefs = preferences != null
+                    ? preferences
+                    : getSharedPreferences(PREFS, MODE_PRIVATE);
+
             String css = null;
             String javascript = null;
-            boolean fresh = false;
+            boolean freshCss = false;
+            boolean freshJs = false;
 
+            // CSS and JavaScript are resolved independently. A temporary failure
+            // fetching one file no longer disables every app tab/page/override.
             try {
                 css = downloadRemoteAppUiText(REMOTE_APP_UI_CSS_URL, REMOTE_APP_UI_CSS_MARKER);
+                freshCss = true;
+            } catch (Throwable remoteCssError) {
+                Log.d(TAG, "Remote app CSS download failed", remoteCssError);
+                css = cachedAppUiText(appUiPrefs, PREF_REMOTE_APP_UI_CSS, REMOTE_APP_UI_CSS_MARKER);
+                if (css == null) {
+                    try {
+                        css = readBundledAppUiText(BUNDLED_APP_UI_CSS_ASSET, REMOTE_APP_UI_CSS_MARKER);
+                    } catch (Throwable bundledCssError) {
+                        Log.d(TAG, "Bundled app CSS fallback unavailable", bundledCssError);
+                    }
+                }
+            }
+
+            try {
                 javascript = downloadRemoteAppUiText(REMOTE_APP_UI_JS_URL, REMOTE_APP_UI_JS_MARKER);
-                fresh = true;
-            } catch (Throwable remoteError) {
-                Log.d(TAG, "Remote app UI download failed; trying cached copy", remoteError);
-                try {
-                    SharedPreferences appUiPrefs = preferences != null
-                            ? preferences
-                            : getSharedPreferences(PREFS, MODE_PRIVATE);
-                    css = appUiPrefs.getString(PREF_REMOTE_APP_UI_CSS, null);
-                    javascript = appUiPrefs.getString(PREF_REMOTE_APP_UI_JS, null);
-                } catch (Throwable ignored) {
+                freshJs = true;
+            } catch (Throwable remoteJsError) {
+                Log.d(TAG, "Remote app JS download failed", remoteJsError);
+                javascript = cachedAppUiText(appUiPrefs, PREF_REMOTE_APP_UI_JS, REMOTE_APP_UI_JS_MARKER);
+                if (javascript == null) {
+                    try {
+                        javascript = readBundledAppUiText(BUNDLED_APP_UI_JS_ASSET, REMOTE_APP_UI_JS_MARKER);
+                    } catch (Throwable bundledJsError) {
+                        Log.d(TAG, "Bundled app JS fallback unavailable", bundledJsError);
+                    }
                 }
             }
 
             if (css == null || javascript == null
                     || !css.contains(REMOTE_APP_UI_CSS_MARKER)
                     || !javascript.contains(REMOTE_APP_UI_JS_MARKER)) {
-                Log.d(TAG, "No valid remote or cached app UI is available");
+                Log.d(TAG, "No valid remote, cached, or bundled app UI is available");
+                scheduleRemoteAppUiRetry(view, attempt);
                 return;
             }
 
             final String finalCss = css;
             final String finalJavascript = javascript;
-            final boolean cacheFresh = fresh;
+            final boolean saveCss = freshCss;
+            final boolean saveJs = freshJs;
 
             view.post(() -> {
                 try {
                     String currentUrl = view.getUrl();
-                    if (pageUrl == null || currentUrl == null || !pageUrl.equals(currentUrl)
-                            || !isDmzUrl(Uri.parse(currentUrl))) {
+                    // Do not require the exact URL captured before the network
+                    // fetch. DMZ Ranked can change its URL/history while loading.
+                    if (currentUrl == null || !isDmzUrl(Uri.parse(currentUrl))) {
                         return;
                     }
 
@@ -2010,27 +2079,32 @@ public class MainActivity extends Activity {
                             + "if(!st){st=document.createElement('style');st.id=sid;(document.head||document.documentElement).appendChild(st);}"
                             + "st.textContent=" + JSONObject.quote(finalCss) + ";"
                             + finalJavascript
+                            + "try{if(window.__dmzHsBetaTabsRefresh)window.__dmzHsBetaTabsRefresh();}catch(e){}"
+                            + "document.documentElement.setAttribute('data-dmz-app-ui','installed');"
                             + "return 'remote-app-ui-installed';"
                             + "}catch(e){return 'remote-app-ui-error:'+String(e&&e.message||e);}})()";
-                    view.evaluateJavascript(script, null);
 
-                    if (cacheFresh) {
-                        SharedPreferences appUiPrefs = preferences != null
-                                ? preferences
-                                : getSharedPreferences(PREFS, MODE_PRIVATE);
-                        appUiPrefs.edit()
-                                .putString(PREF_REMOTE_APP_UI_CSS, finalCss)
-                                .putString(PREF_REMOTE_APP_UI_JS, finalJavascript)
-                                .putLong(PREF_REMOTE_APP_UI_UPDATED_MS, System.currentTimeMillis())
-                                .apply();
+                    view.evaluateJavascript(script, result -> {
+                        String decoded = result == null ? "" : result;
+                        if (decoded.contains("remote-app-ui-error")) {
+                            Log.d(TAG, "Remote app UI JavaScript reported an install error: " + decoded);
+                            scheduleRemoteAppUiRetry(view, attempt);
+                        }
+                    });
+
+                    if (saveCss || saveJs) {
+                        SharedPreferences.Editor editor = appUiPrefs.edit();
+                        if (saveCss) editor.putString(PREF_REMOTE_APP_UI_CSS, finalCss);
+                        if (saveJs) editor.putString(PREF_REMOTE_APP_UI_JS, finalJavascript);
+                        editor.putLong(PREF_REMOTE_APP_UI_UPDATED_MS, System.currentTimeMillis()).apply();
                     }
                 } catch (Throwable error) {
                     Log.d(TAG, "Could not install remote app UI", error);
+                    scheduleRemoteAppUiRetry(view, attempt);
                 }
             });
-        }, "DMZ-Remote-App-UI").start();
+        }, "DMZ-Remote-App-UI-" + attempt).start();
     }
-
 
     private void applyDesktopViewportIfNeeded(WebView view) {
         if (view == null || preferences == null || !preferences.getBoolean(PREF_DESKTOP, false)) {
