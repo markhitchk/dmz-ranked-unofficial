@@ -246,7 +246,7 @@ public class MainActivity extends Activity {
             "var header=document.querySelector('header,.site-header,#header,.header,.topbar');" +
             "if(header&&header.parentNode){header.insertAdjacentElement('afterend',msg);}else{var body=document.body||document.documentElement;if(body.firstChild)body.insertBefore(msg,body.firstChild);else body.appendChild(msg);}" +
             "}" +
-            "window.__dmzHsUpdateMessage=function(){try{var n=getName();var w=document.getElementById('dmz-hs-welcome');if(!w)return;while(w.firstChild)w.removeChild(w.firstChild);if(n){w.appendChild(document.createTextNode('Welcome back, '));var sp=document.createElement('span');sp.className='dmz-hs-name';sp.textContent=n;w.appendChild(sp);w.appendChild(document.createTextNode('!'));}else{w.textContent='Welcome, Guest!';}}catch(e){}};" +
+            "window.__dmzHsUpdateMessage=function(){try{var n=getName(),msg=document.getElementById('dmz-harleys-studios-app-message');if(!msg)return;msg.setAttribute('data-hs-operator',n||'');var w=msg.querySelector('.dmz-hs-welcome');if(!w){w=document.createElement('div');w.className='dmz-hs-welcome';w.id='dmz-hs-welcome';msg.insertBefore(w,msg.firstChild);}while(w.firstChild)w.removeChild(w.firstChild);if(n){w.appendChild(document.createTextNode('Welcome back, '));var sp=document.createElement('span');sp.className='dmz-hs-name';sp.textContent=n;w.appendChild(sp);w.appendChild(document.createTextNode('!'));}else{w.textContent='Welcome, Guest!';}}catch(e){}};" +
             "window.__dmzHsUpdateMessage();" +
             "if(!window.__dmzHsMessageTimer){window.__dmzHsMessageTimer=setInterval(function(){try{window.__dmzHsUpdateMessage();}catch(e){}},1500);}" +
             "return 'installed-top';" +
