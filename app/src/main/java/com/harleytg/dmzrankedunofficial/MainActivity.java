@@ -525,6 +525,7 @@ public class MainActivity extends Activity {
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
                         installBetaCustomTabs(view);
+                        installBetaQol(view);
                         int token = ++loadingStatusPollToken;
                         updateLoadingVerbose("Page loaded • reading LIVE status…");
                         readLiveSiteStatus(token, 0);
@@ -1903,6 +1904,31 @@ public class MainActivity extends Activity {
             view.evaluateJavascript(script, null);
         } catch (Throwable error) {
             Log.d(TAG, "Could not install beta custom tabs", error);
+        }
+    }
+
+
+    private void installBetaQol(WebView view) {
+        if (view == null || !getPackageName().endsWith(".beta")) {
+            return;
+        }
+
+        try {
+            String css = readAssetText("dmz_qol/beta_qol.css");
+            String javascript = readAssetText("dmz_qol/beta_qol.js");
+            String script = "(function(){try{"
+                    + "var sid='hs-beta-qol-style';"
+                    + "if(!document.getElementById(sid)){"
+                    + "var st=document.createElement('style');st.id=sid;"
+                    + "st.textContent=" + JSONObject.quote(css) + ";"
+                    + "(document.head||document.documentElement).appendChild(st);"
+                    + "}"
+                    + javascript
+                    + "return 'beta-qol-installed';"
+                    + "}catch(e){return 'beta-qol-error:'+String(e&&e.message||e);}})()";
+            view.evaluateJavascript(script, null);
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not install beta QoL layer", error);
         }
     }
 
