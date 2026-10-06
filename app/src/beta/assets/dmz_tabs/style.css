@@ -320,3 +320,306 @@ nav.tabs button.hs-unofficial-tab.active{
     gap:3px;
   }
 }
+
+
+/* App-only navigation identity. Only the Unofficial App tab is decorated. */
+nav.tabs button.hs-unofficial-tab{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex-wrap:wrap;
+}
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-logo{
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 5px rgba(230,169,43,.28));
+}
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-logo.failed{
+  display:none;
+}
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-label{
+  min-width:0;
+}
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-channel,
+#unofficial-app .hs-app-channel-badge,
+.dmz-hs-channel-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:18px;
+  padding:2px 6px;
+  border:1px solid rgba(246,196,83,.52);
+  border-radius:5px;
+  color:#0a0e10;
+  background:linear-gradient(180deg,#f8ca59,#d69a22);
+  font-family:var(--f-ui,inherit);
+  font-size:8.5px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.55px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-channel.stable,
+#unofficial-app .hs-app-channel-badge.stable,
+.dmz-hs-channel-badge.stable{
+  color:#dff7e5;
+  border-color:rgba(95,207,122,.48);
+  background:rgba(23,75,38,.72);
+}
+
+/* Active user standings lives directly below the Harley's Studios app message. */
+#dmz-hs-active-user-stats{
+  box-sizing:border-box;
+  width:calc(100% - 20px);
+  max-width:900px;
+  margin:0 auto 14px;
+  position:relative;
+  z-index:2147479999;
+  color:#e9eee9;
+  font-family:var(--f-ui,inherit);
+}
+#dmz-hs-active-user-stats .hs-global-stats-card{
+  box-sizing:border-box;
+  padding:12px 14px;
+  background:linear-gradient(135deg,rgba(20,25,29,.98),rgba(8,12,10,.98));
+  border:1px solid rgba(246,196,83,.42);
+  border-left:4px solid #f6c453;
+  border-radius:11px;
+  box-shadow:0 6px 20px rgba(0,0,0,.24);
+}
+#dmz-hs-active-user-stats .hs-global-stats-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+#dmz-hs-active-user-stats .hs-app-eyebrow{
+  color:#8f9792;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.9px;
+  text-transform:uppercase;
+}
+#dmz-hs-active-user-stats .hs-global-stats-title{
+  margin-top:2px;
+  color:#f7f8f7;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.15px;
+}
+#dmz-hs-active-user-stats .hs-app-heading-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+}
+#dmz-hs-active-user-stats .hs-app-channel-badge,
+#dmz-hs-active-user-stats .hs-stat-state{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:25px;
+  padding:4px 7px;
+  border-radius:5px;
+  font-size:9px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+#dmz-hs-active-user-stats .hs-app-channel-badge{
+  color:#0a0e10;
+  border:1px solid rgba(246,196,83,.52);
+  background:linear-gradient(180deg,#f8ca59,#d69a22);
+}
+#dmz-hs-active-user-stats .hs-app-channel-badge.stable{
+  color:#dff7e5;
+  border-color:rgba(95,207,122,.48);
+  background:rgba(23,75,38,.72);
+}
+#dmz-hs-active-user-stats .hs-stat-state{
+  color:#a9b0ab;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.28);
+}
+#dmz-hs-active-user-stats .hs-stat-state.live{
+  color:#62dc87;
+  border-color:rgba(95,207,122,.42);
+}
+#dmz-hs-active-user-stats .hs-stat-state.loading{
+  color:#f6c453;
+  border-color:rgba(246,196,83,.38);
+}
+#dmz-hs-active-user-stats .hs-stat-refresh{
+  min-width:34px;
+  min-height:30px;
+  padding:4px 8px;
+  border:1px solid rgba(246,196,83,.36);
+  border-radius:6px;
+  background:rgba(0,0,0,.28);
+  color:#f7f8f7;
+  font-size:16px;
+  font-weight:900;
+}
+#dmz-hs-active-user-stats .hs-global-stats-body{
+  display:grid;
+  grid-template-columns:72px minmax(0,1fr);
+  gap:10px;
+  align-items:stretch;
+}
+#dmz-hs-active-user-stats .hs-stat-badge-shell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:76px;
+  padding:6px;
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:8px;
+  background:rgba(0,0,0,.24);
+}
+#dmz-hs-active-user-stats .hs-stat-rank-badge{
+  display:block;
+  width:58px;
+  height:64px;
+  object-fit:contain;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));
+}
+#dmz-hs-active-user-stats .hs-stat-rank-badge[hidden]{
+  display:none;
+}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:56px;
+  min-height:54px;
+  padding:5px;
+  clip-path:polygon(50% 0,92% 18%,82% 75%,50% 100%,18% 75%,8% 18%);
+  background:linear-gradient(180deg,#69716c,#2f3431);
+  color:#fff;
+  text-align:center;
+  font-size:8.5px;
+  font-weight:950;
+  line-height:1.08;
+  letter-spacing:.15px;
+  text-transform:uppercase;
+  text-shadow:0 1px 2px rgba(0,0,0,.7);
+}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback[hidden]{
+  display:none;
+}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-bronze{background:linear-gradient(180deg,#c48a5a,#6e4127)}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-silver{background:linear-gradient(180deg,#d8e0e7,#69737c);color:#111}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-gold{background:linear-gradient(180deg,#f5cf63,#9d6717);color:#15100a}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-platinum{background:linear-gradient(180deg,#ecf3f7,#7f98a5);color:#111}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-diamond{background:linear-gradient(180deg,#9be1ff,#347caa);color:#08131b}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-crimson{background:linear-gradient(180deg,#ef5d61,#7d1720)}
+#dmz-hs-active-user-stats .hs-stat-rank-fallback.tier-iridescent{background:linear-gradient(180deg,#e1d3ff,#7458bd);color:#140d24}
+#dmz-hs-active-user-stats .hs-stat-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+}
+#dmz-hs-active-user-stats .hs-stat-tile{
+  min-width:0;
+  padding:8px 9px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:7px;
+  background:rgba(0,0,0,.2);
+}
+#dmz-hs-active-user-stats .hs-stat-tile.wide{
+  grid-column:1/-1;
+}
+#dmz-hs-active-user-stats .hs-stat-label{
+  display:block;
+  margin-bottom:3px;
+  color:#8f9792;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.65px;
+  text-transform:uppercase;
+}
+#dmz-hs-active-user-stats .hs-stat-tile strong{
+  display:block;
+  overflow:hidden;
+  color:#f4f6f4;
+  font-size:11.5px;
+  line-height:1.2;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#dmz-hs-active-user-stats .hs-stat-footer{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-top:8px;
+  color:#8f9792;
+  font-size:9.5px;
+}
+#dmz-hs-active-user-stats .hs-app-dot{
+  width:7px;
+  height:7px;
+  flex:0 0 7px;
+  border-radius:50%;
+  background:#55d582;
+  box-shadow:0 0 7px rgba(85,213,130,.55);
+}
+.dmz-hs-channel-badge{
+  margin-left:5px;
+  vertical-align:middle;
+}
+
+@media(max-width:520px){
+  nav.tabs button.hs-unofficial-tab{
+    gap:5px;
+  }
+  nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-logo{
+    width:21px;
+    height:21px;
+    flex-basis:21px;
+  }
+  #dmz-hs-active-user-stats{
+    width:calc(100% - 12px);
+    margin:0 auto 10px;
+  }
+  #dmz-hs-active-user-stats .hs-global-stats-card{
+    padding:10px 11px;
+    border-radius:9px;
+  }
+  #dmz-hs-active-user-stats .hs-global-stats-heading{
+    align-items:center;
+  }
+  #dmz-hs-active-user-stats .hs-global-stats-body{
+    grid-template-columns:62px minmax(0,1fr);
+    gap:8px;
+  }
+  #dmz-hs-active-user-stats .hs-stat-badge-shell{
+    min-height:68px;
+    padding:4px;
+  }
+  #dmz-hs-active-user-stats .hs-stat-rank-badge{
+    width:50px;
+    height:56px;
+  }
+  #dmz-hs-active-user-stats .hs-stat-rank-fallback{
+    width:48px;
+    min-height:48px;
+    font-size:7.7px;
+  }
+  #dmz-hs-active-user-stats .hs-stat-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:5px;
+  }
+  #dmz-hs-active-user-stats .hs-stat-tile{
+    padding:7px 8px;
+  }
+  #dmz-hs-active-user-stats .hs-stat-tile strong{
+    font-size:11px;
+  }
+}
