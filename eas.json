@@ -1,0 +1,18 @@
+{
+  "cli": {"version": ">= 16.0.0"},
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {"APP_VARIANT": "beta"}
+    },
+    "beta": {
+      "distribution": "internal",
+      "env": {"APP_VARIANT": "beta"}
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {"APP_VARIANT": "stable"}
+    }
+  }
+}

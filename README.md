@@ -1,44 +1,43 @@
-# DMZ Ranked Unofficial
+# DMZ Ranked App — React Native + TypeScript migration
 
-Unofficial Android wrapper for **https://dmzranked.com/**.
+This branch is the Android/iOS migration of the DMZ Ranked Unofficial app.
 
-## Credits
+## Stack
 
-- **Built by Harley's Studios**
-- **Made by YoLando & dCHINZ**
-- YoLando: YouTube **@itsyolando** and Twitch creator
+- React Native via Expo SDK 57
+- TypeScript
+- React Native WebView
+- AsyncStorage for app preferences
+- NetInfo for connection state
+- Expo Notifications for native/local notifications
+- Continuous Native Generation: Android/iOS projects are generated from `app.config.ts`
 
-## App features
+The existing dmzranked.com site remains the source of the main experience. The app injects the canonical `remote/app-ui/app.css` and `remote/app-ui/app.js` into the WebView.
 
-- Native **DMZ Ranked** title bar with the supplied DMZ Ranked logo.
-- Native loading screen shown while the DMZ Ranked website loads in the background.
-- Loading progress bar with optional **verbose loading details**.
-- Settings for desktop mode, keeping the screen awake, and verbose loading.
-- Reload and clear web cache/cookies controls.
-- Creator credits with YoLando and dCHINZ profile images.
-- JavaScript, DOM storage, cookies, file uploads, and DMZ Ranked section back-navigation support.
-- External navigation is blocked except for the approved PayPal support link.
-- Offline/error page when the website cannot load.
+## Run
 
-## Android configuration
+1. Install Node.js 22.13+.
+2. Run `npm install`.
+3. Run `npm run check`.
+4. Android: `npm run android`.
+5. iOS on macOS: `npm run ios`.
 
-- Package: `com.harleytg.dmzrankedunofficial`
-- Minimum Android: API 26
-- Target/compile SDK: API 36
-- Current source version: `1.0.10` (`110`)
+## Native projects
 
-## Build
+Do not hand-maintain duplicate Android/iOS application code. Generate it when needed with:
 
-The repository includes a GitHub Actions build workflow. You can also build locally with JDK 17, Android SDK 36, and Gradle 8.11.1:
+`npm run prebuild:clean`
 
-```bash
-gradle assembleDebug
-```
+Stable package/bundle ID: `com.harleytg.dmzranked`
 
-The output APK is created at:
+Beta package/bundle ID: `com.harleytg.dmzranked.beta`
 
-`app/build/outputs/apk/debug/app-debug.apk`
+Set `APP_VARIANT=beta` for beta builds.
 
-## Notice
+## Remote UI
 
-This is an unofficial client. DMZ Ranked website content and third-party trademarks belong to their respective owners.
+The app loads the shared `remote/app-ui/app.css` and `remote/app-ui/app.js` from the main GitHub branch at runtime. If those files are temporarily unavailable, dmzranked.com remains usable and the app retries on the next page load.
+
+## Migration
+
+The old Java Android implementation is intentionally not part of this branch. Shared application behavior now lives under `src/` in TypeScript. Android and iOS projects are generated from the shared configuration when a native build is required.
