@@ -1,0 +1,36 @@
+/* DMZ Ranked Beta app-only mobile QoL layer.
+   Injected into dmzranked.com by the Android beta package only. */
+html{scroll-behavior:smooth}
+button,[role="button"],select,input[type="button"],input[type="submit"]{touch-action:manipulation}
+input,select,textarea{font-size:max(16px,1em)}
+.tabs{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
+}
+.tabs>button,.tabs>[role="button"],.tabs>a{scroll-snap-align:center}
+#hs-beta-back-top{
+  position:fixed;
+  right:14px;
+  bottom:18px;
+  z-index:2147482000;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(246,196,83,.62);
+  border-radius:12px;
+  background:rgba(10,13,11,.94);
+  color:#f6c453;
+  box-shadow:0 6px 20px rgba(0,0,0,.32);
+  font:700 20px/1 sans-serif;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+#hs-beta-back-top.hs-show{display:flex}
+@media (max-width:640px){
+  .tabs{justify-content:flex-start!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:4px}
+  .tabs>button,.tabs>[role="button"],.tabs>a{flex:0 0 auto;min-height:42px}
+  button,select,input[type="button"],input[type="submit"]{min-height:42px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
