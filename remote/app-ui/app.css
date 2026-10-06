@@ -1116,3 +1116,104 @@ input,select,textarea{font-size:max(16px,1em)}
   }
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Legacy app override recovery layer.
+   Keeps the original mobile grid, full-width App tab, app page, logo/badges,
+   active standings and app messages intact while newer overrides (such as the
+   compact season header) are layered on top. */
+nav.tabs.hs-site-tabs button.hs-unofficial-tab{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  overflow:visible!important;
+}
+nav.tabs.hs-site-tabs button.hs-unofficial-tab .hs-unofficial-tab-logo{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
+  object-fit:contain!important;
+}
+nav.tabs.hs-site-tabs button.hs-unofficial-tab .hs-unofficial-tab-channel,
+nav.tabs.hs-site-tabs button.hs-unofficial-tab .hs-unofficial-tab-notify{
+  flex:0 0 auto;
+}
+#unofficial-app.active{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+#unofficial-app.active[hidden]{
+  display:block!important;
+}
+#unofficial-app .hs-app-messages,
+#unofficial-app .sect-hero,
+#unofficial-app .card{
+  box-sizing:border-box;
+}
+#dmz-hs-active-user-stats{
+  display:block;
+}
+
+@media (max-width:900px){
+  nav.tabs.hs-site-tabs{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    align-items:stretch!important;
+    justify-content:stretch!important;
+    overflow:visible!important;
+    padding:6px!important;
+    scroll-snap-type:none!important;
+  }
+  nav.tabs.hs-site-tabs>button,
+  nav.tabs.hs-site-tabs>[role="button"],
+  nav.tabs.hs-site-tabs>a{
+    width:100%!important;
+    min-width:0!important;
+    min-height:44px!important;
+    margin:0!important;
+    padding:7px 5px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    line-height:1.15!important;
+  }
+  nav.tabs.hs-site-tabs>button.hs-unofficial-tab{
+    grid-column:1/-1!important;
+    min-height:48px!important;
+  }
+}
+@media (max-width:640px){
+  nav.tabs.hs-site-tabs{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+    padding:5px!important;
+  }
+  nav.tabs.hs-site-tabs>button,
+  nav.tabs.hs-site-tabs>[role="button"],
+  nav.tabs.hs-site-tabs>a{
+    min-height:46px!important;
+    font-size:11px!important;
+    letter-spacing:.2px!important;
+  }
+  nav.tabs.hs-site-tabs button.hs-unofficial-tab .hs-unofficial-tab-logo{
+    width:20px!important;
+    height:20px!important;
+    flex-basis:20px!important;
+  }
+}
+@media (max-width:360px){
+  nav.tabs.hs-site-tabs>button,
+  nav.tabs.hs-site-tabs>[role="button"],
+  nav.tabs.hs-site-tabs>a{
+    padding-left:3px!important;
+    padding-right:3px!important;
+    font-size:10.5px!important;
+  }
+}
+
