@@ -469,6 +469,162 @@ nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify[hidden]{
   line-height:18px;
 }
 
+/* Compact app-only season header.
+   The website still renders and updates the original banner/countdown; JS mirrors
+   those values here, then hides the two tall source blocks only inside the app. */
+#board.hs-compact-season-ready > #seasonBanner,
+#board.hs-compact-season-ready > #seasonBar{
+  display:none!important;
+}
+
+#hs-compact-season-header{
+  --hs-season-bg:none;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  box-sizing:border-box;
+  width:100%;
+  min-height:76px;
+  margin:0 0 12px;
+  padding:9px 11px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  border:1px solid var(--line,rgba(226,180,96,.18));
+  border-left:3px solid var(--gold,#e6a92b);
+  border-radius:9px;
+  background-image:
+    linear-gradient(90deg,rgba(7,10,11,.94) 0%,rgba(7,10,11,.82) 48%,rgba(7,10,11,.68) 100%),
+    var(--hs-season-bg);
+  background-size:cover;
+  background-position:center;
+  box-shadow:0 7px 20px rgba(0,0,0,.28);
+}
+#hs-compact-season-header::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(90deg,rgba(230,169,43,.08),transparent 58%);
+}
+#hs-compact-season-header .hs-compact-season-copy{
+  min-width:0;
+}
+#hs-compact-season-header .hs-compact-season-kicker{
+  overflow:hidden;
+  margin:0 0 2px;
+  color:var(--gold-b,#f5c451);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:8.5px;
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:1.6px;
+  text-overflow:ellipsis;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+#hs-compact-season-header .hs-compact-season-name{
+  overflow:hidden;
+  color:#fff;
+  font-family:var(--f-display,'Oswald','Arial Narrow',system-ui,sans-serif);
+  font-size:18px;
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:.8px;
+  text-overflow:ellipsis;
+  text-transform:uppercase;
+  white-space:nowrap;
+  text-shadow:0 1px 4px rgba(0,0,0,.7);
+}
+#hs-compact-season-header .hs-compact-season-range{
+  overflow:hidden;
+  margin-top:3px;
+  color:var(--muted,#9aa39b);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:10.5px;
+  font-weight:650;
+  line-height:1.15;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#hs-compact-season-header .hs-compact-season-count{
+  min-width:0;
+  text-align:right;
+}
+#hs-compact-season-header .cd-lab{
+  margin:0 0 3px;
+  color:var(--muted2,#727b73);
+  font-size:7px;
+  font-weight:800;
+  letter-spacing:1.1px;
+  line-height:1;
+}
+#hs-compact-season-header .cd-row{
+  display:flex;
+  justify-content:flex-end;
+  gap:3px;
+}
+#hs-compact-season-header .cd-seg{
+  min-width:31px;
+  padding:4px 4px 3px;
+  border:1px solid rgba(226,180,96,.18);
+  border-radius:5px;
+  background:rgba(0,0,0,.38);
+  box-shadow:none;
+}
+#hs-compact-season-header .cd-seg b{
+  color:var(--gold-b,#f5c451);
+  font-size:15px;
+  line-height:1;
+  letter-spacing:0;
+}
+#hs-compact-season-header .cd-seg i{
+  margin-top:2px;
+  color:var(--muted2,#727b73);
+  font-size:6.5px;
+  line-height:1;
+  letter-spacing:.7px;
+}
+#hs-compact-season-header .hs-compact-season-status{
+  padding:5px 8px;
+  border:1px solid rgba(230,169,43,.28);
+  border-radius:5px;
+  background:rgba(0,0,0,.32);
+  color:var(--gold-b,#f5c451);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+@media(max-width:520px){
+  #hs-compact-season-header{
+    min-height:70px;
+    gap:6px;
+    margin-bottom:9px;
+    padding:8px 8px;
+  }
+  #hs-compact-season-header .hs-compact-season-kicker{font-size:7.5px;letter-spacing:1.15px}
+  #hs-compact-season-header .hs-compact-season-name{font-size:16px}
+  #hs-compact-season-header .hs-compact-season-range{font-size:9.5px}
+  #hs-compact-season-header .cd-row{gap:2px}
+  #hs-compact-season-header .cd-seg{min-width:28px;padding:3px 3px 2px}
+  #hs-compact-season-header .cd-seg b{font-size:13px}
+  #hs-compact-season-header .cd-seg i{font-size:6px;letter-spacing:.45px}
+  #hs-compact-season-header .cd-lab{font-size:6.5px;letter-spacing:.8px}
+}
+
+@media(max-width:370px){
+  #hs-compact-season-header{grid-template-columns:minmax(0,1fr) 120px}
+  #hs-compact-season-header .cd-seg{min-width:26px;padding-inline:2px}
+  #hs-compact-season-header .hs-compact-season-name{font-size:15px}
+  #hs-compact-season-header .hs-compact-season-range{font-size:9px}
+}
+
 /* Active user standings lives directly below the Harley's Studios app message.
    Keep the existing app JS/data, but present the row using dmzranked.com's
    leaderboard visual language instead of a separate dashboard/tile layout. */
