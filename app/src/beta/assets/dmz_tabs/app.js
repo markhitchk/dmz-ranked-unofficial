@@ -41,6 +41,9 @@
 
   const PUBLIC_STATE_URL = "https://dmzranked.com/api/v1/data/public-state";
   const SNAPSHOT_URL = "https://dmzranked.com/leaderboard.json";
+  const BADGE_SOURCE_URL = "https://dmz-ticker.netlify.app/";
+  const APP_LOGO_URL = "file:///android_res/drawable/dmz_ranked_logo.png";
+  let badgeMapPromise = null;
   const TIERS = [
     { name: "Iridescent", min: 6000, fee: 100 },
     { name: "Crimson", min: 5000, fee: 75 },
@@ -85,6 +88,95 @@
     div = Math.max(0, Math.min(2, div));
     const roman = ["I", "II", "III"][div];
     return { label: tier.name + " " + roman, fee: tier.fee + (div * 5) };
+  }
+
+  function appChannelLabel() {
+    const ua = String(navigator.userAgent || "");
+    return /com\.harleytg\.dmzranked\.beta/i.test(ua) ? "BETA" : "STABLE";
+  }
+
+  function appChannelCopy() {
+    return appChannelLabel() === "BETA" ? "Beta testing" : "Stable";
+  }
+
+  function rankTierClass(label) {
+    const tier = clean(label).split(/\s+/)[0].toLowerCase();
+    return /^(bronze|silver|gold|platinum|diamond|crimson|iridescent)$/.test(tier)
+      ? "tier-" + tier
+      : "tier-default";
+  }
+
+  function badgeKey(rankLabel, standing) {
+    const label = clean(rankLabel).toUpperCase();
+    if (label.indexOf("IRIDESCENT") === 0) {
+      return standing >= 1 && standing <= 3 ? "Top" : "Iridescent";
+    }
+    const parts = label.split(/\s+/);
+    if (parts.length < 2) return "";
+    const division = parts[1] === "I" ? "1" : parts[1] === "II" ? "2" : parts[1] === "III" ? "3" : "";
+    if (!division) return "";
+    const tier = parts[0].charAt(0) + parts[0].slice(1).toLowerCase();
+    return tier + division;
+  }
+
+  function loadBadgeMap() {
+    if (badgeMapPromise) return badgeMapPromise;
+    badgeMapPromise = fetch(BADGE_SOURCE_URL, { cache: "force-cache" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Badge HTTP " + response.status);
+        return response.text();
+      })
+      .then((html) => {
+        const marker = html.indexOf("const BADGE");
+        const start = marker < 0 ? -1 : html.indexOf("{", marker);
+        const end = start < 0 ? -1 : html.indexOf("};", start);
+        if (start < 0 || end <= start) throw new Error("Badge map missing");
+        return JSON.parse(html.substring(start, end + 1));
+      })
+      .catch((error) => {
+        badgeMapPromise = null;
+        throw error;
+      });
+    return badgeMapPromise;
+  }
+
+  async function renderRankBadge(stats) {
+    const image = document.getElementById("hs-stat-rank-badge");
+    const fallback = document.getElementById("hs-stat-rank-fallback");
+    if (!image || !fallback) return;
+
+    image.hidden = true;
+    image.removeAttribute("src");
+    fallback.hidden = false;
+    fallback.className = "hs-stat-rank-fallback " + rankTierClass(stats && stats.rankLabel);
+    fallback.textContent = stats
+      ? (stats.position >= 1 && stats.position <= 3 && /^Iridescent/i.test(stats.rankLabel)
+          ? "TOP " + stats.position
+          : stats.rankLabel)
+      : "DMZ";
+
+    if (!stats) return;
+    const key = badgeKey(stats.rankLabel, stats.position);
+    if (!key) return;
+
+    try {
+      const badges = await loadBadgeMap();
+      const source = badges && badges[key];
+      if (!source || !/^data:image\//i.test(source)) return;
+      if (!lastStats || lastStats.rankLabel !== stats.rankLabel || lastStats.position !== stats.position) return;
+      image.onload = () => {
+        image.hidden = false;
+        fallback.hidden = true;
+      };
+      image.onerror = () => {
+        image.hidden = true;
+        fallback.hidden = false;
+      };
+      image.src = source;
+    } catch (_) {
+      image.hidden = true;
+      fallback.hidden = false;
+    }
   }
 
   function grossRaid(raid, season2) {
@@ -296,6 +388,11 @@
     setText("hs-stat-position", stats ? "#" + formatNumber(stats.position) + " / " + formatNumber(stats.totalPlayers) : "—");
     setText("hs-stat-last", stats ? signedSr(stats.lastDelta) : "—");
     setText("hs-stat-season", stats && stats.seasonName ? stats.seasonName : "DMZ Ranked");
+    document.querySelectorAll("[data-hs-channel-badge]").forEach((el) => {
+      el.textContent = appChannelLabel();
+      el.classList.toggle("stable", appChannelLabel() === "STABLE");
+    });
+    renderRankBadge(stats);
     renderMessages(state, operator, stats);
   }
 
@@ -314,7 +411,7 @@
     } else {
       rows.push(["Connection", "Live standings are unavailable right now. The website can still be used normally."]);
     }
-    rows.push(["Mobile QoL", "App navigation uses a touch-friendly grid in Beta for faster one-handed access."]);
+    rows.push(["Mobile QoL", "App navigation uses a touch-friendly grid for faster one-handed access."]);
     while (list.firstChild) list.removeChild(list.firstChild);
     rows.forEach((row) => {
       const item = document.createElement("div");
@@ -364,6 +461,89 @@
     }
   }
 
+  function ensureGlobalStats() {
+    let host = document.getElementById("dmz-hs-active-user-stats");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "dmz-hs-active-user-stats";
+      host.setAttribute("aria-label", "DMZ Ranked active user standings");
+      host.innerHTML =
+        '<div class="hs-global-stats-card">' +
+          '<div class="hs-global-stats-heading">' +
+            '<div><div class="hs-app-eyebrow">Active user standings</div><div class="hs-global-stats-title">This Device Operator</div></div>' +
+            '<div class="hs-app-heading-actions">' +
+              '<span class="hs-app-channel-badge" data-hs-channel-badge>' + appChannelLabel() + '</span>' +
+              '<span class="hs-stat-state loading" id="hs-stat-state">SYNCING</span>' +
+              '<button type="button" class="hs-stat-refresh" id="hs-stat-refresh" aria-label="Refresh active operator standings">↻</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="hs-global-stats-body">' +
+            '<div class="hs-stat-badge-shell">' +
+              '<img id="hs-stat-rank-badge" class="hs-stat-rank-badge" alt="Operator rank badge" hidden>' +
+              '<div id="hs-stat-rank-fallback" class="hs-stat-rank-fallback tier-default">DMZ</div>' +
+            '</div>' +
+            '<div class="hs-stat-grid">' +
+              '<div class="hs-stat-tile wide"><span class="hs-stat-label">Operator</span><strong id="hs-stat-operator">Checking…</strong></div>' +
+              '<div class="hs-stat-tile"><span class="hs-stat-label">Rank</span><strong id="hs-stat-rank">—</strong></div>' +
+              '<div class="hs-stat-tile"><span class="hs-stat-label">SR</span><strong id="hs-stat-sr">—</strong></div>' +
+              '<div class="hs-stat-tile"><span class="hs-stat-label">Position</span><strong id="hs-stat-position">—</strong></div>' +
+              '<div class="hs-stat-tile"><span class="hs-stat-label">Last raid</span><strong id="hs-stat-last">—</strong></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="hs-stat-footer"><span class="hs-app-dot"></span><span id="hs-stat-season">DMZ Ranked</span> · live public standings</div>' +
+        '</div>';
+
+      const refresh = host.querySelector("#hs-stat-refresh");
+      if (refresh) refresh.addEventListener("click", () => updateStats(true));
+    }
+
+    const message = document.getElementById("dmz-harleys-studios-app-message");
+    if (message && message.parentNode) {
+      if (host.previousElementSibling !== message) message.insertAdjacentElement("afterend", host);
+      const copy = message.querySelector(".dmz-hs-copy");
+      if (copy && !copy.querySelector(".dmz-hs-channel-badge")) {
+        const badge = document.createElement("span");
+        badge.className = "dmz-hs-channel-badge";
+        badge.setAttribute("data-hs-channel-badge", "true");
+        badge.textContent = appChannelLabel();
+        copy.appendChild(document.createTextNode(" "));
+        copy.appendChild(badge);
+      }
+    } else if (!host.parentNode) {
+      const nav = findSiteNav();
+      if (nav && nav.parentNode) nav.parentNode.insertBefore(host, nav);
+    }
+
+    return host;
+  }
+
+  function decorateTabButton(button) {
+    if (!button) return;
+    const channel = appChannelLabel();
+    button.classList.add("hs-unofficial-tab");
+    button.setAttribute("aria-label", "Unofficial App — " + channel);
+    while (button.firstChild) button.removeChild(button.firstChild);
+
+    const logo = document.createElement("img");
+    logo.className = "hs-unofficial-tab-logo";
+    logo.alt = "";
+    logo.src = APP_LOGO_URL;
+    logo.addEventListener("error", () => logo.classList.add("failed"), { once: true });
+
+    const label = document.createElement("span");
+    label.className = "hs-unofficial-tab-label";
+    label.textContent = "Unofficial App";
+
+    const badge = document.createElement("span");
+    badge.className = "hs-unofficial-tab-channel";
+    badge.setAttribute("data-hs-channel-badge", "true");
+    badge.textContent = channel;
+
+    button.appendChild(logo);
+    button.appendChild(label);
+    button.appendChild(badge);
+  }
+
   function findSiteNav() {
     return document.querySelector(".wrap nav.tabs");
   }
@@ -392,21 +572,6 @@
     section.id = TAB;
     section.setAttribute("aria-label", "DMZ Ranked Unofficial App");
     section.innerHTML =
-      '<div class="card hs-active-stats-card">' +
-        '<div class="hs-app-heading-row">' +
-          '<div><div class="hs-app-eyebrow">Active user stats</div><h2 class="section-title">This Device Operator</h2></div>' +
-          '<div class="hs-app-heading-actions"><span class="hs-stat-state loading" id="hs-stat-state">SYNCING</span><button type="button" class="hs-stat-refresh" id="hs-stat-refresh" aria-label="Refresh active operator stats">↻ Refresh</button></div>' +
-        '</div>' +
-        '<div class="hs-stat-grid">' +
-          '<div class="hs-stat-tile wide"><span class="hs-stat-label">Operator</span><strong id="hs-stat-operator">Checking…</strong></div>' +
-          '<div class="hs-stat-tile"><span class="hs-stat-label">Rank</span><strong id="hs-stat-rank">—</strong></div>' +
-          '<div class="hs-stat-tile"><span class="hs-stat-label">SR</span><strong id="hs-stat-sr">—</strong></div>' +
-          '<div class="hs-stat-tile"><span class="hs-stat-label">Position</span><strong id="hs-stat-position">—</strong></div>' +
-          '<div class="hs-stat-tile"><span class="hs-stat-label">Last raid</span><strong id="hs-stat-last">—</strong></div>' +
-        '</div>' +
-        '<div class="hs-stat-footer"><span class="hs-app-dot"></span><span id="hs-stat-season">DMZ Ranked</span> · synced from public leaderboard data</div>' +
-      '</div>' +
-
       '<div class="card hs-app-messages">' +
         '<div class="hs-app-heading-row">' +
           '<div><div class="hs-app-eyebrow">App messages</div><h2 class="section-title">Messages</h2></div>' +
@@ -417,15 +582,15 @@
       '</div>' +
 
       '<div class="sect-hero camp">' +
-        '<h2>Unofficial App<small>Harley\'s Studios · Android Beta</small></h2>' +
+        '<h2>Unofficial App<small>Harley\'s Studios · Android ' + appChannelLabel() + '</small></h2>' +
       '</div>' +
 
       '<div class="card">' +
         '<h2 class="section-title" id="hs-unofficial-welcome">Welcome, Guest.</h2>' +
         '<p class="hs-app-intro"><b>DMZ Ranked Unofficial App</b> is the Android app experience built around dmzranked.com. This page contains app-only information and tools while the DMZ Ranked website continues to run normally.</p>' +
         '<div class="hs-app-meta">' +
-          '<span class="hs-app-pill beta">Beta</span>' +
-          '<span class="hs-app-pill">1.0.54 (158)</span>' +
+          '<span class="hs-app-pill beta" data-hs-channel-badge>' + appChannelLabel() + '</span>' +
+          '<span class="hs-app-pill">1.0.55 (159)</span>' +
           '<span class="hs-app-pill">Harley\'s Studios</span>' +
         '</div>' +
       '</div>' +
@@ -433,8 +598,8 @@
       '<div class="card">' +
         '<h2 class="section-title">App Status</h2>' +
         '<div class="hs-app-row"><div class="hs-app-label">Website</div><div class="hs-app-value"><span class="hs-app-status"><span class="hs-app-dot"></span>dmzranked.com loaded in the app</span></div></div>' +
-        '<div class="hs-app-row"><div class="hs-app-label">Release channel</div><div class="hs-app-value">Beta testing</div></div>' +
-        '<div class="hs-app-row"><div class="hs-app-label">Build</div><div class="hs-app-value">1.0.54 (158)</div></div>' +
+        '<div class="hs-app-row"><div class="hs-app-label">Release channel</div><div class="hs-app-value">' + appChannelCopy() + '</div></div>' +
+        '<div class="hs-app-row"><div class="hs-app-label">Build</div><div class="hs-app-value">1.0.55 (159)</div></div>' +
         '<div class="hs-app-row"><div class="hs-app-label">Developer</div><div class="hs-app-value">Harley\'s Studios</div></div>' +
       '</div>' +
 
@@ -452,10 +617,6 @@
         '<h2 class="section-title">About This Page</h2>' +
         '<p>This Unofficial App tab exists only inside Harley\'s Studios DMZ Ranked Unofficial App. It is injected by the Android Beta app and does not edit, upload to, or modify the dmzranked.com website.</p>' +
       '</div>';
-
-    const refresh = section.querySelector("#hs-stat-refresh");
-    if (refresh) refresh.addEventListener("click", () => updateStats(true));
-    updateStats(true);
 
     wrap.appendChild(section);
     return section;
@@ -489,20 +650,24 @@
       button.className = "hs-unofficial-tab";
       button.dataset.tab = TAB;
       button.setAttribute(TAB_ATTR, "true");
-      button.textContent = "Unofficial App";
       nav.appendChild(button);
     }
 
+    decorateTabButton(button);
     const section = ensureSection(nav);
+    ensureGlobalStats();
     bindButton(button, section);
     updateWelcome();
+    updateStats(false);
   }
 
   ensureTab();
 
   const observer = new MutationObserver(() => {
-    if (!document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`) || !document.getElementById(TAB)) {
+    if (!document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`) || !document.getElementById(TAB) || !document.getElementById("dmz-hs-active-user-stats")) {
       ensureTab();
+    } else {
+      ensureGlobalStats();
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
