@@ -2398,61 +2398,92 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
 }
 
 
-/* DMZ Ranked Log a Raid SR Summary Fix v1
-   Deliberately scoped to the one SR calculation card marked by app.js.
-   This avoids changing the rest of dmzranked.com's cards, fields and rows. */
+/* DMZ Ranked Log a Raid SR Summary Fix v3
+   Target the site's actual #preview markup directly:
+   .rowline > span + b, with rank badge nested inside #pv-cur/#pv-new.
+   Scoped only to Log a Raid on mobile. */
 @media (max-width:700px){
-  #log .hs-app-raid-sr-summary{
+  #log #preview{
     box-sizing:border-box!important;
-    padding:12px 14px!important;
+    padding:14px 16px!important;
     overflow:hidden!important;
   }
 
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row{
+  #log #preview .rowline{
     box-sizing:border-box!important;
-    display:flex!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
     align-items:center!important;
-    justify-content:space-between!important;
-    gap:12px!important;
+    column-gap:18px!important;
     width:100%!important;
     min-width:0!important;
-    min-height:38px!important;
-    margin:0!important;
-    padding:7px 0!important;
+    padding:8px 0!important;
   }
 
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row > *{
+  #log #preview .rowline > span:first-child{
     min-width:0!important;
-    margin-top:0!important;
-    margin-bottom:0!important;
-  }
-
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row > :first-child{
-    flex:1 1 auto!important;
+    max-width:100%!important;
+    overflow-wrap:anywhere!important;
     text-align:left!important;
   }
 
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-row > :last-child{
-    flex:0 0 auto!important;
-    margin-left:auto!important;
+  #log #preview .rowline > b{
+    min-width:0!important;
+    margin:0!important;
+    justify-self:end!important;
     text-align:right!important;
     white-space:nowrap!important;
   }
 
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-current,
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-new{
-    min-height:48px!important;
+  /* The rank value is a text node ("0 ·") plus the badge.
+     Make that container its own flex row so the text can never sit under
+     or collide with the badge. */
+  #log #preview #pv-cur,
+  #log #preview #pv-new{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:9px!important;
+    white-space:nowrap!important;
+    line-height:1!important;
   }
 
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-current img,
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-new img{
-    max-width:38px!important;
-    max-height:42px!important;
-    object-fit:contain!important;
+  #log #preview #pv-cur .badge,
+  #log #preview #pv-new .badge{
+    flex:0 0 auto!important;
+    margin:0!important;
+    vertical-align:middle!important;
   }
 
-  #log .hs-app-raid-sr-summary .hs-app-raid-sr-net{
-    margin-top:3px!important;
-    padding-top:10px!important;
+  #log #preview hr{
+    margin:10px 0!important;
+  }
+
+  #log #preview #pv-net{
+    line-height:1!important;
+  }
+}
+
+@media (max-width:420px){
+  #log #preview .rowline{
+    column-gap:12px!important;
+  }
+
+  #log #preview #pv-cur,
+  #log #preview #pv-new{
+    gap:6px!important;
+  }
+
+  #log #preview #pv-cur .badge,
+  #log #preview #pv-new .badge{
+    padding-right:8px!important;
+    font-size:10px!important;
+    letter-spacing:.55px!important;
+  }
+
+  #log #preview #pv-cur .badge::before,
+  #log #preview #pv-new .badge::before{
+    width:20px!important;
+    height:24px!important;
   }
 }
