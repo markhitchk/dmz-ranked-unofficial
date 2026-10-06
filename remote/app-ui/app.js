@@ -608,6 +608,66 @@
     }
   }
 
+  function compactSeasonText(el) {
+    return clean(el && (el.innerText || el.textContent));
+  }
+
+  // App-only presentation: combine DMZ Ranked's season artwork/details and its
+  // live countdown into one short mobile header. The website remains the data
+  // source; its original #seasonBanner/#seasonBar continue rendering underneath
+  // and are hidden only after this compact mirror is ready.
+  function syncCompactSeasonHeader() {
+    const board = document.getElementById("board");
+    if (!board) return;
+
+    const bannerHost = document.getElementById("seasonBanner");
+    const barHost = document.getElementById("seasonBar");
+    const banner = bannerHost && bannerHost.querySelector(".season-banner");
+    const bar = barHost && barHost.querySelector(".season-bar");
+    if (!bannerHost || !barHost || !banner || !bar) {
+      board.classList.remove("hs-compact-season-ready");
+      return;
+    }
+
+    let compact = document.getElementById("hs-compact-season-header");
+    if (!compact) {
+      compact = document.createElement("div");
+      compact.id = "hs-compact-season-header";
+      compact.setAttribute("aria-label", "Current DMZ Ranked season");
+      board.insertBefore(compact, bannerHost);
+    }
+
+    const kicker = compactSeasonText(banner.querySelector(".sb-kicker")) || "Current season";
+    const seasonName = compactSeasonText(banner.querySelector(".sb-name")) ||
+      compactSeasonText(bar.querySelector(".s-name")) || "Season";
+    const dateNode = bar.querySelector(".s-dates");
+    const dateRange = compactSeasonText(dateNode) ||
+      compactSeasonText(banner.querySelector(".sb-sub")) || "";
+    const countdown = bar.querySelector("#seasonCountdown");
+    const status = bar.querySelector(".s-status");
+
+    const countdownHtml = countdown
+      ? '<div class="hs-compact-season-count">' + countdown.innerHTML + '</div>'
+      : '<div class="hs-compact-season-status">' + clean(status && status.textContent) + '</div>';
+
+    const nextHtml =
+      '<div class="hs-compact-season-copy">' +
+        '<div class="hs-compact-season-kicker">' + kicker + '</div>' +
+        '<div class="hs-compact-season-name">' + seasonName + '</div>' +
+        '<div class="hs-compact-season-range">' + dateRange + '</div>' +
+      '</div>' +
+      countdownHtml;
+
+    if (compact.innerHTML !== nextHtml) compact.innerHTML = nextHtml;
+
+    const bg = clean(banner.style && banner.style.backgroundImage);
+    if (bg) compact.style.setProperty("--hs-season-bg", bg);
+    else compact.style.removeProperty("--hs-season-bg");
+
+    compact.classList.toggle("hasimg", Boolean(bg));
+    board.classList.add("hs-compact-season-ready");
+  }
+
   function decorateTabButton(button) {
     if (!button) return;
     const channel = appChannelLabel();
@@ -759,6 +819,7 @@
     decorateTabButton(button);
     const section = ensureSection(nav);
     ensureGlobalStats();
+    syncCompactSeasonHeader();
     bindButton(button, section);
     updateWelcome();
     updateStats(false);
@@ -771,6 +832,7 @@
       ensureTab();
     } else {
       ensureGlobalStats();
+      syncCompactSeasonHeader();
       const appTab = document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`);
       renderTabNotification(appTab);
     }
@@ -784,6 +846,7 @@
 
   window.setInterval(() => {
     updateWelcome();
+    syncCompactSeasonHeader();
     const appTab = document.querySelector(`.wrap nav.tabs [${TAB_ATTR}]`);
     renderTabNotification(appTab);
   }, 1500);
