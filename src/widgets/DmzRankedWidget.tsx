@@ -190,7 +190,7 @@ export function DmzRankedWidget({
               color: WHITE,
               fontSize: 13,
               fontWeight: 'bold',
-              flex: 1
+              width: Math.max(50, width - 112)
             }}
           />
           <TextWidget
@@ -232,7 +232,7 @@ export function DmzRankedWidget({
             text="MADE BY HARLEY'S STUDIOS"
             truncate="END"
             maxLines={1}
-            style={{ color: MUTED, fontSize: 5, fontWeight: 'bold', flex: 1 }}
+            style={{ color: MUTED, fontSize: 5, fontWeight: 'bold', width: Math.max(50, width - 95) }}
           />
           <TextWidget
             text={stats?.fromCache ? 'CACHED' : 'LIVE'}
@@ -392,7 +392,7 @@ export function DmzRankedWidget({
             >
               <TextWidget
                 text={stats ? `${formatNumber(stats.sr)} SR` : '… SR'}
-                style={{ color: WHITE, fontSize: 26, fontWeight: 'bold', flex: 1.3 }}
+                style={{ color: WHITE, fontSize: 26, fontWeight: 'bold', width: Math.max(70, usableWidth * 0.42) }}
               />
               <TextWidget
                 text={
@@ -404,7 +404,7 @@ export function DmzRankedWidget({
                   color: WHITE,
                   fontSize: 14,
                   fontWeight: 'bold',
-                  flex: 1,
+                  width: Math.max(55, usableWidth * 0.28),
                   textAlign: 'center'
                 }}
               />
@@ -419,7 +419,7 @@ export function DmzRankedWidget({
                         : RED,
                   fontSize: 13,
                   fontWeight: 'bold',
-                  flex: 1,
+                  width: Math.max(55, usableWidth * 0.30),
                   textAlign: 'right'
                 }}
               />
@@ -451,7 +451,7 @@ export function DmzRankedWidget({
             }
             truncate="END"
             maxLines={1}
-            style={{ color: MUTED, fontSize: 9, flex: 1 }}
+            style={{ color: MUTED, fontSize: 9, width: Math.max(100, width - 150) }}
           />
           <TextWidget
             text={stats?.seasonName?.toUpperCase() || 'SEASON'}
@@ -587,7 +587,7 @@ export function DmzRankedWidget({
           >
             <TextWidget
               text={stats ? `${formatNumber(stats.sr)} SR` : '… SR'}
-              style={{ color: WHITE, fontSize: 19, fontWeight: 'bold', flex: 1 }}
+              style={{ color: WHITE, fontSize: 19, fontWeight: 'bold', width: Math.max(55, width - 130) }}
             />
             <TextWidget
               text={
@@ -633,7 +633,7 @@ export function DmzRankedWidget({
           text={stats ? `UPDATED ${timeLabel(stats.updatedAt)}` : 'DMZRANKED.COM • LIVE DATA'}
           truncate="END"
           maxLines={1}
-          style={{ color: MUTED, fontSize: 7, flex: 1 }}
+          style={{ color: MUTED, fontSize: 7, width: Math.max(80, width - 120) }}
         />
         <TextWidget
           text={stats?.seasonName?.toUpperCase() || 'SEASON'}
