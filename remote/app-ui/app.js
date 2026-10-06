@@ -557,7 +557,10 @@
     let count = 0;
     const seen = new Set();
 
-    ["communityDot", "updatesDot", "watchDot"].forEach((id) => {
+    // The website already decides when these dots are active. Mirror only the
+    // website's top navigation indicators so App does not double-count the same
+    // Community alert again from Community subtabs / review counters.
+    ["communityDot", "updatesDot"].forEach((id) => {
       const dot = document.getElementById(id);
       if (dot && elementIsVisible(dot)) {
         count += 1;
@@ -565,18 +568,16 @@
       }
     });
 
-    const review = document.getElementById("reviewCount");
-    if (review && elementIsVisible(review)) {
-      const value = parseInt(clean(review.textContent), 10);
-      count += Number.isFinite(value) && value > 0 ? value : 1;
-      seen.add(review);
+    // Future-proof for any new top-level website tab dot.
+    const nav = findSiteNav();
+    if (nav) {
+      nav.querySelectorAll(".tab-dot").forEach((dot) => {
+        if (!seen.has(dot) && elementIsVisible(dot)) {
+          count += 1;
+          seen.add(dot);
+        }
+      });
     }
-
-    // Future-proof for additional website notification dots without double
-    // counting the known IDs above.
-    document.querySelectorAll(".tabs .tab-dot, .subtabs .tab-dot, .sub-tabs .tab-dot").forEach((dot) => {
-      if (!seen.has(dot) && elementIsVisible(dot)) count += 1;
-    });
 
     return Math.max(0, count);
   }
@@ -588,21 +589,24 @@
 
     if (!badge) {
       badge = document.createElement("span");
-      badge.className = "hs-unofficial-tab-notify";
+      badge.className = "tab-dot hs-unofficial-tab-notify";
       badge.setAttribute("aria-label", "Website notifications");
       badge.hidden = true;
       button.appendChild(badge);
     }
 
-    const next = count > 99 ? "99+" : String(count);
     if (count > 0) {
-      if (badge.textContent !== next) badge.textContent = next;
+      badge.textContent = "";
       badge.hidden = false;
+      badge.title = count + " website notification" + (count === 1 ? "" : "s");
+      badge.setAttribute("aria-label", badge.title);
       button.classList.add("has-site-notifications");
       button.setAttribute("data-hs-site-notification-count", String(count));
     } else {
-      if (badge.textContent) badge.textContent = "";
+      badge.textContent = "";
       badge.hidden = true;
+      badge.removeAttribute("title");
+      badge.setAttribute("aria-label", "Website notifications");
       button.classList.remove("has-site-notifications");
       button.removeAttribute("data-hs-site-notification-count");
     }
@@ -629,12 +633,23 @@
       return;
     }
 
+    const heroInner = document.querySelector("header.top .hero-inner");
     let compact = document.getElementById("hs-compact-season-header");
     if (!compact) {
       compact = document.createElement("div");
       compact.id = "hs-compact-season-header";
       compact.setAttribute("aria-label", "Current DMZ Ranked season");
-      board.insertBefore(compact, bannerHost);
+    }
+
+    // Put the app-only compact season card inside dmzranked.com's real hero so
+    // the title/status/countdown read as one mobile header. Fall back to the
+    // board if the website changes its header markup.
+    if (heroInner) {
+      if (compact.parentNode !== heroInner) heroInner.appendChild(compact);
+      compact.classList.add("hs-season-in-hero");
+    } else {
+      if (compact.parentNode !== board) board.insertBefore(compact, bannerHost);
+      compact.classList.remove("hs-season-in-hero");
     }
 
     const kicker = compactSeasonText(banner.querySelector(".sb-kicker")) || "Current season";
