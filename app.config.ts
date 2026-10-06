@@ -13,7 +13,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: './assets/dmz_ranked_logo.png',
     scheme: 'dmzranked',
     userInterfaceStyle: 'dark',
-    newArchEnabled: true,
     ios: { bundleIdentifier: packageId, buildNumber: '165', supportsTablet: true },
     android: {
       package: packageId,
