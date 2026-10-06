@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { requireOptionalNativeModule } from 'expo-modules-core';
+import { requireOptionalNativeModule } from 'expo';
 
 type DmzMigrationNative = {
   readPeerPayload(): Promise<string | null>;
