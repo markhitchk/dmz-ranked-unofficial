@@ -634,7 +634,7 @@ nav.tabs button.hs-unofficial-tab .hs-unofficial-tab-notify[hidden]{
   max-width:940px;
   margin:14px auto 16px;
   position:relative;
-  z-index:2147479999;
+  z-index:1;
   color:var(--txt,#e9ede9);
   font-family:var(--f-body,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif);
 }
@@ -1039,7 +1039,7 @@ input,select,textarea{font-size:max(16px,1em)}
   position:fixed;
   right:14px;
   bottom:18px;
-  z-index:2147482000;
+  z-index:80;
   width:44px;
   height:44px;
   border:1px solid rgba(246,196,83,.62);
@@ -1215,5 +1215,31 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab .hs-unofficial-tab-notify{
     padding-right:3px!important;
     font-size:10.5px!important;
   }
+}
+
+/* Site modal stacking compatibility.
+   dmzranked.com owns its modal system: .modal is fixed at z-index:100 and the
+   modal card sits above its backdrop. App-injected cards must remain in normal
+   page stacking so Season, Profile and Raid Result modals can cover them. */
+#dmz-harleys-studios-app-message,
+#dmz-hs-active-user-stats{
+  z-index:1!important;
+}
+#hs-app-back-top{
+  z-index:80!important;
+}
+body > .modal,
+#profileModal,
+#resultModal,
+#seasonPop{
+  z-index:100!important;
+}
+body > .modal .modal-card,
+body > .modal .rcard{
+  position:relative;
+  z-index:2;
+}
+body > .modal .modal-backdrop{
+  z-index:0;
 }
 
