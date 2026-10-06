@@ -553,38 +553,82 @@
   // exposes tab dots for Community, Updates and Watch, plus a numeric Under
   // Review badge. The app does not invent unread state; it only reflects what
   // the loaded website is already showing.
-  function websiteNotificationCount() {
-    let count = 0;
+  const APP_NOTIFICATION_SEEN_KEY = "hs_dmz_app_seen_website_notifications";
+
+  function safeWebsiteNotificationValue(name, fallback) {
+    try {
+      const fn = window[name];
+      if (typeof fn === "function") {
+        const value = fn();
+        return clean(value == null ? fallback : value);
+      }
+    } catch (_) {}
+    return clean(fallback);
+  }
+
+  function websiteNotificationState() {
+    const active = [];
     const seen = new Set();
 
-    // The website already decides when these dots are active. Mirror only the
-    // website's top navigation indicators so App does not double-count the same
-    // Community alert again from Community subtabs / review counters.
-    ["communityDot", "updatesDot"].forEach((id) => {
-      const dot = document.getElementById(id);
+    // Use the website's own top-level dots as the source of truth, but include
+    // the website's underlying version/count where available. That means a new
+    // Community report or changelog version can light the App dot again even if
+    // the website dot was already active before.
+    [
+      { id: "communityDot", value: () => safeWebsiteNotificationValue("watchTotal", "1") },
+      { id: "updatesDot", value: () => safeWebsiteNotificationValue("newestChangelogV", "1") }
+    ].forEach((item) => {
+      const dot = document.getElementById(item.id);
       if (dot && elementIsVisible(dot)) {
-        count += 1;
+        active.push(item.id + ":" + item.value());
         seen.add(dot);
       }
     });
 
-    // Future-proof for any new top-level website tab dot.
+    // Future-proof any additional top-level site notification dot.
     const nav = findSiteNav();
     if (nav) {
       nav.querySelectorAll(".tab-dot").forEach((dot) => {
-        if (!seen.has(dot) && elementIsVisible(dot)) {
-          count += 1;
-          seen.add(dot);
-        }
+        if (seen.has(dot) || !elementIsVisible(dot)) return;
+        const owner = dot.closest("[data-tab]");
+        const key = clean(dot.id || (owner && owner.getAttribute("data-tab")) || "site");
+        active.push(key + ":1");
+        seen.add(dot);
       });
     }
 
-    return Math.max(0, count);
+    active.sort();
+    return {
+      count: active.length,
+      fingerprint: active.join("|")
+    };
+  }
+
+  function websiteNotificationCount() {
+    return websiteNotificationState().count;
+  }
+
+  function readAppNotificationSeen() {
+    try {
+      return clean(localStorage.getItem(APP_NOTIFICATION_SEEN_KEY));
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function markAppNotificationsSeen() {
+    const state = websiteNotificationState();
+    try {
+      localStorage.setItem(APP_NOTIFICATION_SEEN_KEY, state.fingerprint);
+    } catch (_) {}
+    return state;
   }
 
   function renderTabNotification(button) {
     if (!button) return;
-    const count = websiteNotificationCount();
+    const state = websiteNotificationState();
+    const seenFingerprint = readAppNotificationSeen();
+    const hasUnreadForApp = state.count > 0 && state.fingerprint !== seenFingerprint;
     let badge = button.querySelector(".hs-unofficial-tab-notify");
 
     if (!badge) {
@@ -595,13 +639,13 @@
       button.appendChild(badge);
     }
 
-    if (count > 0) {
+    if (hasUnreadForApp) {
       badge.textContent = "";
       badge.hidden = false;
-      badge.title = count + " website notification" + (count === 1 ? "" : "s");
+      badge.title = state.count + " new website notification" + (state.count === 1 ? "" : "s");
       badge.setAttribute("aria-label", badge.title);
       button.classList.add("has-site-notifications");
-      button.setAttribute("data-hs-site-notification-count", String(count));
+      button.setAttribute("data-hs-site-notification-count", String(state.count));
     } else {
       badge.textContent = "";
       badge.hidden = true;
@@ -866,6 +910,13 @@
     section.style.removeProperty("display");
     section.style.removeProperty("visibility");
     section.classList.add("active");
+
+    // Opening the App tab acknowledges the App tab's aggregate notification dot,
+    // just like opening Community or Updates acknowledges their own indicators.
+    // This does NOT clear the website's Community/Updates dots; those remain
+    // independent until the user opens those website sections.
+    markAppNotificationsSeen();
+    renderTabNotification(button);
 
     updateWelcome();
     ensureGlobalStats();
