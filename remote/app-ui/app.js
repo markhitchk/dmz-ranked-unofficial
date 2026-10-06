@@ -1547,7 +1547,7 @@
         :!state.protected
           ?name+" · not PIN protected yet."
           :state.verified
-            ?name+" · protected & verified on this device."
+            ?name+" · Verified on this device"
             :name+" · PIN protected. Unlock this device to log raids.";
 
       if(cover){
@@ -1582,7 +1582,7 @@
           "<div class='hs-pin-cover-brand'>"+
             "<img class='hs-pin-cover-logo' alt='DMZ Ranked app logo'>"+
             "<div class='hs-pin-cover-copy'>"+
-              "<span class='hs-pin-cover-kicker'>Covered by Harley's Studios</span>"+
+              "<span class='hs-pin-cover-kicker'>Protected Autofill by Harley's Studios</span>"+
               "<span class='hs-pin-cover-appname'>DMZ Ranked App</span>"+
               "<span class='hs-pin-cover-state'>Checking operator protection…</span>"+
             "</div>"+
