@@ -525,13 +525,66 @@ public class MainActivity extends Activity {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
                 if (url != null && isDmzUrl(Uri.parse(url))) {
-                    loadingStatusPollToken++;
+                    final int startToken = ++loadingStatusPollToken;
                     operatorMonitorToken++;
                     siteNotificationMonitorToken++;
                     siteNotificationBaselineReady = false;
                     seenSiteNotifications.clear();
                     resetLoadingSiteStatus();
                     showLoadingScreen("Connecting to dmzranked.com…", 5);
+
+                    // Do not let a slow/hung subresource keep the native startup
+                    // overlay on screen forever. The website can be usable before
+                    // WebView fires onPageFinished().
+                    view.postDelayed(() -> {
+                        if (isFinishing() || startToken != loadingStatusPollToken) return;
+                        try {
+                            String currentUrl = view.getUrl();
+                            if (currentUrl == null || !isDmzUrl(Uri.parse(currentUrl))) return;
+                        } catch (Throwable ignored) {
+                            return;
+                        }
+                        if (loadingOverlay != null
+                                && loadingOverlay.getVisibility() == View.VISIBLE) {
+                            updateLoadingVerbose("Website is taking longer than expected • opening page…");
+                            hideLoadingScreen();
+                        }
+                    }, 10000L);
+                }
+            }
+
+            @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                try {
+                    if (url == null || !isDmzUrl(Uri.parse(url))) return;
+
+                    // A page can be visually ready while a tracker/image/request is
+                    // still pending. Install app overrides as soon as committed
+                    // content is visible instead of waiting for every resource.
+                    applyDesktopViewportIfNeeded(view);
+                    view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
+                    view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
+                    view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
+                    installRemoteAppUi(view);
+                    applySavedOperatorToWebsite(0);
+
+                    view.postDelayed(() -> {
+                        if (isFinishing()) return;
+                        try {
+                            String currentUrl = view.getUrl();
+                            if (currentUrl == null || !isDmzUrl(Uri.parse(currentUrl))) return;
+                        } catch (Throwable ignored) {
+                            return;
+                        }
+                        if (loadingOverlay != null
+                                && loadingOverlay.getVisibility() == View.VISIBLE) {
+                            updateLoadingVerbose("Page visible • applying app interface…");
+                            hideLoadingScreen();
+                        }
+                    }, 650L);
+                } catch (Throwable error) {
+                    Log.d(TAG, "Could not install app UI on visible page", error);
                 }
             }
 
