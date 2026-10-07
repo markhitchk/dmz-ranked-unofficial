@@ -28,7 +28,7 @@ import {
 } from '../services/operatorBackup';
 import { getLastNotificationSync } from '../services/backgroundNotificationSync';
 import type { AppSettings, ContentSize } from '../types';
-import { colors, condensedFont } from '../theme';
+import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
 
 const PAYPAL_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
@@ -458,7 +458,7 @@ export function SettingsPanel({
     matches(q, 'beta program discord ticker builder obs themed experimental');
   const showHelp = matches(
     q,
-    'help community feedback report support discord main group'
+    'help community feedback report support app website discord main group rankings rules server'
   );
   const showTransfer = matches(
     q,
@@ -495,7 +495,7 @@ export function SettingsPanel({
       statusBarTranslucent
       navigationBarTranslucent
     >
-      <AppSafeArea>
+      <AppSafeArea contentScale={contentScaleFactor(settings.contentSize)}>
         <View style={styles.toolbar}>
           <Pressable
             accessibilityLabel="Back"
@@ -1010,30 +1010,38 @@ export function SettingsPanel({
 
           {showHelp ? (
             <>
-              <SectionLabel>HELP &amp; COMMUNITY</SectionLabel>
+              <SectionLabel>APP SUPPORT</SectionLabel>
               <ActionCard
-                title="Send app feedback / report"
-                summary={`Report ${Platform.OS === 'android' ? 'Android' : 'iOS'} app bugs or request app features.`}
+                title="Report an app problem"
+                summary={`Report ${Platform.OS === 'android' ? 'Android' : 'iOS'} client bugs, app loading, appearance, notifications, widgets, or request app features.`}
                 label="OPEN ›"
                 onPress={() => onAction({ type: 'feedback' })}
               />
               <ActionCard
                 title="App Support Discord"
-                summary="Help specifically for the unofficial app."
+                summary="Harley's Studios support for the unofficial DMZ Ranked app only."
                 label="OPEN ↗"
                 onPress={() => open(APP_SUPPORT_DISCORD)}
               />
               <ActionCard
-                title="Main DMZ Ranked Discord"
-                summary="Open the main DMZ Ranked community Discord."
+                title="Join App Beta Group"
+                summary="Testing access and beta-app discussion."
+                label="OPEN ↗"
+                onPress={() => open(BETA_GROUP)}
+              />
+
+              <SectionLabel>WEBSITE SUPPORT</SectionLabel>
+              <ActionCard
+                title="DMZ Ranked website support"
+                summary="Use this for dmzranked.com rankings, rules, raid/operator data, moderation, website behavior, or server-side issues."
                 label="OPEN ↗"
                 onPress={() => open(MAIN_DISCORD)}
               />
               <ActionCard
-                title="Join App Beta Group"
-                summary="Open the DMZ Ranked app beta Google Group."
+                title="Support DMZ Ranked creators"
+                summary="Open the creators' website support/donation link."
                 label="OPEN ↗"
-                onPress={() => open(BETA_GROUP)}
+                onPress={() => open(PAYPAL_URL)}
               />
             </>
           ) : null}
@@ -1119,6 +1127,7 @@ export function SettingsPanel({
           positiveLabel="UNLOCK"
           negativeLabel="CANCEL"
           animations={settings.appAnimations}
+          contentScale={contentScaleFactor(settings.contentSize)}
           input={{
             value: pin,
             placeholder: 'Developer PIN',
@@ -1146,6 +1155,7 @@ export function SettingsPanel({
           message="Choose one of the local operator backups."
           negativeLabel="CANCEL"
           animations={settings.appAnimations}
+          contentScale={contentScaleFactor(settings.contentSize)}
           choices={backupNames.map(name => ({
             label: name,
             selected:
@@ -1171,6 +1181,7 @@ export function SettingsPanel({
           positiveLabel="CLEAR DATA"
           negativeLabel="CANCEL"
           animations={settings.appAnimations}
+          contentScale={contentScaleFactor(settings.contentSize)}
           onPositive={() => {
             onAction({ type: 'clear-data' });
             setDialog(null);
@@ -1186,6 +1197,7 @@ export function SettingsPanel({
           positiveLabel="RESET"
           negativeLabel="CANCEL"
           animations={settings.appAnimations}
+          contentScale={contentScaleFactor(settings.contentSize)}
           onPositive={() => {
             onReset();
             setDialog(null);

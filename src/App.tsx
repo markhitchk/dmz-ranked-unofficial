@@ -44,7 +44,7 @@ import {
   publishMigrationPayload
 } from './services/peerMigration';
 import { renderDmzWidget } from './widgets/widgetTaskHandler';
-import { colors } from './theme';
+import { colors, contentScaleFactor } from './theme';
 import type { AppChannel } from './types';
 import { AppSafeArea } from './components/AppSafeArea';
 
@@ -60,11 +60,7 @@ type AppDialog = {
 } | null;
 
 export default function App() {
-  return (
-    <AppSafeArea initialWindow>
-      <AppContent />
-    </AppSafeArea>
-  );
+  return <AppContent />;
 }
 
 function AppContent() {
@@ -366,7 +362,11 @@ function AppContent() {
   }
 
   return (
-    <View style={styles.safe}>
+    <AppSafeArea
+      initialWindow
+      contentScale={contentScaleFactor(settings.contentSize)}
+    >
+      <View style={styles.safe}>
 
       <AppHeader
         channel={channel}
@@ -402,6 +402,7 @@ function AppContent() {
       <FeedbackPanel
         visible={feedbackOpen}
         animations={settings.appAnimations}
+        contentSize={settings.contentSize}
         onClose={() => setFeedbackOpen(false)}
       />
 
@@ -412,6 +413,7 @@ function AppContent() {
         positiveLabel={appDialog?.positiveLabel ?? 'OK'}
         negativeLabel={appDialog?.negativeLabel}
         animations={settings.appAnimations}
+        contentScale={contentScaleFactor(settings.contentSize)}
         onPositive={() => {
           const action = appDialog?.onPositive;
           setAppDialog(null);
@@ -419,7 +421,8 @@ function AppContent() {
         }}
         onNegative={() => setAppDialog(null)}
       />
-    </View>
+      </View>
+    </AppSafeArea>
   );
 }
 

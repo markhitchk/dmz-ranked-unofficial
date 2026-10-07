@@ -15,7 +15,8 @@ import { DmzDialog } from './DmzDialog';
 import { DmzIcon } from './DmzIcon';
 import { DmzActionCard, DmzCard, DmzGoldButton } from './DmzSurface';
 import { sendFeedback } from '../services/feedback';
-import { colors, condensedFont } from '../theme';
+import { colors, condensedFont, contentScaleFactor } from '../theme';
+import type { ContentSize } from '../types';
 
 const SUPPORT_DISCORD_URL = 'https://discord.gg/kdHneTZkyd';
 const MAIN_DISCORD_URL = 'https://discord.gg/jTaTHqw45F';
@@ -33,10 +34,12 @@ const CATEGORIES = [
 export function FeedbackPanel({
   visible,
   animations,
+  contentSize,
   onClose
 }: {
   visible: boolean;
   animations: boolean;
+  contentSize: ContentSize;
   onClose: () => void;
 }) {
   const [category, setCategory] = useState(CATEGORIES[0]!);
@@ -96,7 +99,7 @@ export function FeedbackPanel({
       statusBarTranslucent
       navigationBarTranslucent
     >
-      <AppSafeArea>
+      <AppSafeArea contentScale={contentScaleFactor(contentSize)}>
         <View style={styles.toolbar}>
           <Pressable style={styles.back} onPress={onClose}>
             <DmzIcon name="back" size={24} />
@@ -224,26 +227,35 @@ export function FeedbackPanel({
             </Pressable>
           </View>
 
-          <Text style={styles.section}>DISCORD</Text>
-
+          <Text style={styles.section}>APP SUPPORT ZONE</Text>
           <SupportButton
             title="App Support Discord"
             onPress={() => void Linking.openURL(SUPPORT_DISCORD_URL)}
           />
           <SupportButton
-            title="Main DMZ Ranked Discord"
-            onPress={() => void Linking.openURL(MAIN_DISCORD_URL)}
-          />
-          <SupportButton
             title="Join App Beta Group"
             onPress={() => void Linking.openURL(BETA_GROUP_URL)}
           />
-
           <Text style={styles.note}>
-            Use App Support for this unofficial Android client. For problems
-            with the DMZ Ranked website itself, website data, rankings, rules,
-            or server-side behavior, use the Main DMZ Ranked Discord instead.
+            Use this zone for the unofficial app, WebView, loading, appearance,
+            notifications, widgets, compatibility, or app-only features.
           </Text>
+
+          <Text style={styles.section}>WEBSITE SUPPORT ZONE</Text>
+          <DmzCard>
+            <View style={styles.intro}>
+              <Text style={styles.introTitle}>DMZRANKED.COM SUPPORT</Text>
+              <Text style={styles.copy}>
+                Website rankings, rules, raid/operator data, moderation,
+                accounts, and server-side behavior are controlled by the DMZ
+                Ranked website team.
+              </Text>
+            </View>
+          </DmzCard>
+          <SupportButton
+            title="Main DMZ Ranked Discord"
+            onPress={() => void Linking.openURL(MAIN_DISCORD_URL)}
+          />
         </ScrollView>
 
         <DmzDialog
@@ -252,6 +264,7 @@ export function FeedbackPanel({
           message="Choose the type of app feedback."
           negativeLabel="CANCEL"
           animations={animations}
+          contentScale={contentScaleFactor(contentSize)}
           operatorPicker
           choices={CATEGORIES.map(item => ({
             label: item,
@@ -270,6 +283,7 @@ export function FeedbackPanel({
           message={resultMessage}
           positiveLabel="OK"
           animations={animations}
+          contentScale={contentScaleFactor(contentSize)}
           onPositive={() => {
             setResultTitle('');
             setResultMessage('');
