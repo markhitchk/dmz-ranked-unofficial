@@ -755,7 +755,7 @@ export function SettingsPanel({
                     </View>
                   </View>
                   <Text style={styles.settingsHomeMeta}>
-                    {channel === 'beta' ? 'BETA • ' : ''}Version {version} • Build {build} • {settings.experienceVersion === 'v1' ? 'V1 Legacy target' : 'V2 Current'}
+                    {channel === 'beta' ? 'BETA • ' : ''}Version {version} • Build {build} • {settings.experienceVersion === 'v1' ? 'V1 Legacy' : 'V2 Current'}
                   </Text>
                 </View>
               </DmzCard>
@@ -842,7 +842,7 @@ export function SettingsPanel({
               {developerUnlocked ? (
                 <ActionCard
                   title="Developer options"
-                  summary={`Developer Mode is enabled • ${settings.experienceVersion === 'v1' ? 'V1 Legacy target' : 'V2 Current'}`}
+                  summary={`Developer Mode is enabled • ${settings.experienceVersion === 'v1' ? 'V1 Legacy' : 'V2 Current'}`}
                   label="OPEN ›"
                   icon={<DmzIcon name="settings" size={28} color={colors.gold} />}
                   onPress={() => setQuery('developer')}
@@ -1421,7 +1421,7 @@ export function SettingsPanel({
                   <View style={styles.experienceCard}>
                     <Text style={styles.cardTitleCondensed}>App experience version</Text>
                     <Text style={styles.cardSummary}>
-                      V2 is the current React Native app. V1 identifies the legacy Java/non-React experience for compatibility work.
+                      V2 is the current React Native app. V1 launches the embedded legacy Java/non-React app sourced from the main branch.
                     </Text>
                     <View style={styles.experienceRow}>
                       <Pressable
@@ -1461,7 +1461,7 @@ export function SettingsPanel({
                       </Pressable>
                     </View>
                     <Text style={styles.experienceNotice}>
-                      Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java target' : 'V2 Current React Native'}. The V1 selector is persisted for the native legacy handoff; V2 remains the active runtime until that host is bundled.
+                      Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java' : 'V2 Current React Native'}. Changing to V1 opens the native Java experience; Android Back returns to V2 so you can switch versions again.
                     </Text>
                   </View>
                 </DmzCard>
