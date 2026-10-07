@@ -329,6 +329,23 @@ function AppContent() {
         webRef.current?.captureOperatorBackup();
         return;
 
+      case 'select-operator': {
+        const operatorName = action.operatorName.trim();
+        if (!operatorName) return;
+        update('selectedOperator', operatorName);
+        update('operatorVerified', false);
+        update('operatorSource', 'App operator picker');
+        update('operatorSyncMs', Date.now());
+        const selected = await webRef.current?.selectOperator(operatorName);
+        if (!selected) {
+          setDialog({
+            title: 'SELECT OPERATOR',
+            message: 'Open DMZ Ranked before switching the selected operator.'
+          });
+        }
+        return;
+      }
+
       case 'restore-operator': {
         const restored = await webRef.current?.restoreOperatorBackup(
           action.operatorName
