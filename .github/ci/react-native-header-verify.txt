@@ -1,2 +1,2 @@
 React Native header verification trigger.
-Run: compact-header-url-bar
+Run: compact-header-url-bar-corrected
