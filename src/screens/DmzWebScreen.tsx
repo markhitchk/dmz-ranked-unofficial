@@ -1,6 +1,7 @@
 import React, {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -21,10 +22,9 @@ import { WebView } from 'react-native-webview';
 import type { AppSettings } from '../types';
 import { colors, condensedFont } from '../theme';
 import { LoadingOverlay } from '../components/LoadingOverlay';
-import {
-  buildRemoteUiInjection,
-  loadRemoteAppUi
-} from '../services/remoteAppUi';
+import { loadRemoteAppUi } from '../services/remoteAppUi';
+import { buildRemoteUiInjection } from '../services/appUiInjection';
+import { AppUiLoadGate } from '../services/appUiLoadGate';
 import {
   createBridgeBootstrap,
   parseBridgeMessage
@@ -44,7 +44,7 @@ const MAIN_DISCORD_URL = 'https://discord.gg/jTaTHqw45F';
 const BETA_GROUP_URL = 'https://groups.google.com/g/dmz-ranked';
 
 const DESKTOP_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36 DMZRankedApp/1.0.62';
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36 DMZRankedApp/1.0.63';
 
 export type DmzWebHandle = {
   reload: () => void;
@@ -151,7 +151,27 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('Starting DMZ Ranked…');
     const [failed, setFailed] = useState(false);
+    const [failureKind, setFailureKind] = useState<'network' | 'interface'>('network');
     const overlayOpacity = useRef(new Animated.Value(1)).current;
+    const gate = useRef(new AppUiLoadGate()).current;
+    const page = useRef({ id: 0, url: initialUrl.current, loaded: false, requiresOverrides: settings.appUiOverrides });
+    const payload = useRef<Promise<{ css: string; js: string }> | null>(null);
+    const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearLoadTimers = useCallback(() => {
+      if (finishTimer.current) clearTimeout(finishTimer.current);
+      if (readyTimer.current) clearTimeout(readyTimer.current);
+      if (backupTimer.current) clearTimeout(backupTimer.current);
+      finishTimer.current = readyTimer.current = backupTimer.current = null;
+    }, []);
+
+    useEffect(() => () => {
+      gate.cancel();
+      clearLoadTimers();
+      overlayOpacity.stopAnimation();
+    }, [clearLoadTimers, gate, overlayOpacity]);
 
     const bridge = useMemo(() => createBridgeBootstrap(channel), [channel]);
 
@@ -231,15 +251,25 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       [overlayOpacity, setLoadingState]
     );
 
-    const hideOverlay = useCallback(() => {
+    const hideOverlay = useCallback((id: number) => {
+      if (!gate.claimReady(id)) return;
+      if (readyTimer.current) clearTimeout(readyTimer.current);
       setProgress(100);
       setStatus('Ready.');
       const finish = () => {
+        if (!gate.isCurrent(id)) return;
         setOverlayVisible(false);
         setLoadingState(false);
+        refreshOperator();
+        if (settings.operatorAutoSave) {
+          backupTimer.current = setTimeout(() => {
+            if (gate.isCurrent(id)) captureOperatorBackup();
+          }, 500);
+        }
       };
 
-      setTimeout(() => {
+      finishTimer.current = setTimeout(() => {
+        if (!gate.isCurrent(id)) return;
         if (!settings.appAnimations) {
           finish();
           return;
@@ -248,44 +278,73 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           toValue: 0,
           duration: 180,
           useNativeDriver: true
-        }).start(finish);
+        }).start(({ finished }) => { if (finished) finish(); });
       }, 120);
-    }, [overlayOpacity, setLoadingState, settings.appAnimations]);
+    }, [captureOperatorBackup, gate, overlayOpacity, refreshOperator, setLoadingState, settings.appAnimations, settings.operatorAutoSave]);
 
-    const applyRemoteUi = useCallback(async () => {
-      if (!settings.appUiOverrides || !webRef.current) return;
-      const { css, js } = await loadRemoteAppUi();
-      webRef.current.injectJavaScript(buildRemoteUiInjection(css, js));
-    }, [settings.appUiOverrides]);
+    const failLoad = useCallback((id: number, kind: 'network' | 'interface') => {
+      if (!gate.isCurrent(id)) return;
+      gate.fail(id);
+      clearLoadTimers();
+      overlayOpacity.stopAnimation();
+      setLoadingState(false);
+      setOverlayVisible(false);
+      setFailureKind(kind);
+      setFailed(true);
+    }, [clearLoadTimers, gate, overlayOpacity, setLoadingState]);
 
-    const handleLoadEnd = useCallback(async () => {
+    const handleLoadStart = useCallback((url: string) => {
+      clearLoadTimers();
+      const id = gate.begin(settings.appUiOverrides);
+      page.current = { id, url, loaded: false, requiresOverrides: settings.appUiOverrides };
+      payload.current = settings.appUiOverrides ? loadRemoteAppUi() : null;
+      // Attach a rejection handler immediately while the document is loading.
+      void payload.current?.catch(() => undefined);
       setFailed(false);
-      setStatus('Finalizing DMZ Ranked app interface…');
+      showOverlay('Connecting to dmzranked.com…', 5);
+    }, [clearLoadTimers, gate, settings.appUiOverrides, showOverlay]);
 
+    const handleLoad = useCallback(async (url: string) => {
+      const current = page.current;
+      const id = current.id;
+      if (url !== current.url || !gate.isCurrent(id) || current.loaded) return;
+      current.loaded = true;
+      gate.loaded(id);
+      if (!current.requiresOverrides) {
+        hideOverlay(id);
+        return;
+      }
+      setProgress(95);
+      setStatus('Installing the DMZ Ranked app interface…');
+      readyTimer.current = setTimeout(() => failLoad(id, 'interface'), 20000);
       try {
-        await applyRemoteUi();
-        setStatus('Website finishing • app interface staged…');
+        const { css, js } = await (payload.current ?? loadRemoteAppUi());
+        if (!gate.isCurrent(id)) return;
+        // BeforeContentLoaded can be skipped on Android. Ensure the original
+        // app info/bridge exists immediately before the app scripts execute.
+        webRef.current?.injectJavaScript(bridge + '\n' + buildRemoteUiInjection(css, js, id));
+        setProgress(98);
+        setStatus('Checking app styles and the App tab…');
       } catch {
-        setStatus('Website ready • app interface unavailable.');
+        failLoad(id, 'interface');
       }
-
-      refreshOperator();
-      if (settings.operatorAutoSave) {
-        setTimeout(captureOperatorBackup, 500);
-      }
-      hideOverlay();
-    }, [
-      applyRemoteUi,
-      captureOperatorBackup,
-      hideOverlay,
-      refreshOperator,
-      settings.operatorAutoSave
-    ]);
+    }, [bridge, failLoad, gate, hideOverlay]);
 
     const handleMessage = useCallback(
       (event: { nativeEvent: { data: string } }) => {
         const message = parseBridgeMessage(event.nativeEvent.data);
         if (!message) return;
+
+        if (message.type === 'app-ui-ready' || message.type === 'app-ui-error') {
+          if (!gate.isCurrent(message.pageId)) return;
+          if (message.type === 'app-ui-error') {
+            failLoad(message.pageId, 'interface');
+          } else {
+            gate.verified(message.pageId);
+            hideOverlay(message.pageId);
+          }
+          return;
+        }
 
         if (message.type === 'open-settings') {
           onOpenSettings();
@@ -337,6 +396,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       },
       [
         captureOperatorBackup,
+        failLoad,
+        gate,
+        hideOverlay,
         onOpenSettings,
         onOperatorBackupSaved,
         onUpdateSetting,
@@ -396,10 +458,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const retry = useCallback(async () => {
       const state = await NetInfo.fetch();
       if (!state.isConnected) return;
+      gate.cancel();
+      clearLoadTimers();
       setFailed(false);
       showOverlay('Connecting to dmzranked.com…', 5);
       webRef.current?.reload();
-    }, [showOverlay]);
+    }, [clearLoadTimers, gate, showOverlay]);
 
     const progressStatus = useCallback((value: number) => {
       if (value < 20) return `Connecting… ${value}%`;
@@ -424,23 +488,24 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           userAgent={settings.desktopSite ? DESKTOP_UA : undefined}
           textZoom={contentZoom(settings.contentSize)}
           injectedJavaScriptBeforeContentLoaded={bridge}
-          onLoadStart={() => {
-            setFailed(false);
-            showOverlay('Connecting to dmzranked.com…', 5);
-          }}
+          onLoadStart={event => handleLoadStart(event.nativeEvent.url)}
           onLoadProgress={event => {
-            const next = Math.round(event.nativeEvent.progress * 100);
+            if (page.current.loaded || !gate.isCurrent(page.current.id)) return;
+            const next = Math.min(94, Math.round(event.nativeEvent.progress * 100));
             setProgress(next);
             setStatus(progressStatus(next));
           }}
-          onLoadEnd={() => void handleLoadEnd()}
+          onLoad={event => void handleLoad(event.nativeEvent.url)}
           onMessage={handleMessage}
           onNavigationStateChange={handleNavigation}
           onShouldStartLoadWithRequest={handleShouldStart}
-          onError={() => {
-            setLoadingState(false);
-            setOverlayVisible(false);
-            setFailed(true);
+          onError={event => {
+            if (event.nativeEvent.url === page.current.url) failLoad(page.current.id, 'network');
+          }}
+          onHttpError={event => {
+            if (event.nativeEvent.url === page.current.url && event.nativeEvent.statusCode >= 400) {
+              failLoad(page.current.id, 'network');
+            }
           }}
           onFileDownload={() =>
             Alert.alert(
@@ -476,16 +541,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             <View style={styles.offlineCard}>
               <Text style={styles.eyebrow}>DMZ RANKED</Text>
               <Text style={styles.offlineTitle}>
-                RANKED <Text style={styles.gold}>OFFLINE</Text>
+                RANKED <Text style={styles.gold}>{failureKind === 'interface' ? 'NOT READY' : 'OFFLINE'}</Text>
               </Text>
               <View style={styles.connectionChip}>
                 <Text style={styles.connectionText}>
-                  <Text style={styles.green}>●</Text> CONNECTION LOST
+                  <Text style={styles.green}>●</Text> {failureKind === 'interface' ? 'APP INTERFACE UNAVAILABLE' : 'CONNECTION LOST'}
                 </Text>
               </View>
               <Text style={styles.offlineCopy}>
-                DMZ Ranked could not load. Check your connection, then reconnect
-                to the leaderboard.
+                {failureKind === 'interface'
+                  ? 'The app interface could not finish loading. Retry to load the complete DMZ Ranked app.'
+                  : 'DMZ Ranked could not load. Check your connection, then reconnect to the leaderboard.'}
               </Text>
               <Pressable style={styles.retry} onPress={retry}>
                 <Text style={styles.retryText}>RETRY DMZ RANKED</Text>

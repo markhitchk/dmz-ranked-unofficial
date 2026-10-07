@@ -31,6 +31,9 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm install
 
+      - name: Loading regression tests
+        run: npm test
+
       - name: Generate Android project
         run: npx expo prebuild --clean --platform android --non-interactive
 
@@ -45,12 +48,12 @@ jobs:
 
       - name: Rename APK
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk DMZ-Ranked-React-Native-Beta-1.0.62-166.apk
+          cp android/app/build/outputs/apk/release/app-release.apk DMZ-Ranked-React-Native-Beta-1.0.63-167.apk
 
       - name: Upload beta APK
         uses: actions/upload-artifact@v4
         with:
-          name: DMZ-Ranked-React-Native-Beta-1.0.62-166
-          path: DMZ-Ranked-React-Native-Beta-1.0.62-166.apk
+          name: DMZ-Ranked-React-Native-Beta-1.0.63-167
+          path: DMZ-Ranked-React-Native-Beta-1.0.63-167.apk
           if-no-files-found: error
           retention-days: 30

@@ -41,6 +41,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export type BridgeMessage =
   | { type: 'ready' }
+  | { type: 'app-ui-ready'; pageId: number }
+  | { type: 'app-ui-error'; pageId: number; message?: string }
   | { type: 'open-settings' }
   | { type: 'notification'; title?: string; body?: string }
   | {

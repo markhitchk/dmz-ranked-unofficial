@@ -28,8 +28,8 @@ export function AppHeader({
   animations,
   onOpenSettings
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.62';
-  const build = Application.nativeBuildVersion ?? '166';
+  const version = Application.nativeApplicationVersion ?? '1.0.63';
+  const build = Application.nativeBuildVersion ?? '167';
   const messages = useMemo(
     () => [
       `Version ${version} • Build ${build}`,
