@@ -10,6 +10,7 @@ import React, {
 import {
   Alert,
   Animated,
+  BackHandler,
   Linking,
   Platform,
   Pressable,
@@ -30,6 +31,10 @@ import {
   parseBridgeMessage
 } from '../services/webBridge';
 import { showWebsiteNotification } from '../services/notifications';
+import {
+  processForegroundOperatorState,
+  recordForegroundNotification
+} from '../services/backgroundNotificationSync';
 import {
   buildOperatorRestoreScript,
   getOperatorBackup,
@@ -159,6 +164,11 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const canGoBack = useRef(false);
+    const pullStartY = useRef<number | null>(null);
+    const pullTriggered = useRef(false);
+    const webScrollY = useRef(0);
+    const previousDesktopMode = useRef(settings.desktopSite);
 
     const clearLoadTimers = useCallback(() => {
       if (finishTimer.current) clearTimeout(finishTimer.current);
@@ -172,6 +182,28 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       clearLoadTimers();
       overlayOpacity.stopAnimation();
     }, [clearLoadTimers, gate, overlayOpacity]);
+
+    useEffect(() => {
+      if (Platform.OS !== 'android') return;
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          if (!webRef.current) return false;
+          webRef.current.injectJavaScript(
+            `(function(){var result="missing";try{if(window.__dmzRnSectionBack){result=window.__dmzRnSectionBack();}}catch(e){result="error";}window.ReactNativeWebView.postMessage(JSON.stringify({type:"back-result",result:result}));return true;})();true;`
+          );
+          return true;
+        }
+      );
+      return () => subscription.remove();
+    }, []);
+
+    useEffect(() => {
+      if (previousDesktopMode.current === settings.desktopSite) return;
+      previousDesktopMode.current = settings.desktopSite;
+      showOverlay('Applying display mode…', 0);
+      webRef.current?.reload();
+    }, [settings.desktopSite, showOverlay]);
 
     const bridge = useMemo(() => createBridgeBootstrap(channel), [channel]);
 
@@ -304,12 +336,20 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       showOverlay('Connecting to dmzranked.com…', 5);
     }, [clearLoadTimers, gate, settings.appUiOverrides, showOverlay]);
 
+    const applyDesktopViewport = useCallback(() => {
+      if (!settings.desktopSite) return;
+      webRef.current?.injectJavaScript(
+        `(function(){try{var m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}m.setAttribute('content','width=1280, initial-scale=0.75, minimum-scale=0.25, maximum-scale=3, user-scalable=yes');document.documentElement.style.minWidth='1180px';}catch(e){}})();true;`
+      );
+    }, [settings.desktopSite]);
+
     const handleLoad = useCallback(async (url: string) => {
       const current = page.current;
       const id = current.id;
       if (url !== current.url || !gate.isCurrent(id) || current.loaded) return;
       current.loaded = true;
       gate.loaded(id);
+      applyDesktopViewport();
       if (!current.requiresOverrides) {
         hideOverlay(id);
         return;
@@ -328,7 +368,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       } catch {
         failLoad(id, 'interface');
       }
-    }, [bridge, failLoad, gate, hideOverlay]);
+    }, [applyDesktopViewport, bridge, failLoad, gate, hideOverlay]);
 
     const handleMessage = useCallback(
       (event: { nativeEvent: { data: string } }) => {
@@ -352,10 +392,45 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
 
         if (message.type === 'notification' && settings.siteNotifications) {
-          void showWebsiteNotification(
-            message.title?.trim() || 'DMZ Ranked',
-            message.body?.trim() || 'New activity is available.'
+          const title = message.title?.trim() || 'DMZ Ranked';
+          const body = message.body?.trim() || 'New activity is available.';
+          void showWebsiteNotification(title, body).then(() =>
+            recordForegroundNotification(title, body)
           );
+          return;
+        }
+
+        if (message.type === 'operator-alert-state' && message.snapshot) {
+          const raids: Record<string, {
+            reports: number;
+            pending: boolean;
+            verified: boolean;
+            pendingReason: string;
+          }> = {};
+          for (const [key, value] of Object.entries(message.snapshot.raids ?? {})) {
+            raids[key] = {
+              reports: Math.max(0, Number(value.reports) || 0),
+              pending: Boolean(value.pending),
+              verified: Boolean(value.verified),
+              pendingReason: String(value.pendingReason ?? '')
+            };
+          }
+          void processForegroundOperatorState({
+            playerId: String(message.snapshot.playerId ?? ''),
+            name: String(message.snapshot.name ?? ''),
+            reports: Math.max(0, Number(message.snapshot.reports) || 0),
+            raids
+          });
+          return;
+        }
+
+        if (message.type === 'back-result') {
+          if (message.result === 'handled') return;
+          if (canGoBack.current) {
+            webRef.current?.goBack();
+          } else if (Platform.OS === 'android') {
+            BackHandler.exitApp();
+          }
           return;
         }
 
@@ -408,7 +483,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     );
 
     const handleNavigation = useCallback(
-      (nav: { url: string }) => {
+      (nav: { url: string; canGoBack?: boolean }) => {
+        canGoBack.current = Boolean(nav.canGoBack);
         if (settings.rememberLastPage && isInternal(nav.url)) {
           onUpdateSetting('lastPageUrl', nav.url);
         }
@@ -480,11 +556,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           source={{ uri: initialUrl.current }}
           style={styles.webview}
           javaScriptEnabled
+          javaScriptCanOpenWindowsAutomatically={false}
           domStorageEnabled
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
+          allowFileAccess={false}
           setSupportMultipleWindows={false}
-          pullToRefreshEnabled={settings.pullToRefresh}
+          webviewDebuggingEnabled={settings.webviewDebug}
+          pullToRefreshEnabled={Platform.OS === 'ios' && settings.pullToRefresh}
           userAgent={settings.desktopSite ? DESKTOP_UA : undefined}
           textZoom={contentZoom(settings.contentSize)}
           injectedJavaScriptBeforeContentLoaded={bridge}
@@ -498,6 +577,41 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           onLoad={event => void handleLoad(event.nativeEvent.url)}
           onMessage={handleMessage}
           onNavigationStateChange={handleNavigation}
+          onScroll={event => {
+            webScrollY.current = event.nativeEvent.contentOffset.y;
+          }}
+          onTouchStart={event => {
+            if (
+              Platform.OS === 'android' &&
+              settings.pullToRefresh &&
+              webScrollY.current <= 1
+            ) {
+              pullStartY.current = event.nativeEvent.pageY;
+              pullTriggered.current = false;
+            } else {
+              pullStartY.current = null;
+            }
+          }}
+          onTouchMove={event => {
+            if (
+              Platform.OS !== 'android' ||
+              !settings.pullToRefresh ||
+              pullStartY.current == null ||
+              pullTriggered.current ||
+              webScrollY.current > 1
+            ) {
+              return;
+            }
+            if (event.nativeEvent.pageY - pullStartY.current >= 72) {
+              pullTriggered.current = true;
+              showOverlay('Refreshing DMZ Ranked…', 0);
+              webRef.current?.reload();
+            }
+          }}
+          onTouchEnd={() => {
+            pullStartY.current = null;
+            pullTriggered.current = false;
+          }}
           onShouldStartLoadWithRequest={handleShouldStart}
           onError={event => {
             if (event.nativeEvent.url === page.current.url) failLoad(page.current.id, 'network');
