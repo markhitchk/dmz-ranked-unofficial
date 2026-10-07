@@ -2,7 +2,7 @@ name: React Native Beta Verify and APK
 
 on:
   pull_request:
-    branches: [ react-native-migration ]
+    branches: [ main, react-native-migration ]
   workflow_dispatch:
 
 jobs:
