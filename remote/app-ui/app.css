@@ -1973,6 +1973,176 @@ body > .modal .modal-backdrop{
   min-width:190px;
 }
 
+/* App-only iOS release support campaign.
+   Uses the same dark/gold popup language as the website and app dialogs, but
+   remains isolated from dmzranked.com's own modal classes. */
+html.hs-ios-support-open,
+html.hs-ios-support-open body{
+  overflow:hidden!important;
+}
+#hs-ios-support-overlay{
+  position:fixed;
+  inset:0;
+  z-index:10040;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:
+    max(16px,env(safe-area-inset-top))
+    max(14px,env(safe-area-inset-right))
+    max(16px,env(safe-area-inset-bottom))
+    max(14px,env(safe-area-inset-left));
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+}
+#hs-ios-support-overlay .hs-ios-support-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(4,6,7,.93);
+  backdrop-filter:blur(5px);
+}
+#hs-ios-support-overlay .hs-ios-support-card{
+  position:relative;
+  z-index:1;
+  box-sizing:border-box;
+  width:min(520px,100%);
+  max-height:min(82vh,700px);
+  overflow:auto;
+  padding:24px 20px 20px;
+  border:1px solid rgba(230,169,43,.42);
+  border-top:3px solid var(--gold,#e6a92b);
+  border-radius:13px;
+  background:
+    radial-gradient(90% 120% at 50% -15%,rgba(230,169,43,.14),transparent 62%),
+    linear-gradient(180deg,#101719,#0b1012);
+  color:var(--txt,#e9ede9);
+  text-align:center;
+  box-shadow:0 24px 70px rgba(0,0,0,.72);
+}
+#hs-ios-support-overlay .hs-ios-support-close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:36px;
+  height:36px;
+  border:1px solid var(--line,rgba(226,180,96,.16));
+  border-radius:8px;
+  background:rgba(0,0,0,.32);
+  color:var(--txt,#e9ede9);
+  font-size:19px;
+  line-height:1;
+  cursor:pointer;
+}
+#hs-ios-support-overlay .hs-ios-support-icon{
+  width:58px;
+  height:58px;
+  margin:2px auto 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(230,169,43,.42);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(245,196,81,.18),rgba(230,169,43,.06));
+  color:var(--gold-b,#f5c451);
+  font-family:var(--f-display,'Oswald','Arial Narrow',system-ui,sans-serif);
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:.8px;
+  box-shadow:0 0 24px rgba(230,169,43,.14);
+}
+#hs-ios-support-overlay .hs-ios-support-kicker{
+  color:var(--gold-b,#f5c451);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+}
+#hs-ios-support-overlay .hs-ios-support-card h2{
+  margin:5px 30px 10px;
+  color:#fff;
+  font-family:var(--f-display,'Oswald','Arial Narrow',system-ui,sans-serif);
+  font-size:25px;
+  font-weight:800;
+  line-height:1.08;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+#hs-ios-support-overlay .hs-ios-support-card p{
+  margin:0 auto 11px;
+  max-width:430px;
+  color:var(--muted,#9aa39b);
+  font-size:12.5px;
+  line-height:1.5;
+}
+#hs-ios-support-overlay .hs-ios-support-card .hs-ios-support-lead{
+  color:var(--txt,#e9ede9);
+  font-size:14px;
+}
+#hs-ios-support-overlay .hs-ios-support-note{
+  margin:14px auto 16px;
+  max-width:440px;
+  padding:10px 11px;
+  border-left:3px solid var(--gold,#e6a92b);
+  border-radius:0 8px 8px 0;
+  background:rgba(230,169,43,.08);
+  color:var(--muted,#9aa39b);
+  font-size:11px;
+  line-height:1.45;
+  text-align:left;
+}
+#hs-ios-support-overlay .hs-ios-support-note b{
+  color:var(--txt,#e9ede9);
+}
+#hs-ios-support-overlay .hs-ios-support-actions{
+  display:grid;
+  gap:8px;
+}
+#hs-ios-support-overlay .hs-ios-support-primary,
+#hs-ios-support-overlay .hs-ios-support-secondary{
+  box-sizing:border-box;
+  width:100%;
+  min-height:44px;
+  padding:10px 14px;
+  border-radius:8px;
+  font-family:var(--f-display,'Oswald','Arial Narrow',system-ui,sans-serif);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.55px;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+#hs-ios-support-overlay .hs-ios-support-primary{
+  border:1px solid rgba(230,169,43,.52);
+  background:linear-gradient(180deg,var(--gold-b,#f5c451),var(--gold-d,#b07f1c));
+  color:#0a0e10;
+  box-shadow:0 7px 18px rgba(230,169,43,.20);
+}
+#hs-ios-support-overlay .hs-ios-support-secondary{
+  border:1px solid var(--line,rgba(226,180,96,.16));
+  background:rgba(0,0,0,.28);
+  color:var(--txt,#e9ede9);
+}
+@media(max-width:560px){
+  #hs-ios-support-overlay{
+    align-items:center;
+    padding:
+      max(12px,env(safe-area-inset-top))
+      max(10px,env(safe-area-inset-right))
+      max(12px,env(safe-area-inset-bottom))
+      max(10px,env(safe-area-inset-left));
+  }
+  #hs-ios-support-overlay .hs-ios-support-card{
+    max-height:86vh;
+    padding:21px 15px 15px;
+    border-radius:12px;
+  }
+  #hs-ios-support-overlay .hs-ios-support-card h2{
+    margin-left:26px;
+    margin-right:26px;
+    font-size:22px;
+  }
+}
+
 /* Dedicated app modal system for first-run setup and PIN management. */
 .hs-app-modal{
   position:fixed;
