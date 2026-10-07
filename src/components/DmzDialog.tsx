@@ -37,6 +37,7 @@ type Props = {
   choices?: DmzDialogChoice[];
   operatorPicker?: boolean;
   animations?: boolean;
+  contentScale?: number;
   onPositive?: () => void;
   onNegative?: () => void;
 };
@@ -78,6 +79,7 @@ export function DmzDialog({
   choices,
   operatorPicker = false,
   animations = true,
+  contentScale = 1,
   onPositive,
   onNegative
 }: Props) {
@@ -128,10 +130,13 @@ export function DmzDialog({
                   })
                 },
                 {
-                  scale: animation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.97, 1]
-                  })
+                  scale: Animated.multiply(
+                    animation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.97, 1]
+                    }),
+                    Math.max(0.75, Math.min(1.25, contentScale))
+                  )
                 }
               ]
             }

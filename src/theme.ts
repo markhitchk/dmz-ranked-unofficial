@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import type { ContentSize } from './types';
 
 export const colors = {
   black: '#080A09',
@@ -20,3 +21,10 @@ export const colors = {
 
 export const condensedFont =
   Platform.OS === 'android' ? 'sans-serif-condensed' : undefined;
+
+
+export function contentScaleFactor(size: ContentSize): number {
+  if (size === 'compact') return 0.88;
+  if (size === 'large') return 1.12;
+  return 1;
+}
