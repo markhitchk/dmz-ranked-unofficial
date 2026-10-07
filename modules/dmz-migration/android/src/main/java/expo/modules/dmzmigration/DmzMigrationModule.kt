@@ -1,5 +1,7 @@
 package expo.modules.dmzmigration
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -131,6 +133,47 @@ class DmzMigrationModule : Module() {
         } catch (_: Throwable) {
           promise.resolve(false)
         }
+      }
+    }
+
+    AsyncFunction("syncWidgetSettings") { selectedOperator: String ->
+      val context = appContext.reactContext ?: return@AsyncFunction false
+      context
+        .getSharedPreferences("dmz_ranked_settings", 0)
+        .edit()
+        .putString("website_selected_operator", selectedOperator.trim())
+        .apply()
+      true
+    }
+
+    AsyncFunction("requestPinDmzWidget") {
+      val context = appContext.reactContext ?: return@AsyncFunction false
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        return@AsyncFunction false
+      }
+      try {
+        val manager = AppWidgetManager.getInstance(context)
+        if (!manager.isRequestPinAppWidgetSupported) {
+          false
+        } else {
+          manager.requestPinAppWidget(
+            ComponentName(context, DmzRankedWidgetProvider::class.java),
+            null,
+            null
+          )
+        }
+      } catch (_: Throwable) {
+        false
+      }
+    }
+
+    AsyncFunction("refreshDmzWidgets") {
+      val context = appContext.reactContext ?: return@AsyncFunction false
+      try {
+        DmzRankedWidgetProvider.requestUpdateAll(context)
+        true
+      } catch (_: Throwable) {
+        false
       }
     }
 

@@ -11,6 +11,9 @@ type DmzMigrationNative = {
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   clearWebViewData(): Promise<boolean>;
+  syncWidgetSettings(selectedOperator: string): Promise<boolean>;
+  requestPinDmzWidget(): Promise<boolean>;
+  refreshDmzWidgets(): Promise<boolean>;
   installWebChromeParity(
     reactTag: number,
     animations: boolean,
@@ -54,4 +57,19 @@ export async function installWebChromeParity(
 
 export async function setExportPayload(payload: string): Promise<boolean> {
   return nativeModule?.setExportPayload(payload) ?? false;
+}
+
+
+export async function syncWidgetSettings(
+  selectedOperator: string
+): Promise<boolean> {
+  return nativeModule?.syncWidgetSettings(selectedOperator) ?? false;
+}
+
+export async function requestPinDmzWidget(): Promise<boolean> {
+  return nativeModule?.requestPinDmzWidget() ?? false;
+}
+
+export async function refreshDmzWidgets(): Promise<boolean> {
+  return nativeModule?.refreshDmzWidgets() ?? false;
 }
