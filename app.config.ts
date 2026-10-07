@@ -35,9 +35,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: 'dmzranked',
     userInterfaceStyle: 'dark',
     androidStatusBar: {
-      backgroundColor: '#080A09',
+      backgroundColor: '#00000000',
       barStyle: 'light-content',
-      hidden: false
+      hidden: false,
+      translucent: true
     },
     ios: {
       bundleIdentifier: packageId,
