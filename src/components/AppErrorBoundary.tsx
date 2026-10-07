@@ -17,7 +17,7 @@ export class AppErrorBoundary extends React.Component<
   PropsWithChildren,
   State
 > {
-  state: State = {
+  override state: State = {
     error: null,
     retryKey: 0
   };
