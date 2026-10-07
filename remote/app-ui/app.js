@@ -23,11 +23,29 @@
     } catch (_) {}
 
     try {
-      window.location.href = "dmzranked://settings/" + encodeURIComponent(section);
+      window.location.href =
+        section === "all" || section === "settings"
+          ? "dmzranked://settings"
+          : "dmzranked://settings/" + encodeURIComponent(section);
       return true;
     } catch (_) {
       return false;
     }
+  }
+
+  function settingsShortcutMarkup(label, target, url, wide) {
+    return (
+      '<button type="button" class="hs-app-settings-shortcut' +
+      (wide ? ' hs-app-settings-all' : '') +
+      '" data-hs-open-settings="' + target + '">' +
+        '<span class="hs-app-settings-shortcut-label">' + label + '</span>' +
+        '<small class="hs-app-settings-shortcut-url">' + url + '</small>' +
+      '</button>'
+    );
+  }
+
+  function settingsAliasMarkup(url) {
+    return '<code class="hs-app-settings-alias">' + url + '</code>';
   }
 
   function validOperator(value) {
@@ -1108,21 +1126,46 @@
 
       '<div class="card hs-app-settings-card">' +
         '<div class="hs-app-heading-row">' +
-          '<div><div class="hs-app-eyebrow">Website → native app</div><h2 class="section-title">Quick App Settings</h2></div>' +
+          '<div><div class="hs-app-eyebrow">Website → native app</div><h2 class="section-title">App Settings Shortcuts</h2></div>' +
           '<span class="hs-exclusive-badge">APP EXCLUSIVE</span>' +
         '</div>' +
-        '<p class="hs-app-settings-copy">Open the native DMZ Ranked settings screen directly at the section you need.</p>' +
+        '<p class="hs-app-settings-copy">Jump directly from the App page into a native DMZ Ranked settings area. The exact app URL is shown under each shortcut.</p>' +
         '<div class="hs-app-settings-grid">' +
-          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="appearance">Appearance</button>' +
-          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="operators">Operators</button>' +
-          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="notifications">Notifications</button>' +
-          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="updates">App Updates</button>' +
+          settingsShortcutMarkup("All App Settings", "all", "dmzranked://settings", true) +
+          settingsShortcutMarkup("About", "about", "dmzranked://settings/about") +
+          settingsShortcutMarkup("Build Details", "build", "dmzranked://settings/build") +
+          settingsShortcutMarkup("Credits", "credits", "dmzranked://settings/credits") +
+          settingsShortcutMarkup("Appearance", "appearance", "dmzranked://settings/appearance") +
+          settingsShortcutMarkup("Display", "display", "dmzranked://settings/display") +
+          settingsShortcutMarkup("Compact Mode", "compact", "dmzranked://settings/compact") +
           (String(APP_INFO.channel || "").toLowerCase() === "beta"
-            ? '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="widgets">Widgets</button>'
+            ? settingsShortcutMarkup("Widgets", "widgets", "dmzranked://settings/widgets")
             : '') +
-          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="support">Support</button>' +
-          '<button type="button" class="hs-app-action-btn hs-app-settings-shortcut hs-app-settings-all" data-hs-open-settings="all">All App Settings</button>' +
+          settingsShortcutMarkup("App Experience", "experience", "dmzranked://settings/experience") +
+          settingsShortcutMarkup("Operators", "operators", "dmzranked://settings/operators") +
+          settingsShortcutMarkup("Notifications", "notifications", "dmzranked://settings/notifications") +
+          settingsShortcutMarkup("App Updates", "updates", "dmzranked://settings/updates") +
+          settingsShortcutMarkup("Page Actions", "page-actions", "dmzranked://settings/page-actions") +
+          (String(APP_INFO.channel || "").toLowerCase() === "beta"
+            ? settingsShortcutMarkup("Beta Program", "beta", "dmzranked://settings/beta")
+            : '') +
+          settingsShortcutMarkup("Website Tools", "website-tools", "dmzranked://settings/website-tools") +
+          settingsShortcutMarkup("Support & Help", "support", "dmzranked://settings/support") +
+          settingsShortcutMarkup("App Data Transfer", "transfer", "dmzranked://settings/transfer") +
+          settingsShortcutMarkup("Danger Zone", "danger", "dmzranked://settings/danger") +
         '</div>' +
+        '<details class="hs-app-settings-aliases">' +
+          '<summary>Supported alternate URLs</summary>' +
+          '<div class="hs-app-settings-alias-list">' +
+            settingsAliasMarkup("dmzranked://settings/settings") +
+            settingsAliasMarkup("dmzranked://settings/operator") +
+            settingsAliasMarkup("dmzranked://settings/notification") +
+            settingsAliasMarkup("dmzranked://settings/update") +
+            settingsAliasMarkup("dmzranked://settings/page") +
+            settingsAliasMarkup("dmzranked://settings/website") +
+            settingsAliasMarkup("dmzranked://settings/help") +
+          '</div>' +
+        '</details>' +
       '</div>' +
 
       '<div class="card hs-app-features-card">' +
