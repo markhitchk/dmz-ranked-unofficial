@@ -387,7 +387,7 @@ function AppContent() {
         if (nativeCleared) {
           showNotice(
             'Website data cleared. App operator backups were kept.',
-            ToastAndroid.LONG
+            true
           );
         } else {
           showNotice(
@@ -527,7 +527,7 @@ function AppContent() {
           } else {
             showNotice(
               'Open your Android launcher’s Widgets menu and add DMZ Ranked.',
-            true,
+              true,
               'DMZ RANKED WIDGET'
             );
           }
@@ -569,7 +569,7 @@ function AppContent() {
         const importedSettings = Object.keys(imported.patch).length;
         showNotice(
           `Imported ${importedSettings} app setting${importedSettings === 1 ? '' : 's'} and ${imported.importedOperators} operator backup${imported.importedOperators === 1 ? '' : 's'} from ${peerLabel}.`,
-            true,
+          true,
           'APP DATA TRANSFER'
         );
         return;
