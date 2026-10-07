@@ -14,6 +14,43 @@ export type AppUpdateCheck = {
   reason?: string;
 };
 
+export function installedVersionLabel(): string {
+  const version = Application.nativeApplicationVersion ?? 'Unknown';
+  const build = Application.nativeBuildVersion ?? 'Unknown';
+  return `Installed ${version} (${build})`;
+}
+
+export function appUpdateStatusText(event: StatusUpdateEvent): string {
+  switch (event.status) {
+    case IAUInstallStatus.PENDING:
+      return 'Preparing Google Play update…';
+    case IAUInstallStatus.DOWNLOADING: {
+      const downloaded = Math.max(0, Number(event.bytesDownloaded) || 0);
+      const total = Math.max(0, Number(event.totalBytesToDownload) || 0);
+      if (total > 0) {
+        const percent = Math.max(
+          0,
+          Math.min(100, Math.round((downloaded * 100) / total))
+        );
+        return `Downloading update from Google Play… ${percent}%`;
+      }
+      return 'Downloading update from Google Play…';
+    }
+    case IAUInstallStatus.DOWNLOADED:
+      return 'Update downloaded from Google Play • Ready to install.';
+    case IAUInstallStatus.INSTALLING:
+      return 'Installing Google Play update…';
+    case IAUInstallStatus.INSTALLED:
+      return 'Update installed • refreshing Google Play status…';
+    case IAUInstallStatus.FAILED:
+      return 'Google Play update failed • Tap CHECK to retry.';
+    case IAUInstallStatus.CANCELED:
+      return 'Update canceled • Tap CHECK to retry.';
+    default:
+      return installedVersionLabel() + ' • Live monitoring';
+  }
+}
+
 export async function checkForAppUpdate(
   startWhenAvailable: boolean
 ): Promise<AppUpdateCheck> {

@@ -48,7 +48,10 @@ export function AppHeader({
     }
 
     const timer = setInterval(() => {
-      const next = (messageIndex + 1) % messages.length;
+      let next = Math.floor(Math.random() * messages.length);
+      if (messages.length > 1 && next === messageIndex) {
+        next = (next + 1) % messages.length;
+      }
       if (!animations) {
         setMessageIndex(next);
         return;
