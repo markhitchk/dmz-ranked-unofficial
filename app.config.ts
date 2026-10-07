@@ -29,7 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: isBeta ? 'DMZ Ranked [Beta]' : 'DMZ Ranked',
     slug: 'dmz-ranked-unofficial',
-    version: '1.0.66',
+    version: '1.0.67',
     orientation: 'default',
     icon: './assets/dmz_launcher_icon.png',
     scheme: 'dmzranked',
@@ -42,7 +42,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     ios: {
       bundleIdentifier: packageId,
-      buildNumber: '170',
+      buildNumber: '171',
       supportsTablet: true,
       infoPlist: {
         LSApplicationQueriesSchemes: ['itms-apps']
@@ -50,7 +50,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: packageId,
-      versionCode: 170,
+      versionCode: 171,
       allowBackup: true,
       adaptiveIcon: {
         foregroundImage: './assets/dmz_launcher_foreground.png',

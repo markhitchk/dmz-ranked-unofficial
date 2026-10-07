@@ -2,23 +2,51 @@ import type { BridgeMessage } from '../types';
 import * as Application from 'expo-application';
 import dmzLogo from '../../assets/dmz_logo_data.json';
 
-export function createBridgeBootstrap(channel: string): string {
+export function createBridgeBootstrap(channel: string, selectedOperator = ''): string {
   const channelLiteral = JSON.stringify(channel);
+  const selectedOperatorLiteral = JSON.stringify(selectedOperator.trim());
   const appInfoLiteral = JSON.stringify({
     channel,
-    versionName: Application.nativeApplicationVersion ?? '1.0.65',
-    versionCode: Application.nativeBuildVersion ?? '169',
+    versionName: Application.nativeApplicationVersion ?? '1.0.67',
+    versionCode: Application.nativeBuildVersion ?? '171',
     logoUrl: dmzLogo.dataUri
   });
 
   return [
     '(function () {',
     '  window.__DMZ_APP_INFO = Object.assign({}, window.__DMZ_APP_INFO || {}, ' + appInfoLiteral + ');',
-    '  if (window.__DMZ_RN_BRIDGE__) return true;',
+    '  window.__DMZ_RN_PREFERRED_OPERATOR = ' + selectedOperatorLiteral + ';',
+    '  if (window.__DMZ_RN_BRIDGE__) { if (window.__dmzRnApplyPreferredOperator) window.__dmzRnApplyPreferredOperator(window.__DMZ_RN_PREFERRED_OPERATOR, 0); return true; }',
     '  window.__DMZ_RN_BRIDGE__ = true;',
     '  function clean(value) { return String(value == null ? "" : value).replace(/\\s+/g, " ").trim(); }',
     '  function send(payload) { try { window.ReactNativeWebView.postMessage(JSON.stringify(payload)); } catch (_) {} }',
     '  function plain(value) { try { var d=document.createElement("div"); d.innerHTML=String(value==null?"":value); return clean(d.textContent||d.innerText||""); } catch (_) { return clean(value); } }',
+    '  function applyPreferredOperator(name, attempt) {',
+    '    name = clean(name); attempt = Number(attempt || 0); if (!name) return "empty";',
+    '    try { localStorage.setItem("dmz_myname", name); } catch (_) {}',
+    '    try {',
+    '      var input = document.getElementById("playerName");',
+    '      var pick = document.getElementById("playerPick");',
+    '      function touched(event) { if (event && event.isTrusted) window.__dmzRnOperatorTouched = true; }',
+    '      if (input && !input.__dmzRnOperatorGuard) { input.__dmzRnOperatorGuard = true; input.addEventListener("input", touched, true); input.addEventListener("change", touched, true); }',
+    '      if (pick && !pick.__dmzRnOperatorGuard) { pick.__dmzRnOperatorGuard = true; pick.addEventListener("change", touched, true); }',
+    '      if (window.__dmzRnOperatorTouched) return "user";',
+    '      if (!input && !pick) { if (attempt < 20) setTimeout(function () { applyPreferredOperator(name, attempt + 1); }, 350); return "wait"; }',
+    '      var target = name.toLowerCase(), pickMatched = false;',
+    '      if (pick && pick.options) {',
+    '        for (var i = 1; i < pick.options.length; i++) {',
+    '          var option = pick.options[i]; var value = clean(option && (option.value || option.textContent));',
+    '          if (value.toLowerCase() === target) { pickMatched = true; if (pick.selectedIndex !== i) { pick.selectedIndex = i; pick.dispatchEvent(new Event("change", { bubbles: true })); } break; }',
+    '        }',
+    '      }',
+    '      if (input && clean(input.value).toLowerCase() !== target) { input.value = name; input.dispatchEvent(new Event("input", { bubbles: true })); input.dispatchEvent(new Event("change", { bubbles: true })); }',
+    '      if (typeof window.updateNameStatus === "function") { try { window.updateNameStatus(); } catch (_) {} }',
+    '      if ((!input || (pick && !pickMatched)) && attempt < 20) setTimeout(function () { applyPreferredOperator(name, attempt + 1); }, 350);',
+    '      if (window.__dmzRnReadOperator) setTimeout(window.__dmzRnReadOperator, 30);',
+    '      return (input ? "ready" : "wait") + "|" + (pickMatched ? "pick" : "nopick");',
+    '    } catch (_) { if (attempt < 20) setTimeout(function () { applyPreferredOperator(name, attempt + 1); }, 350); return "error"; }',
+    '  }',
+    '  window.__dmzRnApplyPreferredOperator = applyPreferredOperator;',
     '  function emit(title, body, key) {',
     '    var text = plain(body);',
     '    if (!text) return;',
@@ -168,7 +196,7 @@ export function createBridgeBootstrap(channel: string): string {
     '  };',
     '  window.addEventListener("dmz-ranked-notification", function (event) { var detail = event && event.detail ? event.detail : {}; emit(detail.title || "DMZ Ranked", detail.body || "", "event:" + detail.title + ":" + detail.body); });',
     '  window.addEventListener("dmz-ranked-operator", function () { readOperator(); captureBackup(); });',
-    '  installHooks(); installSectionNav(); readOperator(); scanDomFallbacks(true); emitOperatorAlertState();',
+    '  installHooks(); installSectionNav(); applyPreferredOperator(window.__DMZ_RN_PREFERRED_OPERATOR, 0); readOperator(); scanDomFallbacks(true); emitOperatorAlertState();',
     '  if(!window.__dmzRnObserver){try{window.__dmzRnObserver=new MutationObserver(function(){installHooks();installSectionNav();scanDomFallbacks(false);});window.__dmzRnObserver.observe(document.documentElement||document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class","style"]});}catch(_){}}',
     '  setInterval(function () { installHooks(); installSectionNav(); readOperator(); scanDomFallbacks(false); emitOperatorAlertState(); }, 1800);',
     '  send({ type: "ready" });',
