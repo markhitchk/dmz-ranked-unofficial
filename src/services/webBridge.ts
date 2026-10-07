@@ -8,7 +8,7 @@ export function createBridgeBootstrap(channel: string, selectedOperator = ''): s
   const appInfoLiteral = JSON.stringify({
     channel,
     versionName: Application.nativeApplicationVersion ?? '1.1.0',
-    versionCode: Application.nativeBuildVersion ?? '175',
+    versionCode: Application.nativeBuildVersion ?? '176',
     logoUrl: dmzLogo.dataUri
   });
 
