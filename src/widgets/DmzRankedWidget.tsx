@@ -286,17 +286,18 @@ export function DmzRankedWidget({
             alignItems: 'center'
           }}
         >
-          <TextWidget
-            text="MADE BY HARLEY'S STUDIOS"
-            truncate="END"
-            maxLines={1}
-            style={{
-              color: MUTED,
-              fontSize: 5,
-              fontWeight: 'bold',
-              flex: 1
-            }}
-          />
+          <FlexWidget style={{ flex: 1 }}>
+            <TextWidget
+              text="MADE BY HARLEY'S STUDIOS"
+              truncate="END"
+              maxLines={1}
+              style={{
+                color: MUTED,
+                fontSize: 5,
+                fontWeight: 'bold'
+              }}
+            />
+          </FlexWidget>
           <TextWidget
             text={
               stats
