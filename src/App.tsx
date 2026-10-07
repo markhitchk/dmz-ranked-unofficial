@@ -33,7 +33,9 @@ import {
 } from './services/notifications';
 import {
   configureBackgroundNotifications,
-  syncNotificationsNow
+  primeNotificationBaseline,
+  scheduleNotificationBackgroundKick,
+  setNotificationAppForeground
 } from './services/backgroundNotificationSync';
 import {
   appUpdateStatusText,
@@ -105,9 +107,10 @@ function AppContent() {
 
     void initializeNotifications(settings.siteNotifications);
     void configureBackgroundNotifications(settings.siteNotifications);
+    void setNotificationAppForeground(AppState.currentState === 'active');
 
     if (settings.siteNotifications) {
-      void syncNotificationsNow();
+      void primeNotificationBaseline();
     }
   }, [ready, settings.siteNotifications]);
 
@@ -115,11 +118,16 @@ function AppContent() {
     if (!ready) return;
     const subscription = AppState.addEventListener('change', nextState => {
       const wasActive = appState.current === 'active';
+      const isActive = nextState === 'active';
       appState.current = nextState;
-      if (!settings.siteNotifications) return;
+      void setNotificationAppForeground(isActive);
 
-      if (nextState === 'active' || wasActive) {
-        void syncNotificationsNow();
+      if (!settings.siteNotifications) return;
+      if (isActive) {
+        void configureBackgroundNotifications(true);
+        void primeNotificationBaseline();
+      } else if (wasActive) {
+        scheduleNotificationBackgroundKick();
       }
     });
     return () => subscription.remove();
