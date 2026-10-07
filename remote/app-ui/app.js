@@ -1157,7 +1157,6 @@
         '<details class="hs-app-settings-aliases">' +
           '<summary>Supported alternate URLs</summary>' +
           '<div class="hs-app-settings-alias-list">' +
-            settingsAliasMarkup("dmzranked://settings/settings") +
             settingsAliasMarkup("dmzranked://settings/operator") +
             settingsAliasMarkup("dmzranked://settings/notification") +
             settingsAliasMarkup("dmzranked://settings/update") +
