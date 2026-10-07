@@ -56,6 +56,7 @@ export type SettingsAction =
   | { type: 'clear-data' }
   | { type: 'save-operator' }
   | { type: 'refresh-operator' }
+  | { type: 'select-operator'; operatorName: string }
   | { type: 'restore-operator'; operatorName: string }
   | { type: 'open-app-tab' }
   | { type: 'test-notification' }
@@ -1181,7 +1182,7 @@ export function SettingsPanel({
               settings.selectedOperator.toLowerCase(),
             onPress: () => {
               onAction({
-                type: 'restore-operator',
+                type: 'select-operator',
                 operatorName: name
               });
               setDialog(null);
