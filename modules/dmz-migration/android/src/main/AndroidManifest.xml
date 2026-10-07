@@ -1,11 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <queries>
         <provider android:authorities="com.harleytg.dmzranked.migration" />
         <provider android:authorities="com.harleytg.dmzranked.beta.migration" />
     </queries>
 
     <application>
+        <activity
+            android:name="com.harleytg.dmzranked.legacy.MainActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            android:theme="@style/Theme.DMZRanked" />
+        <activity
+            android:name="com.harleytg.dmzranked.legacy.SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.DMZRanked" />
+        <activity
+            android:name="com.harleytg.dmzranked.legacy.FeedbackActivity"
+            android:exported="false"
+            android:theme="@style/Theme.DMZRanked" />
         <receiver
             android:name="expo.modules.dmzmigration.DmzRankedWidgetProvider"
             android:exported="false">
