@@ -48,6 +48,9 @@
   const APP_INFO = (window.__DMZ_APP_INFO && typeof window.__DMZ_APP_INFO === "object") ? window.__DMZ_APP_INFO : {};
   const APP_LOGO_URL = clean(APP_INFO.logoUrl) || "file:///android_res/drawable/dmz_ranked_logo.png";
   const APP_LOGO_FALLBACK_URL = "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/app/src/main/logo/png/dmz_ranked_logo.png";
+  const HARLEYS_STUDIOS_LOGO_URL = "data:image/png;base64,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\nvzwZMv8DDaWRp856zVUAAAAASUVORK5CYII=\n";
+  const IOS_SUPPORT_KOFI_URL = "https://ko-fi.com/harleytg_#checkoutModal";
+  const IOS_SUPPORT_APP_LINK = "dmzranked-support://open?url=" + encodeURIComponent(IOS_SUPPORT_KOFI_URL);
 
   // Exact rank emblems used by dmzranked.com's leaderboard/profile UI.
   // Keep these tied to the website assets so Current/My Operator matches the site,
@@ -168,31 +171,116 @@
     const fallback = document.getElementById("hs-stat-rank-fallback");
     if (!image || !fallback) return;
 
-    image.hidden = true;
-    image.removeAttribute("src");
-    fallback.hidden = false;
     fallback.className = "hs-stat-rank-fallback " + rankTierClass(stats && stats.rankLabel);
     fallback.textContent = stats ? stats.rankLabel : "DMZ";
 
-    if (!stats) return;
+    function showFallback() {
+      image.onload = null;
+      image.onerror = null;
+      image.hidden = true;
+      image.removeAttribute("src");
+      if (image.dataset) {
+        delete image.dataset.hsRankSource;
+        delete image.dataset.hsRankPending;
+      }
+      fallback.hidden = false;
+    }
+
+    if (!stats) {
+      showFallback();
+      return;
+    }
+
     const key = badgeKey(stats.rankLabel);
-    if (!key) return;
+    if (!key) {
+      showFallback();
+      return;
+    }
 
     try {
       const badges = await loadBadgeMap();
       const source = badges && badges[key];
-      if (!source) return;
-      if (!lastStats || lastStats.rankLabel !== stats.rankLabel || lastStats.position !== stats.position) return;
-      image.onload = () => {
+      if (!source) {
+        showFallback();
+        return;
+      }
+      if (!lastStats || badgeKey(lastStats.rankLabel) !== key) return;
+
+      const href = new URL(source, "https://dmzranked.com/").href;
+      let currentSource = "";
+      try {
+        currentSource =
+          (image.dataset && image.dataset.hsRankSource) ||
+          image.currentSrc ||
+          image.getAttribute("src") ||
+          "";
+        if (currentSource) {
+          currentSource = new URL(currentSource, "https://dmzranked.com/").href;
+        }
+      } catch (_) {
+        currentSource = "";
+      }
+
+      if (currentSource === href && !image.hidden) {
+        if (image.dataset) {
+          image.dataset.hsRankSource = href;
+          delete image.dataset.hsRankPending;
+        }
+        fallback.hidden = true;
+        return;
+      }
+
+      const pendingSource =
+        image.dataset && image.dataset.hsRankPending
+          ? image.dataset.hsRankPending
+          : "";
+      if (pendingSource === href) {
+        if (!image.hidden && currentSource) fallback.hidden = true;
+        return;
+      }
+
+      if (image.dataset) image.dataset.hsRankPending = href;
+
+      const hasVisibleBadge = !image.hidden && Boolean(currentSource);
+      if (hasVisibleBadge) {
+        fallback.hidden = true;
+      } else {
+        image.hidden = true;
+        fallback.hidden = false;
+      }
+
+      const preloader = new Image();
+      preloader.onload = () => {
+        if (
+          image.dataset &&
+          image.dataset.hsRankPending &&
+          image.dataset.hsRankPending !== href
+        ) return;
+        if (!lastStats || badgeKey(lastStats.rankLabel) !== key) return;
+
+        image.onload = null;
+        image.onerror = null;
+        image.src = href;
+        if (image.dataset) {
+          image.dataset.hsRankSource = href;
+          delete image.dataset.hsRankPending;
+        }
         image.hidden = false;
         fallback.hidden = true;
       };
-      image.onerror = () => {
+      preloader.onerror = () => {
+        if (
+          image.dataset &&
+          image.dataset.hsRankPending &&
+          image.dataset.hsRankPending !== href
+        ) return;
+        if (image.dataset) delete image.dataset.hsRankPending;
         image.hidden = true;
         fallback.hidden = false;
       };
-      image.src = new URL(source, "https://dmzranked.com/").href;
+      preloader.src = href;
     } catch (_) {
+      if (image.dataset) delete image.dataset.hsRankPending;
       image.hidden = true;
       fallback.hidden = false;
     }
@@ -411,7 +499,14 @@
       el.textContent = appChannelLabel();
       el.classList.toggle("stable", appChannelLabel() === "STABLE");
     });
-    renderRankBadge(stats);
+    const badgeStats =
+      stats ||
+      (state === "loading" &&
+      operator &&
+      clean(operator).toLowerCase() === clean(lastStatsOperator).toLowerCase()
+        ? lastStats
+        : null);
+    renderRankBadge(badgeStats);
     renderMessages(state, operator, stats);
   }
 
@@ -967,7 +1062,7 @@
       '<div class="card hs-app-whats-new-card">' +
         '<div class="hs-app-heading-row">' +
           '<div><div class="hs-app-eyebrow">Latest app update</div><h2 class="section-title">What\'s New</h2></div>' +
-          '<span class="hs-app-update-build">1.0.58 · 162</span>' +
+          '<span class="hs-app-update-build">' + appBuildLabel() + '</span>' +
         '</div>' +
         '<div class="hs-app-whats-new-list">' +
           '<div class="hs-app-whats-new-item"><span class="hs-app-whats-new-icon">↗</span><div><strong>Website Donate Button</strong><span>The header Support button can now open the donation URL configured by dmzranked.com in your browser.</span></div></div>' +
@@ -976,6 +1071,19 @@
           '<div class="hs-app-whats-new-item"><span class="hs-app-whats-new-icon">◈</span><div><strong>CSS Override Reliability</strong><span>App-only styling now repairs itself if the website rebuilds part of the page.</span></div></div>' +
         '</div>' +
         '<div class="hs-app-whats-new-foot">Installed build: <b>' + appBuildLabel() + '</b> · Channel: <b>' + appChannelLabel() + '</b></div>' +
+      '</div>' +
+
+      '<div class="card hs-ios-support-app-card" id="hs-ios-support-app-card">' +
+        '<div class="hs-ios-support-app-head">' +
+          '<div class="hs-ios-support-app-logos" aria-hidden="true">' +
+            '<img class="hs-ios-support-brand-logo" src="' + APP_LOGO_URL + '" alt="">' +
+            '<img class="hs-ios-support-brand-logo hs-ios-support-studio-logo" src="' + HARLEYS_STUDIOS_LOGO_URL + '" alt="">' +
+          '</div>' +
+          '<div><div class="hs-app-eyebrow">Harley\'s Studios · iOS expansion</div><h2 class="section-title">Help bring DMZ Ranked to iOS</h2></div>' +
+        '</div>' +
+        '<p class="hs-ios-support-app-copy">We want to bring the unofficial DMZ Ranked App to <b>iPhone and iPad</b>. Voluntary support helps cover Apple development, testing, and publishing costs while Android development continues.</p>' +
+        '<div class="hs-ios-support-app-note"><b>Android is staying.</b> This campaign only helps expand the app to Apple devices. Donations are voluntary and do not guarantee a release date.</div>' +
+        '<a class="hs-app-action-btn hs-ios-support-app-action" href="' + IOS_SUPPORT_APP_LINK + '">Support the iOS release</a>' +
       '</div>' +
 
       '<div class="card hs-app-features-card">' +
@@ -1172,6 +1280,9 @@
 
     var FIRST_RUN_KEY="hs_dmz_app_get_started_v1";
     var KOFI_URL="https://ko-fi.com/harleytg_#checkoutModal";
+    var APP_LOGO_URL=clean(window.__DMZ_APP_INFO&&window.__DMZ_APP_INFO.logoUrl)||"https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/app/src/main/logo/png/dmz_ranked_logo.png";
+    var HARLEYS_STUDIOS_LOGO_URL="data:image/png;base64,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\nvzwZMv8DDaWRp856zVUAAAAASUVORK5CYII=\n";
+    var IOS_SUPPORT_CAMPAIGN_KEY="hs_dmz_ios_release_campaign_v2";
     var firstRunQueued=false;
 
     function q(sel){try{return document.querySelector(sel);}catch(e){return null;}}
@@ -1187,6 +1298,96 @@
     function setStore(key,value){try{localStorage.setItem(key,value);}catch(e){}}
     function firstRunDone(){return getStore(FIRST_RUN_KEY)==="1";}
     function markFirstRun(){setStore(FIRST_RUN_KEY,"1");}
+
+    function popupVisible(el){
+      if(!el)return false;
+      try{
+        var style=window.getComputedStyle?window.getComputedStyle(el):null;
+        if(style&&(style.display==="none"||style.visibility==="hidden"))return false;
+      }catch(e){}
+      return !el.hidden;
+    }
+
+    function hasBlockingPopup(){
+      if(q(".hs-app-modal"))return true;
+      var ids=["wnOverlay","clOverlay","seasonPop","profileModal","resultModal"];
+      for(var i=0;i<ids.length;i++){
+        if(popupVisible(q("#"+ids[i])))return true;
+      }
+      var siteModals=qa("body > .modal");
+      for(var j=0;j<siteModals.length;j++){
+        if(popupVisible(siteModals[j]))return true;
+      }
+      return false;
+    }
+
+    function shouldShowIosSupportPopup(){
+      if(getStore(IOS_SUPPORT_CAMPAIGN_KEY)==="1")return false;
+      if(!/Android/i.test(String(navigator.userAgent||"")))return false;
+      if(hasBlockingPopup())return false;
+      return true;
+    }
+
+    function iosSupportPopupMarkup(){
+      return "<div class='hs-ios-support-card' role='dialog' aria-modal='true' aria-labelledby='hs-ios-support-title'>"+
+        "<button type='button' class='hs-ios-support-close' data-hs-ios-dismiss='1' aria-label='Close'>×</button>"+
+        "<div class='hs-ios-support-icon hs-ios-support-brand' aria-hidden='true'>"+
+          "<img class='hs-ios-support-brand-logo' src='"+APP_LOGO_URL+"' alt=''>"+
+          "<img class='hs-ios-support-brand-logo hs-ios-support-studio-logo' src='"+HARLEYS_STUDIOS_LOGO_URL+"' alt=''>"+
+        "</div>"+
+        "<div class='hs-ios-support-kicker'>Harley's Studios · DMZ Ranked App</div>"+
+        "<h2 id='hs-ios-support-title'>Help bring DMZ Ranked to iOS</h2>"+
+        "<p class='hs-ios-support-lead'>We want to bring the unofficial DMZ Ranked App to <b>iPhone and iPad</b>.</p>"+
+        "<p>Voluntary support helps Harley's Studios cover the costs involved with preparing, testing, and publishing an Apple release while we keep improving the Android app.</p>"+
+        "<div class='hs-ios-support-note'><b>Android is staying.</b> This campaign is specifically to help expand DMZ Ranked to Apple devices. Donations are voluntary and do not guarantee a release date.</div>"+
+        "<div class='hs-ios-support-actions'>"+
+          "<button type='button' class='hs-ios-support-primary' id='hs-ios-support-donate'>Support the iOS release</button>"+
+          "<button type='button' class='hs-ios-support-secondary' data-hs-ios-dismiss='1'>Not now</button>"+
+        "</div>"+
+      "</div>";
+    }
+
+    function closeIosSupportPopup(){
+      var overlay=q("#hs-ios-support-overlay");
+      if(overlay&&overlay.parentNode)overlay.parentNode.removeChild(overlay);
+      document.documentElement.classList.remove("hs-ios-support-open");
+    }
+
+    function showIosSupportPopup(){
+      if(q("#hs-ios-support-overlay"))return;
+      var overlay=document.createElement("div");
+      overlay.id="hs-ios-support-overlay";
+      overlay.className="hs-ios-support-overlay";
+      overlay.innerHTML="<div class='hs-ios-support-backdrop' data-hs-ios-dismiss='1'></div>"+iosSupportPopupMarkup();
+
+      function dismiss(){
+        setStore(IOS_SUPPORT_CAMPAIGN_KEY,"1");
+        closeIosSupportPopup();
+      }
+
+      overlay.querySelectorAll("[data-hs-ios-dismiss]").forEach(function(btn){
+        btn.addEventListener("click",dismiss);
+      });
+      var donate=overlay.querySelector("#hs-ios-support-donate");
+      if(donate){
+        donate.addEventListener("click",function(){
+          setStore(IOS_SUPPORT_CAMPAIGN_KEY,"1");
+          closeIosSupportPopup();
+          try{
+            window.location.href="dmzranked-support://open?url="+encodeURIComponent(KOFI_URL);
+          }catch(e){}
+        });
+      }
+
+      (document.body||document.documentElement).appendChild(overlay);
+      document.documentElement.classList.add("hs-ios-support-open");
+      setStore(IOS_SUPPORT_CAMPAIGN_KEY,"1");
+    }
+
+    function maybeIosSupportPopup(){
+      if(!shouldShowIosSupportPopup())return;
+      showIosSupportPopup();
+    }
 
     function currentOperator(){
       var input=q("#playerName");
@@ -1815,6 +2016,7 @@
       ensureAppTools();
       ensurePinCover();
       updatePinUi();
+      if(firstRunDone())maybeIosSupportPopup();
       if(!firstRunDone()&&!firstRunQueued&&!q("#hs-app-get-started")){
         firstRunQueued=true;
         setTimeout(function(){
@@ -1847,6 +2049,7 @@
           el.closest("#hs-app-pin-cover")||
           el.closest("#hs-app-operator-tools")||
           el.closest("#hs-app-support-card")||
+          el.closest("#hs-ios-support-overlay")||
           el.closest(".hs-app-modal")
         ))continue;
         queueRefresh();

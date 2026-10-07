@@ -1,7 +1,6 @@
 import type { BridgeMessage } from '../types';
 import * as Application from 'expo-application';
 import dmzLogo from '../../assets/dmz_logo_data.json';
-import studioLogo from '../../assets/harleys_studios_logo_data.json';
 
 export function createBridgeBootstrap(channel: string, selectedOperator = ''): string {
   const channelLiteral = JSON.stringify(channel);
@@ -10,8 +9,7 @@ export function createBridgeBootstrap(channel: string, selectedOperator = ''): s
     channel,
     versionName: Application.nativeApplicationVersion ?? '1.1.0',
     versionCode: Application.nativeBuildVersion ?? '175',
-    logoUrl: dmzLogo.dataUri,
-    studioLogoUrl: studioLogo.dataUri
+    logoUrl: dmzLogo.dataUri
   });
 
   return [

@@ -8,8 +8,9 @@ const bundle = JSON.parse(
 );
 const source = String(bundle.js || '');
 const css = String(bundle.css || '');
+const remoteJs = readFileSync(new URL('../remote/app-ui/app.js', import.meta.url), 'utf8');
+const remoteCss = readFileSync(new URL('../remote/app-ui/app.css', import.meta.url), 'utf8');
 const injectionSource = readFileSync(new URL('../src/services/appUiInjection.ts', import.meta.url), 'utf8');
-const bridgeSource = readFileSync(new URL('../src/services/webBridge.ts', import.meta.url), 'utf8');
 
 function extractFunction(name) {
   const needles = ['function ' + name + '(', 'async function ' + name + '('];
@@ -87,7 +88,10 @@ test('iOS support campaign only prompts eligible Android app users once', () => 
 });
 
 test('iOS release popup copy is app-specific, voluntary, and dismissible', () => {
-  const context = vm.createContext({});
+  const context = vm.createContext({
+    APP_LOGO_URL: 'data:image/png;base64,dmz',
+    HARLEYS_STUDIOS_LOGO_URL: 'data:image/png;base64,studio'
+  });
   vm.runInContext(extractFunction('iosSupportPopupMarkup'), context);
   const html = context.iosSupportPopupMarkup();
 
@@ -106,17 +110,20 @@ test('bundled App UI includes dedicated popup styling without changing website m
 });
 
 
-test('React Native campaign replaces the placeholder with bundled brand logos', () => {
-  assert.match(injectionSource, /hs-ios-support-branded/);
-  assert.match(injectionSource, /data-hs-dmz-logo/);
-  assert.match(injectionSource, /data-hs-studio-logo/);
-  assert.match(bridgeSource, /studioLogoUrl/);
-  assert.match(bridgeSource, /harleys_studios_logo_data\.json/);
+test('iOS campaign is owned by the remote override files', () => {
+  assert.equal(source, remoteJs, 'bundled JS fallback must mirror remote/app-ui/app.js');
+  assert.equal(css, remoteCss, 'bundled CSS fallback must mirror remote/app-ui/app.css');
+  assert.match(remoteJs, /hs_ios_release_campaign_v2/);
+  assert.match(remoteCss, /iOS release campaign branding/);
+  assert.doesNotMatch(injectionSource, /IOS_SUPPORT_ENHANCEMENT_CSS/);
+  assert.doesNotMatch(injectionSource, /hs-ios-support-app-card/);
 });
 
-test('React Native campaign is permanently available on the App page', () => {
-  assert.match(injectionSource, /hs-ios-support-app-card/);
-  assert.match(injectionSource, /Help bring DMZ Ranked to iOS/);
-  assert.match(injectionSource, /Support the iOS release/);
-  assert.match(injectionSource, /Android is staying/);
+test('override campaign uses real logos and remains available on the App page', () => {
+  assert.match(remoteJs, /HARLEYS_STUDIOS_LOGO_URL/);
+  assert.match(remoteJs, /hs-ios-support-brand-logo/);
+  assert.match(remoteJs, /id="hs-ios-support-app-card"/);
+  assert.match(remoteJs, /Help bring DMZ Ranked to iOS/);
+  assert.match(remoteJs, /Support the iOS release/);
+  assert.match(remoteCss, /\.hs-ios-support-app-card/);
 });
