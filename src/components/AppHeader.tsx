@@ -1,23 +1,37 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View
 } from 'react-native';
 import * as Application from 'expo-application';
+import * as Clipboard from 'expo-clipboard';
 import { DmzIcon } from './DmzIcon';
 import { colors, condensedFont } from '../theme';
 import type { AppChannel } from '../types';
+import {
+  formatCollapsedBrowserUrl,
+  normalizeBrowserUrlInput
+} from '../services/urlNavigation';
 
 type Props = {
   channel: AppChannel;
   online: boolean;
   loading: boolean;
   animations: boolean;
+  currentUrl: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  onGoBack: () => void;
+  onGoForward: () => void;
+  onReload: () => void;
+  onNavigate: (url: string) => void;
   onOpenSettings: () => void;
 };
 
@@ -26,53 +40,24 @@ export function AppHeader({
   online,
   loading,
   animations,
+  currentUrl,
+  canGoBack,
+  canGoForward,
+  onGoBack,
+  onGoForward,
+  onReload,
+  onNavigate,
   onOpenSettings
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.69';
-  const build = Application.nativeBuildVersion ?? '173';
-  const messages = useMemo(
-    () => [
-      `Version ${version} • Build ${build}`,
-      "Made by Harley's Studios"
-    ],
-    [build, version]
-  );
-  const [messageIndex, setMessageIndex] = useState(0);
-  const metaOpacity = useRef(new Animated.Value(1)).current;
+  const version = Application.nativeApplicationVersion ?? '1.1.0';
+  const build = Application.nativeBuildVersion ?? '176';
   const titleOpacity = useRef(new Animated.Value(1)).current;
+  const [editing, setEditing] = useState(false);
+  const [draftUrl, setDraftUrl] = useState(currentUrl);
 
   useEffect(() => {
-    if (!animations) {
-      metaOpacity.stopAnimation();
-      metaOpacity.setValue(1);
-    }
-
-    const timer = setInterval(() => {
-      let next = Math.floor(Math.random() * messages.length);
-      if (messages.length > 1 && next === messageIndex) {
-        next = (next + 1) % messages.length;
-      }
-      if (!animations) {
-        setMessageIndex(next);
-        return;
-      }
-      Animated.timing(metaOpacity, {
-        toValue: 0.25,
-        duration: 130,
-        useNativeDriver: true
-      }).start(({ finished }) => {
-        if (!finished) return;
-        setMessageIndex(next);
-        Animated.timing(metaOpacity, {
-          toValue: 1,
-          duration: 190,
-          useNativeDriver: true
-        }).start();
-      });
-    }, 4200);
-
-    return () => clearInterval(timer);
-  }, [animations, messageIndex, messages.length, metaOpacity]);
+    if (!editing) setDraftUrl(currentUrl);
+  }, [currentUrl, editing]);
 
   useEffect(() => {
     if (!loading || !animations) {
@@ -99,39 +84,161 @@ export function AppHeader({
     return () => loop.stop();
   }, [animations, loading, titleOpacity]);
 
+  const beginEditing = () => {
+    setDraftUrl(currentUrl);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setDraftUrl(currentUrl);
+    setEditing(false);
+    Keyboard.dismiss();
+  };
+
+  const submitAddress = () => {
+    const normalized = normalizeBrowserUrlInput(draftUrl);
+    if (!normalized) {
+      cancelEditing();
+      return;
+    }
+    setDraftUrl(normalized);
+    setEditing(false);
+    Keyboard.dismiss();
+    onNavigate(normalized);
+  };
+
+  const copyAddress = () => {
+    const value = (editing ? draftUrl : currentUrl).trim();
+    if (value) void Clipboard.setStringAsync(value);
+  };
+
+  const secure = currentUrl.toLowerCase().startsWith('https://');
+  const compactUrl = formatCollapsedBrowserUrl(currentUrl);
+
   return (
     <View style={styles.header}>
-      <Image
-        source={require('../../assets/dmz_ranked_logo_display.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <View style={styles.titleBar}>
+        <Image
+          source={require('../../assets/dmz_ranked_logo_display.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-      <View style={styles.titleBlock}>
         <View style={styles.titleRow}>
-          <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
+          <Animated.Text
+            numberOfLines={1}
+            style={[styles.title, { opacity: titleOpacity }]}
+          >
             DMZ Ranked
           </Animated.Text>
           {channel === 'beta' ? <Text style={styles.beta}>BETA</Text> : null}
+          <Text numberOfLines={1} style={styles.meta}>
+            v{version} • {build}{!online ? ' • OFFLINE' : ''}
+          </Text>
         </View>
-        <Animated.Text
-          numberOfLines={1}
-          style={[styles.meta, { opacity: metaOpacity }]}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          onPress={onOpenSettings}
+          android_ripple={{ color: '#333333', borderless: true }}
+          style={styles.settingsButton}
         >
-          {messages[messageIndex]}
-          {!online ? ' • OFFLINE' : ''}
-        </Animated.Text>
+          <DmzIcon name="settings" size={24} color={colors.gold} />
+        </Pressable>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Settings"
-        onPress={onOpenSettings}
-        android_ripple={{ color: '#333333', borderless: true }}
-        style={styles.settingsButton}
-      >
-        <DmzIcon name="settings" size={28} color={colors.gold} />
-      </Pressable>
+      <View style={styles.browserRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          disabled={!canGoBack}
+          onPress={onGoBack}
+          style={[styles.navButton, !canGoBack && styles.navButtonDisabled]}
+        >
+          <DmzIcon name="back" size={19} color={colors.white} />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Forward"
+          disabled={!canGoForward}
+          onPress={onGoForward}
+          style={[styles.navButton, !canGoForward && styles.navButtonDisabled]}
+        >
+          <DmzIcon name="forward" size={19} color={colors.white} />
+        </Pressable>
+
+        <View style={[styles.addressShell, editing && styles.addressShellEditing]}>
+          <DmzIcon
+            name={secure ? 'lock' : 'globe'}
+            size={14}
+            color={secure ? colors.goldSoft : colors.muted}
+          />
+
+          {editing ? (
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              returnKeyType="go"
+              selectTextOnFocus
+              value={draftUrl}
+              onChangeText={setDraftUrl}
+              onSubmitEditing={submitAddress}
+              onBlur={() => {
+                if (editing) cancelEditing();
+              }}
+              style={styles.addressInput}
+              accessibilityLabel="URL"
+            />
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit URL"
+              onPress={beginEditing}
+              onLongPress={copyAddress}
+              style={styles.addressPressable}
+            >
+              <Text numberOfLines={1} style={styles.addressText}>
+                {compactUrl || 'dmzranked.com'}
+              </Text>
+            </Pressable>
+          )}
+
+          {editing ? (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Copy URL"
+                onPress={copyAddress}
+                hitSlop={8}
+                style={styles.inlineButton}
+              >
+                <DmzIcon name="copy" size={15} color={colors.muted} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancel URL editing"
+                onPress={cancelEditing}
+                hitSlop={8}
+                style={styles.inlineButton}
+              >
+                <DmzIcon name="close" size={16} color={colors.muted} />
+              </Pressable>
+            </>
+          ) : null}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reload"
+          onPress={onReload}
+          style={styles.navButton}
+        >
+          <DmzIcon name="reload" size={18} color={colors.white} />
+        </Pressable>
+      </View>
 
       <View style={styles.goldLine} />
     </View>
@@ -140,12 +247,114 @@ export function AppHeader({
 
 const styles = StyleSheet.create({
   header: {
-    height: 74,
-    paddingLeft: 10,
-    paddingRight: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
+    height: 88,
     backgroundColor: colors.toolbar
+  },
+  titleBar: {
+    height: 46,
+    paddingLeft: 9,
+    paddingRight: 5,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  logo: { width: 34, height: 34 },
+  titleRow: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 7,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  title: {
+    flexShrink: 1,
+    color: colors.white,
+    fontFamily: condensedFont,
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: Platform.OS === 'android' ? 0.35 : 0
+  },
+  beta: {
+    marginLeft: 6,
+    textAlign: 'center',
+    color: colors.black,
+    backgroundColor: colors.gold,
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    fontFamily: condensedFont,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.7
+  },
+  meta: {
+    marginLeft: 7,
+    flexShrink: 1,
+    color: colors.muted,
+    fontFamily: condensedFont,
+    fontSize: 10
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  browserRow: {
+    height: 40,
+    paddingHorizontal: 7,
+    paddingBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  navButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  navButtonDisabled: {
+    opacity: 0.28
+  },
+  addressShell: {
+    flex: 1,
+    height: 32,
+    marginHorizontal: 3,
+    paddingLeft: 9,
+    paddingRight: 5,
+    borderWidth: 1,
+    borderColor: colors.cardBorderGold,
+    borderRadius: 9,
+    backgroundColor: colors.panelDeep,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  addressShellEditing: {
+    borderColor: colors.gold
+  },
+  addressPressable: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    paddingLeft: 7
+  },
+  addressText: {
+    color: colors.white,
+    fontSize: 11.5
+  },
+  addressInput: {
+    flex: 1,
+    minWidth: 0,
+    height: 30,
+    marginLeft: 6,
+    paddingVertical: 0,
+    color: colors.white,
+    fontSize: 11.5
+  },
+  inlineButton: {
+    width: 27,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   goldLine: {
     position: 'absolute',
@@ -154,47 +363,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.gold
-  },
-  logo: { width: 46, height: 46 },
-  titleBlock: {
-    flex: 1,
-    height: '100%',
-    justifyContent: 'center',
-    marginLeft: 8,
-    marginRight: 6
-  },
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
-  title: {
-    color: colors.white,
-    fontFamily: condensedFont,
-    fontSize: 21,
-    fontWeight: '800',
-    letterSpacing: Platform.OS === 'android' ? 0.4 : 0
-  },
-  beta: {
-    marginLeft: 7,
-    minWidth: 40,
-    textAlign: 'center',
-    color: colors.black,
-    backgroundColor: colors.gold,
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    fontFamily: condensedFont,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8
-  },
-  meta: {
-    marginTop: 2,
-    color: colors.muted,
-    fontFamily: condensedFont,
-    fontSize: 10.5
-  },
-  settingsButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center'
   }
 });
