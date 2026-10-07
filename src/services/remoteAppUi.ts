@@ -6,10 +6,10 @@ import {
   isValidAppUiPair
 } from './appUiInjection';
 
-const CSS_URL =
-  'https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.css';
-const JS_URL =
-  'https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/remote/app-ui/app.js';
+const REPO = 'markhitchk/dmz-ranked-unofficial';
+const COMMIT_URL = `https://api.github.com/repos/${REPO}/commits/main`;
+const rawUrl = (revision: string, path: string) =>
+  `https://raw.githubusercontent.com/${REPO}/${revision}/${path}`;
 const TIMEOUT_MS = 3500;
 const CACHE_KEY = 'dmz_remote_app_ui_pair_v2';
 
@@ -28,7 +28,7 @@ type CachedPair = {
   revision: string;
 };
 
-async function fetchText(url: string): Promise<string> {
+async function fetchText(url: string, accept = 'text/plain'): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -37,7 +37,7 @@ async function fetchText(url: string): Promise<string> {
       cache: 'no-store',
       signal: controller.signal,
       headers: {
-        Accept: 'text/plain',
+        Accept: accept,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         Pragma: 'no-cache',
         'User-Agent': `DMZRankedApp-RemoteUI/${version}`
@@ -49,6 +49,18 @@ async function fetchText(url: string): Promise<string> {
     clearTimeout(timeout);
   }
 }
+
+
+async function resolveRemoteRevision(): Promise<string> {
+  const raw = await fetchText(COMMIT_URL, 'application/vnd.github+json');
+  const parsed = JSON.parse(raw) as { sha?: unknown };
+  const sha = String(parsed.sha ?? '').trim();
+  if (!/^[a-f0-9]{40}$/i.test(sha)) {
+    throw new Error('Could not resolve the latest App UI revision');
+  }
+  return sha;
+}
+
 
 async function readCachedPair(): Promise<RemoteAppUiPayload | null> {
   try {
@@ -70,14 +82,24 @@ async function readCachedPair(): Promise<RemoteAppUiPayload | null> {
   }
 }
 
-async function storeRemotePair(css: string, js: string): Promise<RemoteAppUiPayload> {
+async function storeRemotePair(
+  css: string,
+  js: string,
+  revision: string
+): Promise<RemoteAppUiPayload> {
   if (!isValidAppUiPair(css, js)) {
     throw new Error('Remote app UI pair did not validate');
   }
 
   const updatedAt = Date.now();
-  const revision = appUiPairRevision(css, js);
-  const cached: CachedPair = { css, js, updatedAt, revision };
+  const safeRevision =
+    /^[a-f0-9]{40}$/i.test(revision) ? revision : appUiPairRevision(css, js);
+  const cached: CachedPair = {
+    css,
+    js,
+    updatedAt,
+    revision: safeRevision
+  };
 
   // One JSON write makes CSS + JS atomic from the app's point of view. A failed
   // download can never replace only one half of the last-known-good pair.
@@ -88,14 +110,21 @@ async function storeRemotePair(css: string, js: string): Promise<RemoteAppUiPayl
     js,
     source: 'remote',
     updatedAt,
-    revision
+    revision: safeRevision
   };
 }
 
 export async function loadRemoteAppUi(): Promise<RemoteAppUiPayload> {
   try {
-    const [css, js] = await Promise.all([fetchText(CSS_URL), fetchText(JS_URL)]);
-    return await storeRemotePair(css, js);
+    // Resolve main once, then fetch both payloads from that immutable commit.
+    // This prevents a branch update between the CSS and JS requests from ever
+    // producing a mixed pair.
+    const revision = await resolveRemoteRevision();
+    const [css, js] = await Promise.all([
+      fetchText(rawUrl(revision, 'remote/app-ui/app.css')),
+      fetchText(rawUrl(revision, 'remote/app-ui/app.js'))
+    ]);
+    return await storeRemotePair(css, js, revision);
   } catch (remoteError) {
     const cached = await readCachedPair();
     if (cached) return cached;

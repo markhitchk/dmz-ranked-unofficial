@@ -267,6 +267,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       protected: false
     });
     const restoreRequestSequence = useRef(0);
+    const lastAutoBackupMs = useRef(0);
     const restoreRequests = useRef(
       new Map<
         string,
@@ -869,7 +870,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           if (typeof message.source === 'string') {
             onUpdateSetting('operatorSource', message.source);
           }
-          if (nextName && settings.operatorAutoSave) {
+          if (
+            nextName &&
+            settings.operatorAutoSave &&
+            Date.now() - lastAutoBackupMs.current >= 8000
+          ) {
+            lastAutoBackupMs.current = Date.now();
             setTimeout(captureOperatorBackup, 180);
           }
           return;
