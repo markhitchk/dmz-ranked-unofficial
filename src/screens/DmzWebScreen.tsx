@@ -498,6 +498,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       setLoadingState(false);
       setOverlayVisible(false);
       setFailureKind(kind);
+
+      // Java deliberately opens the normal website when the optional app-ui
+      // payload cannot be downloaded, injected, or verified. Only actual page
+      // / network failures replace the WebView with the retry state.
+      if (kind === 'interface') {
+        setFailed(false);
+        return;
+      }
       setFailed(true);
     }, [clearLoadTimers, gate, overlayOpacity, setLoadingState]);
 
