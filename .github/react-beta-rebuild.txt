@@ -1,0 +1,1 @@
+Trigger a fresh React Native beta APK build after the Android safe-area and Settings parity fixes.
