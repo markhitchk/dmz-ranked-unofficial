@@ -8,7 +8,8 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
-    shouldShowList: true
+    shouldShowList: true,
+    priority: Notifications.AndroidNotificationPriority.HIGH
   })
 });
 
@@ -83,8 +84,10 @@ export async function showWebsiteNotification(
       body: preview,
       sound: 'default',
       color: '#F6C453',
+      autoDismiss: true,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
       data: { source: 'dmzranked.com', alertTitle: alertLine }
     },
-    trigger: null
+    trigger: Platform.OS === 'android' ? { channelId: CHANNEL_ID } : null
   });
 }
