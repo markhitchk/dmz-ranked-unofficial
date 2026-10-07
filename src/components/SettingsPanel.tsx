@@ -88,6 +88,7 @@ type Props = {
 type DialogMode =
   | 'developer-pin'
   | 'operator-picker'
+  | 'build-info'
   | 'clear-data'
   | 'reset-settings'
   | null;
@@ -689,7 +690,15 @@ export function SettingsPanel({
                       ) : null}
                     </View>
                     <Text style={styles.aboutVersion}>Version {version}</Text>
-                    <Text style={styles.aboutBuild}>Build {build}</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Build ${build}. Show build details.`}
+                      accessibilityHint="Shows the technology used to build this app."
+                      onPress={() => setDialog('build-info')}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.aboutBuild}>Build {build}</Text>
+                    </Pressable>
                     <Text style={styles.unofficialClient}>
                       Unofficial {Platform.OS === 'android' ? 'Android' : 'iOS'} client
                     </Text>
@@ -1251,6 +1260,17 @@ export function SettingsPanel({
             trademarks belong to their respective owners.
           </Text>
         </Animated.ScrollView>
+
+        <DmzDialog
+          visible={dialog === 'build-info'}
+          title="BUILD DETAILS"
+          message={`DMZ Ranked ${version} (Build ${build})\n\nBuilt with:\n• React Native 0.86.3\n• React 19.2.3\n• Expo SDK 57\n• TypeScript 6.0.3\n• React Native WebView 13.16.1\n\nPlatform: ${Platform.OS === 'android' ? 'Android' : 'iOS'}\nChannel: ${channel === 'beta' ? 'Beta' : 'Stable'}`}
+          positiveLabel="OK"
+          animations={settings.appAnimations}
+          contentScale={contentScaleFactor(settings.contentSize)}
+          onPositive={() => setDialog(null)}
+          onNegative={() => setDialog(null)}
+        />
 
         <DmzDialog
           visible={dialog === 'developer-pin'}
