@@ -75,7 +75,11 @@ async function readCachedPair(): Promise<RemoteAppUiPayload | null> {
       js,
       source: 'cache',
       updatedAt: Number(cached.updatedAt) || 0,
-      revision: appUiPairRevision(css, js)
+      revision:
+        typeof cached.revision === 'string' &&
+        /^[a-f0-9]{40}$/i.test(cached.revision)
+          ? cached.revision
+          : appUiPairRevision(css, js)
     };
   } catch {
     return null;
