@@ -18,6 +18,7 @@ export type AppSettings = {
   operatorVerified: boolean;
   operatorProtected: boolean;
   operatorSource: string;
+  operatorSyncMs: number;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -36,7 +37,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   selectedOperator: '',
   operatorVerified: false,
   operatorProtected: false,
-  operatorSource: ''
+  operatorSource: '',
+  operatorSyncMs: 0
 };
 
 export type BridgeMessage =
