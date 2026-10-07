@@ -242,7 +242,15 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const overlayOpacity = useRef(new Animated.Value(1)).current;
     const navProgressOpacity = useRef(new Animated.Value(0)).current;
     const gate = useRef(new AppUiLoadGate()).current;
-    const page = useRef({ id: 0, url: initialUrl.current, loaded: false, requiresOverrides: settings.appUiOverrides });
+    const page = useRef({
+      id: 0,
+      url: initialUrl.current,
+      loaded: false,
+      uiStarted: false,
+      requiresOverrides: settings.appUiOverrides
+    });
+    const startupComplete = useRef(false);
+    const forceOverlayNextNavigation = useRef(false);
     const payload = useRef<Promise<RemoteAppUiPayload> | null>(null);
     const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -323,6 +331,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     useEffect(() => {
       if (previousDesktopMode.current === settings.desktopSite) return;
       previousDesktopMode.current = settings.desktopSite;
+      forceOverlayNextNavigation.current = true;
       webRef.current?.reload();
     }, [settings.desktopSite]);
 
@@ -498,7 +507,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        reload: () => webRef.current?.reload(),
+        reload: () => {
+          forceOverlayNextNavigation.current = true;
+          webRef.current?.reload();
+        },
         clearCache: () => {
           const view = webRef.current as (WebView & {
             clearCache?: (includeDiskFiles?: boolean) => void;
@@ -544,6 +556,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (!gate.isCurrent(id)) return;
         setOverlayVisible(false);
         setLoadingState(false);
+        startupComplete.current = true;
         refreshOperator();
         if (settings.operatorAutoSave) {
           backupTimer.current = setTimeout(() => {
@@ -573,6 +586,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       overlayOpacity.stopAnimation();
       setLoadingState(false);
       setOverlayVisible(false);
+      startupComplete.current = true;
       setFailureKind(kind);
 
       // Java deliberately opens the normal website when the optional app-ui
@@ -630,16 +644,37 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const handleLoadStart = useCallback((url: string) => {
       clearLoadTimers();
       const id = gate.begin(settings.appUiOverrides);
-      page.current = { id, url, loaded: false, requiresOverrides: settings.appUiOverrides };
+      page.current = {
+        id,
+        url,
+        loaded: false,
+        uiStarted: false,
+        requiresOverrides: settings.appUiOverrides
+      };
       payload.current = settings.appUiOverrides ? loadRemoteAppUi() : null;
       // Attach a rejection handler immediately while the document is loading.
       void payload.current?.catch(() => undefined);
       setFailed(false);
       showNavigationProgress();
-      showOverlay('Connecting to dmzranked.com…', 5);
+
+      const useFullOverlay =
+        !startupComplete.current || forceOverlayNextNavigation.current;
+      forceOverlayNextNavigation.current = false;
+      if (useFullOverlay) {
+        showOverlay('Connecting to dmzranked.com…', 5);
+      } else {
+        overlayOpacity.stopAnimation();
+        overlayOpacity.setValue(0);
+        setOverlayVisible(false);
+        setProgress(5);
+        setStatus('Connecting to dmzranked.com…');
+        setLoadingState(true);
+      }
     }, [
       clearLoadTimers,
       gate,
+      overlayOpacity,
+      setLoadingState,
       settings.appUiOverrides,
       showNavigationProgress,
       showOverlay
@@ -652,6 +687,49 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       );
     }, [settings.desktopSite]);
 
+    const installAppUi = useCallback(
+      async (id: number) => {
+        const current = page.current;
+        if (
+          !gate.isCurrent(id) ||
+          current.id !== id ||
+          !current.requiresOverrides ||
+          current.uiStarted
+        ) {
+          return;
+        }
+
+        current.uiStarted = true;
+        setProgress(value => Math.max(value, 90));
+        setStatus('Verifying the DMZ Ranked app interface…');
+        if (readyTimer.current) clearTimeout(readyTimer.current);
+        readyTimer.current = setTimeout(() => failLoad(id, 'interface'), 20000);
+
+        try {
+          const ui = await (payload.current ?? loadRemoteAppUi());
+          if (!gate.isCurrent(id)) return;
+          setProgress(value => Math.max(value, 94));
+          setStatus(
+            ui.source === 'remote'
+              ? 'Applying the latest app interface…'
+              : ui.source === 'cache'
+                ? 'Applying the last verified app interface…'
+                : 'Applying the bundled app interface…'
+          );
+          webRef.current?.injectJavaScript(
+            bridge +
+              '\n' +
+              buildRemoteUiInjection(ui.css, ui.js, id, ui.revision)
+          );
+          setProgress(value => Math.max(value, 98));
+          setStatus('Checking app styles and the App tab…');
+        } catch {
+          failLoad(id, 'interface');
+        }
+      },
+      [bridge, failLoad, gate]
+    );
+
     const handleLoad = useCallback(async (url: string) => {
       const current = page.current;
       const id = current.id;
@@ -663,32 +741,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         hideOverlay(id);
         return;
       }
-      setProgress(95);
-      setStatus('Verifying the DMZ Ranked app interface…');
-      readyTimer.current = setTimeout(() => failLoad(id, 'interface'), 20000);
-      try {
-        const ui = await (payload.current ?? loadRemoteAppUi());
-        if (!gate.isCurrent(id)) return;
-        setStatus(
-          ui.source === 'remote'
-            ? 'Applying the latest app interface…'
-            : ui.source === 'cache'
-              ? 'Applying the last verified app interface…'
-              : 'Applying the bundled app interface…'
-        );
-        // BeforeContentLoaded can be skipped on Android. Ensure the original
-        // app info/bridge exists immediately before the app scripts execute.
-        webRef.current?.injectJavaScript(
-          bridge +
-            '\n' +
-            buildRemoteUiInjection(ui.css, ui.js, id, ui.revision)
-        );
-        setProgress(98);
-        setStatus('Checking app styles and the App tab…');
-      } catch {
-        failLoad(id, 'interface');
+      if (current.uiStarted) {
+        hideOverlay(id);
+        return;
       }
-    }, [applyDesktopViewport, bridge, failLoad, gate, hideOverlay]);
+      await installAppUi(id);
+    }, [applyDesktopViewport, gate, hideOverlay, installAppUi]);
 
     const handleMessage = useCallback(
       (event: { nativeEvent: { data: string; url?: string } }) => {
@@ -908,6 +966,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       gate.cancel();
       clearLoadTimers();
       setFailed(false);
+      forceOverlayNextNavigation.current = true;
       showNavigationProgress();
       showOverlay('Connecting to dmzranked.com…', 5);
       webRef.current?.reload();
@@ -963,9 +1022,18 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             if (raw >= 100) hideNavigationProgress();
 
             if (page.current.loaded || !gate.isCurrent(page.current.id)) return;
-            const next = Math.min(94, raw);
-            setProgress(next);
-            setStatus(progressStatus(next));
+            if (
+              raw >= 68 &&
+              page.current.requiresOverrides &&
+              !page.current.uiStarted
+            ) {
+              void installAppUi(page.current.id);
+            }
+            if (!page.current.uiStarted) {
+              const next = Math.min(89, raw);
+              setProgress(next);
+              setStatus(progressStatus(next));
+            }
           }}
           onLoad={event => {
             hideNavigationProgress();
@@ -1006,6 +1074,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
                   ToastAndroid.SHORT
                 );
               }
+              forceOverlayNextNavigation.current = true;
               showOverlay('Refreshing DMZ Ranked…', 0);
               webRef.current?.reload();
             }
