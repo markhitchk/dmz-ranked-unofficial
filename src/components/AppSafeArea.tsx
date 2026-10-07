@@ -1,31 +1,61 @@
 import React, { type PropsWithChildren } from 'react';
-import { StatusBar, StyleSheet, View } from 'react-native';
+import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
-  SafeAreaView
+  useSafeAreaInsets
 } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
-// Each full-screen Modal has its own native window and must measure its own
-// insets. Only the app's permanent root uses the initial window metrics.
-export function AppSafeArea({
+type AppSafeAreaProps = PropsWithChildren<{
+  initialWindow?: boolean;
+  contentScale?: number;
+}>;
+
+function SafeAreaFrame({
   children,
-  initialWindow = false,
   contentScale = 1
-}: PropsWithChildren<{ initialWindow?: boolean; contentScale?: number }>) {
+}: PropsWithChildren<{ contentScale?: number }>) {
+  const measuredInsets = useSafeAreaInsets();
+  const initialInsets = initialWindowMetrics?.insets;
+
+  // Android 15/16 can report a zero top inset briefly for translucent modal
+  // windows. Keep the system notification/status tray outside app content by
+  // falling back to the native status-bar height until insets settle.
+  const topInset =
+    Platform.OS === 'android'
+      ? Math.max(
+          measuredInsets.top,
+          initialInsets?.top ?? 0,
+          StatusBar.currentHeight ?? 0
+        )
+      : Math.max(measuredInsets.top, initialInsets?.top ?? 0);
+  const rightInset = Math.max(
+    measuredInsets.right,
+    initialInsets?.right ?? 0
+  );
+  const bottomInset = Math.max(
+    measuredInsets.bottom,
+    initialInsets?.bottom ?? 0
+  );
+  const leftInset = Math.max(measuredInsets.left, initialInsets?.left ?? 0);
+
   const scale = Math.max(0.75, Math.min(1.25, contentScale));
   const inverse = 100 / scale;
+
   return (
-    <SafeAreaProvider
-      style={styles.root}
-      initialMetrics={initialWindow ? initialWindowMetrics : undefined}
+    <View
+      style={[
+        styles.root,
+        {
+          paddingTop: topInset,
+          paddingRight: rightInset,
+          paddingBottom: bottomInset,
+          paddingLeft: leftInset
+        }
+      ]}
     >
-      <StatusBar hidden={false} barStyle="light-content" />
-      <SafeAreaView
-        style={styles.root}
-        edges={['top', 'right', 'bottom', 'left']}
-      >
+      <View style={styles.viewport}>
         <View
           style={[
             styles.scaledFrame,
@@ -39,13 +69,46 @@ export function AppSafeArea({
         >
           {children}
         </View>
-      </SafeAreaView>
+      </View>
+    </View>
+  );
+}
+
+// Keep this wrapper shared by the permanent app root and full-screen modals.
+// Supplying initial metrics avoids the one-frame zero-inset state that caused
+// the title bar/logo to render underneath Samsung's Android status tray.
+export function AppSafeArea({
+  children,
+  initialWindow = false,
+  contentScale = 1
+}: AppSafeAreaProps) {
+  return (
+    <SafeAreaProvider
+      style={styles.provider}
+      initialMetrics={initialWindowMetrics}
+    >
+      <StatusBar
+        hidden={false}
+        barStyle="light-content"
+        backgroundColor={colors.black}
+        translucent={false}
+      />
+      <SafeAreaFrame contentScale={contentScale}>
+        {children}
+      </SafeAreaFrame>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  provider: { flex: 1, backgroundColor: colors.black },
   root: { flex: 1, backgroundColor: colors.black },
+  viewport: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: colors.black
+  },
   scaledFrame: {
     position: 'absolute',
     top: 0,
