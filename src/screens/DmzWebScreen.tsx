@@ -48,10 +48,7 @@ import {
   latestOperatorBackup,
   saveOperatorBackup
 } from '../services/operatorBackup';
-import {
-  isDmzRankedUrl,
-  normalizeBrowserUrlInput
-} from '../services/urlNavigation';
+import { normalizeBrowserUrlInput } from '../services/urlNavigation';
 import {
   getDefaultWebViewUserAgent,
   installWebChromeParity
@@ -167,7 +164,12 @@ type Props = {
 };
 
 function isInternal(url: string): boolean {
-  return isDmzRankedUrl(url);
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === 'dmzranked.com' || host.endsWith('.dmzranked.com');
+  } catch {
+    return false;
+  }
 }
 
 function isAllowedExternal(url: string): boolean {
