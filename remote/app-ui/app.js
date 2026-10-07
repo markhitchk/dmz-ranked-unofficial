@@ -1264,6 +1264,7 @@
 
     var FIRST_RUN_KEY="hs_dmz_app_get_started_v1";
     var KOFI_URL="https://ko-fi.com/harleytg_#checkoutModal";
+    var IOS_SUPPORT_CAMPAIGN_KEY="hs_dmz_ios_release_campaign_v1";
     var firstRunQueued=false;
 
     function q(sel){try{return document.querySelector(sel);}catch(e){return null;}}
@@ -1279,6 +1280,93 @@
     function setStore(key,value){try{localStorage.setItem(key,value);}catch(e){}}
     function firstRunDone(){return getStore(FIRST_RUN_KEY)==="1";}
     function markFirstRun(){setStore(FIRST_RUN_KEY,"1");}
+
+    function popupVisible(el){
+      if(!el)return false;
+      try{
+        var style=window.getComputedStyle?window.getComputedStyle(el):null;
+        if(style&&(style.display==="none"||style.visibility==="hidden"))return false;
+      }catch(e){}
+      return !el.hidden;
+    }
+
+    function hasBlockingPopup(){
+      if(q(".hs-app-modal"))return true;
+      var ids=["wnOverlay","clOverlay","seasonPop","profileModal","resultModal"];
+      for(var i=0;i<ids.length;i++){
+        if(popupVisible(q("#"+ids[i])))return true;
+      }
+      var siteModals=qa("body > .modal");
+      for(var j=0;j<siteModals.length;j++){
+        if(popupVisible(siteModals[j]))return true;
+      }
+      return false;
+    }
+
+    function shouldShowIosSupportPopup(){
+      if(getStore(IOS_SUPPORT_CAMPAIGN_KEY)==="1")return false;
+      if(!/Android/i.test(String(navigator.userAgent||"")))return false;
+      if(hasBlockingPopup())return false;
+      return true;
+    }
+
+    function iosSupportPopupMarkup(){
+      return "<div class='hs-ios-support-card' role='dialog' aria-modal='true' aria-labelledby='hs-ios-support-title'>"+
+        "<button type='button' class='hs-ios-support-close' data-hs-ios-dismiss='1' aria-label='Close'>×</button>"+
+        "<div class='hs-ios-support-icon' aria-hidden='true'>●</div>"+
+        "<div class='hs-ios-support-kicker'>Harley's Studios · DMZ Ranked App</div>"+
+        "<h2 id='hs-ios-support-title'>Help bring DMZ Ranked to iOS</h2>"+
+        "<p class='hs-ios-support-lead'>We want to bring the unofficial DMZ Ranked App to <b>iPhone and iPad</b>.</p>"+
+        "<p>Voluntary support helps Harley's Studios cover the costs involved with preparing, testing, and publishing an Apple release while we keep improving the Android app.</p>"+
+        "<div class='hs-ios-support-note'><b>Android is staying.</b> This campaign is specifically to help expand DMZ Ranked to Apple devices. Donations are voluntary and do not guarantee a release date.</div>"+
+        "<div class='hs-ios-support-actions'>"+
+          "<button type='button' class='hs-ios-support-primary' id='hs-ios-support-donate'>Support the iOS release</button>"+
+          "<button type='button' class='hs-ios-support-secondary' data-hs-ios-dismiss='1'>Not now</button>"+
+        "</div>"+
+      "</div>";
+    }
+
+    function closeIosSupportPopup(){
+      var overlay=q("#hs-ios-support-overlay");
+      if(overlay&&overlay.parentNode)overlay.parentNode.removeChild(overlay);
+      document.documentElement.classList.remove("hs-ios-support-open");
+    }
+
+    function showIosSupportPopup(){
+      if(q("#hs-ios-support-overlay"))return;
+      var overlay=document.createElement("div");
+      overlay.id="hs-ios-support-overlay";
+      overlay.className="hs-ios-support-overlay";
+      overlay.innerHTML="<div class='hs-ios-support-backdrop' data-hs-ios-dismiss='1'></div>"+iosSupportPopupMarkup();
+
+      function dismiss(){
+        setStore(IOS_SUPPORT_CAMPAIGN_KEY,"1");
+        closeIosSupportPopup();
+      }
+
+      overlay.querySelectorAll("[data-hs-ios-dismiss]").forEach(function(btn){
+        btn.addEventListener("click",dismiss);
+      });
+      var donate=overlay.querySelector("#hs-ios-support-donate");
+      if(donate){
+        donate.addEventListener("click",function(){
+          setStore(IOS_SUPPORT_CAMPAIGN_KEY,"1");
+          closeIosSupportPopup();
+          try{
+            window.location.href="dmzranked-support://open?url="+encodeURIComponent(KOFI_URL);
+          }catch(e){}
+        });
+      }
+
+      (document.body||document.documentElement).appendChild(overlay);
+      document.documentElement.classList.add("hs-ios-support-open");
+      setStore(IOS_SUPPORT_CAMPAIGN_KEY,"1");
+    }
+
+    function maybeIosSupportPopup(){
+      if(!shouldShowIosSupportPopup())return;
+      showIosSupportPopup();
+    }
 
     function currentOperator(){
       var input=q("#playerName");
@@ -1907,6 +1995,7 @@
       ensureAppTools();
       ensurePinCover();
       updatePinUi();
+      if(firstRunDone())maybeIosSupportPopup();
       if(!firstRunDone()&&!firstRunQueued&&!q("#hs-app-get-started")){
         firstRunQueued=true;
         setTimeout(function(){
@@ -1939,6 +2028,7 @@
           el.closest("#hs-app-pin-cover")||
           el.closest("#hs-app-operator-tools")||
           el.closest("#hs-app-support-card")||
+          el.closest("#hs-ios-support-overlay")||
           el.closest(".hs-app-modal")
         ))continue;
         queueRefresh();
