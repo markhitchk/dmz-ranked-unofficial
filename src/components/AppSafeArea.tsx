@@ -79,7 +79,7 @@ function SafeAreaFrame({
 // the title bar/logo to render underneath Samsung's Android status tray.
 export function AppSafeArea({
   children,
-  initialWindow = false,
+  initialWindow: _initialWindow = false,
   contentScale = 1
 }: AppSafeAreaProps) {
   return (
@@ -90,8 +90,8 @@ export function AppSafeArea({
       <StatusBar
         hidden={false}
         barStyle="light-content"
-        backgroundColor={colors.black}
-        translucent={false}
+        backgroundColor="transparent"
+        translucent
       />
       <SafeAreaFrame contentScale={contentScale}>
         {children}
