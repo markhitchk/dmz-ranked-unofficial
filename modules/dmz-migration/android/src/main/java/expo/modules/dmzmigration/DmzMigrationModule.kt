@@ -1,6 +1,8 @@
 package expo.modules.dmzmigration
 
 import android.net.Uri
+import android.os.Build
+import android.webkit.WebView
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -34,6 +36,25 @@ class DmzMigrationModule : Module() {
         null
       } finally {
         cursor?.close()
+      }
+    }
+
+    AsyncFunction("getWebViewPackage") {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        return@AsyncFunction null
+      }
+      try {
+        val info = WebView.getCurrentWebViewPackage()
+        if (info == null) {
+          null
+        } else {
+          mapOf(
+            "packageName" to info.packageName,
+            "versionName" to (info.versionName ?: "")
+          )
+        }
+      } catch (_: Throwable) {
+        null
       }
     }
 

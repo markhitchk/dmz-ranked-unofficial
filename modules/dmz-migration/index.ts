@@ -1,8 +1,14 @@
 import { Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 
+export type WebViewPackageInfo = {
+  packageName: string;
+  versionName: string;
+};
+
 type DmzMigrationNative = {
   readPeerPayload(): Promise<string | null>;
+  getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   setExportPayload(payload: string): Promise<boolean>;
 };
 
@@ -13,6 +19,10 @@ const nativeModule =
 
 export async function readPeerPayload(): Promise<string | null> {
   return nativeModule?.readPeerPayload() ?? null;
+}
+
+export async function getWebViewPackage(): Promise<WebViewPackageInfo | null> {
+  return nativeModule?.getWebViewPackage() ?? null;
 }
 
 export async function setExportPayload(payload: string): Promise<boolean> {
