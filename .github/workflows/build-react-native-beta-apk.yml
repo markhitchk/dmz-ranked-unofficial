@@ -6,6 +6,10 @@ on:
       - react-native-migration
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-beta-apk:
     runs-on: ubuntu-latest
