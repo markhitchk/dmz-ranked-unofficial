@@ -28,13 +28,14 @@ export function LoadingOverlay({
   animations
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const version = Application.nativeApplicationVersion ?? '1.0.63';
-  const build = Application.nativeBuildVersion ?? '167';
+  const version = Application.nativeApplicationVersion ?? '1.0.64';
+  const build = Application.nativeBuildVersion ?? '168';
 
   useEffect(() => {
+    pulse.stopAnimation();
+    pulse.setValue(1);
+
     if (!animations) {
-      pulse.stopAnimation();
-      pulse.setValue(1);
       return;
     }
 
@@ -53,7 +54,11 @@ export function LoadingOverlay({
       ])
     );
     loop.start();
-    return () => loop.stop();
+    return () => {
+      loop.stop();
+      pulse.stopAnimation();
+      pulse.setValue(1);
+    };
   }, [animations, pulse]);
 
   const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));

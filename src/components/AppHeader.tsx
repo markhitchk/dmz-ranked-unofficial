@@ -28,8 +28,8 @@ export function AppHeader({
   animations,
   onOpenSettings
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.63';
-  const build = Application.nativeBuildVersion ?? '167';
+  const version = Application.nativeApplicationVersion ?? '1.0.64';
+  const build = Application.nativeBuildVersion ?? '168';
   const messages = useMemo(
     () => [
       `Version ${version} • Build ${build}`,
@@ -42,6 +42,11 @@ export function AppHeader({
   const titleOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (!animations) {
+      metaOpacity.stopAnimation();
+      metaOpacity.setValue(1);
+    }
+
     const timer = setInterval(() => {
       const next = (messageIndex + 1) % messages.length;
       if (!animations) {
@@ -52,7 +57,8 @@ export function AppHeader({
         toValue: 0.25,
         duration: 130,
         useNativeDriver: true
-      }).start(() => {
+      }).start(({ finished }) => {
+        if (!finished) return;
         setMessageIndex(next);
         Animated.timing(metaOpacity, {
           toValue: 1,

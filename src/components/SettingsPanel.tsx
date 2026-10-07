@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Image,
   Linking,
   Modal,
@@ -201,8 +202,8 @@ export function SettingsPanel({
   onReset,
   onAction
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.63';
-  const build = Application.nativeBuildVersion ?? '167';
+  const version = Application.nativeApplicationVersion ?? '1.0.64';
+  const build = Application.nativeBuildVersion ?? '168';
   const [query, setQuery] = useState('');
   const [creditsExpanded, setCreditsExpanded] = useState(false);
   const [backupNames, setBackupNames] = useState<string[]>([]);
@@ -218,6 +219,8 @@ export function SettingsPanel({
   const developerTapStarted = useRef(0);
   const developerFailures = useRef(0);
   const developerLockoutUntil = useRef(0);
+  const searchEntry = useRef(new Animated.Value(1)).current;
+  const contentEntry = useRef(new Animated.Value(1)).current;
 
   const q = query.trim().toLowerCase();
 
@@ -245,6 +248,44 @@ export function SettingsPanel({
       setLastSyncText(`${sync.result} • ${stamp}`);
     });
   }, [backupRevision, visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    searchEntry.stopAnimation();
+    contentEntry.stopAnimation();
+
+    if (!settings.appAnimations) {
+      searchEntry.setValue(1);
+      contentEntry.setValue(1);
+      return;
+    }
+
+    searchEntry.setValue(0);
+    contentEntry.setValue(0);
+
+    const entry = Animated.parallel([
+      Animated.timing(searchEntry, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true
+      }),
+      Animated.timing(contentEntry, {
+        toValue: 1,
+        duration: 240,
+        delay: 45,
+        useNativeDriver: true
+      })
+    ]);
+
+    entry.start();
+    return () => entry.stop();
+  }, [
+    contentEntry,
+    searchEntry,
+    settings.appAnimations,
+    visible
+  ]);
 
   useEffect(() => {
     if (
@@ -449,7 +490,7 @@ export function SettingsPanel({
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType={settings.appAnimations ? 'fade' : 'none'}
       onRequestClose={onClose}
       statusBarTranslucent
       navigationBarTranslucent
@@ -477,7 +518,22 @@ export function SettingsPanel({
           <View style={styles.toolbarGoldLine} />
         </View>
 
-        <View style={styles.searchOuter}>
+        <Animated.View
+          style={[
+            styles.searchOuter,
+            {
+              opacity: searchEntry,
+              transform: [
+                {
+                  translateY: searchEntry.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-10, 0]
+                  })
+                }
+              ]
+            }
+          ]}
+        >
           <LinearGradient
             colors={[colors.panel, colors.panelDeep]}
             start={{ x: 0, y: 0.5 }}
@@ -496,10 +552,23 @@ export function SettingsPanel({
               returnKeyType="done"
             />
           </LinearGradient>
-        </View>
+        </Animated.View>
 
-        <ScrollView
-          style={styles.scroll}
+        <Animated.ScrollView
+          style={[
+            styles.scroll,
+            {
+              opacity: contentEntry,
+              transform: [
+                {
+                  translateY: contentEntry.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [18, 0]
+                  })
+                }
+              ]
+            }
+          ]}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
@@ -1041,7 +1110,7 @@ export function SettingsPanel({
             Unofficial client. DMZ Ranked website content and third-party
             trademarks belong to their respective owners.
           </Text>
-        </ScrollView>
+        </Animated.ScrollView>
 
         <DmzDialog
           visible={dialog === 'developer-pin'}

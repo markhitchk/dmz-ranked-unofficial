@@ -91,7 +91,7 @@ export function FeedbackPanel({
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType={animations ? 'fade' : 'none'}
       onRequestClose={onClose}
       statusBarTranslucent
       navigationBarTranslucent
