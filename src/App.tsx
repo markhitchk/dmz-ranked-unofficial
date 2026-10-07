@@ -90,6 +90,7 @@ function AppContent() {
     installedVersionLabel() + ' • Live monitoring'
   );
   const lastAnnouncedStoreVersion = useRef('');
+  const foregroundAnnouncedStoreVersion = useRef('');
 
   const channel =
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
@@ -190,21 +191,62 @@ function AppContent() {
   }, [ready, settings.selectedOperator]);
 
   useEffect(() => {
-    if (!settingsOpen) return;
     return listenForAppUpdateStatus(event => {
-      setUpdateStatus(appUpdateStatusText(event));
+      if (settingsOpen) {
+        setUpdateStatus(appUpdateStatusText(event));
+      }
       if (isDownloadedUpdate(event)) {
         setAppDialog({
           title: 'UPDATE READY',
           message:
-            'The DMZ Ranked update finished downloading and is ready to install.',
-          positiveLabel: 'INSTALL',
+            'The DMZ Ranked update finished downloading from Google Play and is ready to install.',
+          positiveLabel: 'INSTALL & RESTART',
           negativeLabel: 'LATER',
           onPositive: installDownloadedUpdate
         });
       }
     });
   }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    let cancelled = false;
+    const checkForegroundUpdate = () => {
+      void checkForAppUpdate(false)
+        .then(result => {
+          if (cancelled || !result.available) return;
+          const store = result.storeVersion || 'newer build';
+          if (foregroundAnnouncedStoreVersion.current === store) return;
+          foregroundAnnouncedStoreVersion.current = store;
+
+          setAppDialog({
+            title: 'UPDATE AVAILABLE',
+            message:
+              `Google Play has DMZ Ranked ${store} ready for this device. You can download it now without leaving the app.`,
+            positiveLabel: 'UPDATE NOW',
+            negativeLabel: 'LATER',
+            onPositive: () => {
+              void checkForAppUpdate(true).catch(() => {
+                void openPlayStore();
+              });
+            }
+          });
+        })
+        .catch(() => undefined);
+    };
+
+    checkForegroundUpdate();
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active') {
+        checkForegroundUpdate();
+      }
+    });
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
+  }, [ready]);
 
   useEffect(() => {
     if (!ready || !settingsOpen) return;
