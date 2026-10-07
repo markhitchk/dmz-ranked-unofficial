@@ -362,8 +362,38 @@ function AppContent() {
         if (!restored) {
           setAppDialog({
             title: 'OPERATOR RESTORE',
-            message: 'That local operator backup could not be restored.'
+            message: 'Open DMZ Ranked before restoring an operator.'
           });
+          return;
+        }
+
+        if (!restored.ok) {
+          const operatorName =
+            restored.operatorName || action.operatorName || 'this operator';
+          const message =
+            restored.reason === 'not-dmz'
+              ? 'Open DMZ Ranked before restoring an operator.'
+              : restored.reason === 'missing-backup'
+                ? 'No saved operator backup is available.'
+                : restored.reason === 'no-data'
+                  ? 'The saved operator backup has no restorable website data.'
+                  : restored.reason === 'switch-operator'
+                    ? `Switch DMZ Ranked to ${operatorName} before restoring this operator.`
+                    : restored.reason === 'pin-required'
+                      ? `${operatorName} is PIN protected. Select that operator on DMZ Ranked and enter its PIN first.`
+                      : 'DMZ Ranked could not restore the saved operator data.';
+          setAppDialog({
+            title: 'OPERATOR RESTORE',
+            message
+          });
+          return;
+        }
+
+        if (Platform.OS === 'android') {
+          ToastAndroid.show(
+            `Restored ${restored.operatorName}. Reloading DMZ Ranked…`,
+            ToastAndroid.SHORT
+          );
         }
         return;
       }
