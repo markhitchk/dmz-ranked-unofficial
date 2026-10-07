@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import * as Application from 'expo-application';
 import * as Clipboard from 'expo-clipboard';
+import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DmzDialog } from './DmzDialog';
@@ -30,6 +31,7 @@ import { getLastNotificationSync } from '../services/backgroundNotificationSync'
 import type { AppSettings, ContentSize } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
+import { getWebViewPackage } from '../../modules/dmz-migration';
 
 const PAYPAL_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
 const KOFI_URL = 'https://ko-fi.com/harleytg_#checkoutModal';
@@ -213,6 +215,7 @@ export function SettingsPanel({
   const [notificationStatus, setNotificationStatus] =
     useState('Checking notification permission…');
   const [lastSyncText, setLastSyncText] = useState('Not checked yet');
+  const [webViewPackageText, setWebViewPackageText] = useState('Unknown');
   const [dialog, setDialog] = useState<DialogMode>(null);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
@@ -248,6 +251,13 @@ export function SettingsPanel({
       }
       const stamp = new Date(sync.at).toLocaleString();
       setLastSyncText(`${sync.result} • ${stamp}`);
+    });
+    void getWebViewPackage().then(info => {
+      setWebViewPackageText(
+        info
+          ? `${info.packageName} ${info.versionName}`.trim()
+          : 'Unknown'
+      );
     });
   }, [backupRevision, visible]);
 
@@ -404,18 +414,24 @@ export function SettingsPanel({
 
   const copyDiagnostics = async () => {
     const report = [
-      'DMZ Ranked diagnostics',
-      `Version: ${version}`,
-      `Build: ${build}`,
+      'DMZ Ranked Android Diagnostics',
+      `App: ${version} (${build})`,
+      `Package: ${Application.applicationId ?? 'unknown'}`,
       `Channel: ${channel}`,
-      `Platform: ${Platform.OS} ${String(Platform.Version)}`,
-      `Operator: ${settings.selectedOperator || 'none'}`,
-      `Verified: ${settings.operatorVerified}`,
-      `Protected: ${settings.operatorProtected}`,
-      `Operator backups: ${backupCount}`,
+      `Android: ${Device.osVersion ?? String(Platform.Version)} (API ${Device.platformApiLevel ?? String(Platform.Version)})`,
+      `Device: ${[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown'}`,
+      `WebView: ${webViewPackageText}`,
+      `Notification permission: ${notificationStatus}`,
+      `Website notifications: ${settings.siteNotifications ? 'On' : 'Off'}`,
+      `Desktop website: ${settings.desktopSite ? 'On' : 'Off'}`,
+      `Keep screen awake: ${settings.keepAwake ? 'On' : 'Off'}`,
+      `Pull to refresh: ${settings.pullToRefresh ? 'On' : 'Off'}`,
+      `Remember last page: ${settings.rememberLastPage ? 'On' : 'Off'}`,
+      `Detailed loading: ${settings.verboseLoading ? 'On' : 'Off'}`,
+      `WebView debugging: ${settings.webviewDebug ? 'On' : 'Off'}`,
       `Content size: ${settings.contentSize}`,
-      `Desktop site: ${settings.desktopSite}`,
-      `Notifications: ${settings.siteNotifications}`,
+      `Operator: ${settings.selectedOperator || 'none'}`,
+      `Operator backups: ${backupCount}`,
       `Last notification sync: ${lastSyncText}`
     ].join('\n');
     await Clipboard.setStringAsync(report);
@@ -1088,10 +1104,10 @@ export function SettingsPanel({
                 <View style={styles.diagnosticsCard}>
                   <Text style={styles.actionTitle}>Runtime information</Text>
                   <Text style={styles.cardSummary}>
-                    Version {version} ({build}) • {Platform.OS} {String(Platform.Version)}
-                    {'\n'}Operator: {settings.selectedOperator || 'none'}
-                    {'\n'}Backups: {backupCount} • Notifications: {notificationStatus}
-                    {'\n'}Last sync: {lastSyncText}
+                    Android {Device.osVersion ?? String(Platform.Version)} • {[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown device'}
+                    {'\n'}WebView: {webViewPackageText}
+                    {'\n'}Notifications: {notificationStatus} • Desktop: {settings.desktopSite ? 'On' : 'Off'} • Pull refresh: {settings.pullToRefresh ? 'On' : 'Off'}
+                    {'\n'}Remember page: {settings.rememberLastPage ? 'On' : 'Off'} • WebView debug: {settings.webviewDebug ? 'On' : 'Off'}
                   </Text>
                 </View>
               </DmzCard>
