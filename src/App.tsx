@@ -105,9 +105,10 @@ function AppContent() {
   useEffect(() => {
     if (!ready) return;
 
+    appState.current = AppState.currentState;
     void initializeNotifications(settings.siteNotifications);
     void configureBackgroundNotifications(settings.siteNotifications);
-    void setNotificationAppForeground(AppState.currentState === 'active');
+    void setNotificationAppForeground(appState.current === 'active');
 
     if (settings.siteNotifications) {
       void primeNotificationBaseline();
