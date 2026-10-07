@@ -38,6 +38,7 @@ import {
 import {
   buildOperatorRestoreScript,
   getOperatorBackup,
+  latestOperatorBackup,
   saveOperatorBackup
 } from '../services/operatorBackup';
 
@@ -51,6 +52,20 @@ const BETA_GROUP_URL = 'https://groups.google.com/g/dmz-ranked';
 const DESKTOP_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36 DMZRankedApp/1.0.65';
 
+export type OperatorRestoreResult =
+  | { ok: true; operatorName: string }
+  | {
+      ok: false;
+      reason:
+        | 'not-dmz'
+        | 'missing-backup'
+        | 'no-data'
+        | 'switch-operator'
+        | 'pin-required'
+        | 'restore-failed';
+      operatorName?: string;
+    };
+
 export type DmzWebHandle = {
   reload: () => void;
   clearCache: () => void;
@@ -58,7 +73,9 @@ export type DmzWebHandle = {
   refreshOperator: () => void;
   selectOperator: (operatorName: string) => Promise<boolean>;
   captureOperatorBackup: () => void;
-  restoreOperatorBackup: (operatorName: string) => Promise<boolean>;
+  restoreOperatorBackup: (
+    operatorName: string
+  ) => Promise<OperatorRestoreResult>;
   openAppTab: () => void;
 };
 
@@ -170,6 +187,21 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const pullTriggered = useRef(false);
     const webScrollY = useRef(0);
     const previousDesktopMode = useRef(settings.desktopSite);
+    const liveOperator = useRef({
+      name: '',
+      verified: false,
+      protected: false
+    });
+    const restoreRequestSequence = useRef(0);
+    const restoreRequests = useRef(
+      new Map<
+        string,
+        {
+          timer: ReturnType<typeof setTimeout>;
+          resolve: (result: string) => void;
+        }
+      >()
+    );
 
     const clearLoadTimers = useCallback(() => {
       if (finishTimer.current) clearTimeout(finishTimer.current);
@@ -182,6 +214,11 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       gate.cancel();
       clearLoadTimers();
       overlayOpacity.stopAnimation();
+      for (const pending of restoreRequests.current.values()) {
+        clearTimeout(pending.timer);
+        pending.resolve('error:cancelled');
+      }
+      restoreRequests.current.clear();
     }, [clearLoadTimers, gate, overlayOpacity]);
 
     useEffect(() => {
@@ -295,19 +332,89 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     }, []);
 
     const restoreOperatorBackup = useCallback(
-      async (operatorName: string): Promise<boolean> => {
-        const record = await getOperatorBackup(operatorName);
-        if (!record) return false;
+      async (operatorName: string): Promise<OperatorRestoreResult> => {
+        if (!webRef.current || !isInternal(page.current.url)) {
+          return { ok: false, reason: 'not-dmz' };
+        }
+
+        const requestedName = operatorName.trim();
+        const record =
+          (requestedName ? await getOperatorBackup(requestedName) : null) ??
+          (await latestOperatorBackup());
+        if (!record) {
+          return { ok: false, reason: 'missing-backup' };
+        }
+
         const script = buildOperatorRestoreScript(record);
-        if (!script) return false;
-        webRef.current?.injectJavaScript(
-          script +
-            ';if(window.__dmzRnReadOperator){window.__dmzRnReadOperator();}location.reload();true;'
-        );
+        if (!script) {
+          return {
+            ok: false,
+            reason: 'no-data',
+            operatorName: record.operator
+          };
+        }
+
+        const live = liveOperator.current;
+        const liveName = live.name.trim();
+        const sameOperator =
+          Boolean(liveName) &&
+          liveName.toLowerCase() === record.operator.toLowerCase();
+
+        if (liveName && !sameOperator) {
+          return {
+            ok: false,
+            reason: 'switch-operator',
+            operatorName: record.operator
+          };
+        }
+
+        const pinRequired =
+          record.protected || (sameOperator && live.protected);
+        if (pinRequired && (!sameOperator || !live.verified)) {
+          return {
+            ok: false,
+            reason: 'pin-required',
+            operatorName: record.operator
+          };
+        }
+
+        const requestId =
+          'restore-' +
+          Date.now().toString(36) +
+          '-' +
+          (++restoreRequestSequence.current).toString(36);
+
+        const result = await new Promise<string>(resolve => {
+          const timer = setTimeout(() => {
+            restoreRequests.current.delete(requestId);
+            resolve('error:timeout');
+          }, 4000);
+
+          restoreRequests.current.set(requestId, { timer, resolve });
+          webRef.current?.injectJavaScript(
+            `(function(){try{var result=${script};window.ReactNativeWebView.postMessage(JSON.stringify({type:'operator-restore-result',requestId:${JSON.stringify(
+              requestId
+            )},result:String(result||'')}));}catch(e){window.ReactNativeWebView.postMessage(JSON.stringify({type:'operator-restore-result',requestId:${JSON.stringify(
+              requestId
+            )},result:'error:'+String(e&&e.message||e)}));}})();true;`
+          );
+        });
+
+        if (!result.startsWith('restored:')) {
+          return {
+            ok: false,
+            reason: 'restore-failed',
+            operatorName: record.operator
+          };
+        }
+
         onUpdateSetting('selectedOperator', record.operator);
         onUpdateSetting('operatorProtected', record.protected);
         onUpdateSetting('operatorSyncMs', Date.now());
-        return true;
+        webRef.current?.injectJavaScript(
+          'if(window.__dmzRnReadOperator){window.__dmzRnReadOperator();}location.reload();true;'
+        );
+        return { ok: true, operatorName: record.operator };
       },
       [onUpdateSetting]
     );
@@ -455,6 +562,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           return;
         }
 
+        if (message.type === 'operator-restore-result') {
+          const requestId = message.requestId?.trim() || '';
+          const pending = restoreRequests.current.get(requestId);
+          if (pending) {
+            clearTimeout(pending.timer);
+            restoreRequests.current.delete(requestId);
+            pending.resolve(message.result ?? '');
+          }
+          return;
+        }
+
         if (message.type === 'open-settings') {
           onOpenSettings();
           return;
@@ -506,6 +624,11 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (message.type === 'operator') {
           const nextName =
             typeof message.name === 'string' ? message.name.trim() : '';
+          liveOperator.current = {
+            name: nextName,
+            verified: Boolean(message.verified),
+            protected: Boolean(message.protected)
+          };
           if (nextName) {
             onUpdateSetting('selectedOperator', nextName);
             onUpdateSetting('operatorSyncMs', Date.now());
