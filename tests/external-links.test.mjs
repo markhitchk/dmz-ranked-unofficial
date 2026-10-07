@@ -7,6 +7,10 @@ const source = readFileSync(
   new URL('../src/screens/DmzWebScreen.tsx', import.meta.url),
   'utf8'
 );
+const appUiSource = readFileSync(
+  new URL('../remote/app-ui/app.js', import.meta.url),
+  'utf8'
+);
 
 function extractFunction(name) {
   const start = source.indexOf('function ' + name + '(');
@@ -73,4 +77,17 @@ test('website Support bridge custom scheme reaches the navigation handler', () =
     /originWhitelist=\{\['http:\/\/\*', 'https:\/\/\*', 'dmzranked-support:\/\/\*'\]\}/
   );
   assert.match(source, /url\.toLowerCase\(\)\.startsWith\('dmzranked-support:'\)/);
+});
+
+
+test('header Support button keeps the website HTTPS donation URL', () => {
+  const start = appUiSource.indexOf('function fixSupportLinks(){');
+  assert.notEqual(start, -1);
+  const end = appUiSource.indexOf('/* Scope the site', start);
+  assert.notEqual(end, -1);
+  const fn = appUiSource.slice(start, end);
+
+  assert.match(fn, /support\.setAttribute\("target","_self"\)/);
+  assert.doesNotMatch(fn, /dmzranked-support:\/\/open/);
+  assert.doesNotMatch(fn, /preventDefault\(\)/);
 });
