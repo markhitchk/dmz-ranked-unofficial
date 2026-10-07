@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppSettings, DEFAULT_SETTINGS } from '../types';
 import { loadSettings, resetSettings, saveSettings } from '../services/storage';
+import { resetNotificationSyncState } from '../services/backgroundNotificationSync';
+import { resetProductionMigrationState } from '../services/peerMigration';
 
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -30,6 +32,10 @@ export function useSettings() {
 
   const reset = useCallback(async () => {
     const next = await resetSettings();
+    await Promise.all([
+      resetNotificationSyncState(),
+      resetProductionMigrationState()
+    ]);
     setSettings(next);
   }, []);
 
