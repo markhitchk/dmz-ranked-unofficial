@@ -1899,25 +1899,13 @@
     function fixSupportLinks(){
       var support=q("#supportBtn");
       if(support){
+        // Keep the website's configured PayPal/Ko-fi URL intact. Using the
+        // normal HTTPS href lets the native WebView routing layer open it in
+        // the user's browser/app. Rewriting this button to a custom scheme
+        // caused older React Native builds to reject the click as blocked.
         support.setAttribute("target","_self");
         support.setAttribute("rel","noopener noreferrer");
-
-        // The website owns the donation URL and may use PayPal, Ko-fi, or
-        // another HTTPS donation provider. Hand only this trusted header
-        // support click to the native app so Android can open the configured
-        // URL externally without weakening the general WebView allow-list.
-        if(!support.getAttribute("data-hs-support-bridge")){
-          support.setAttribute("data-hs-support-bridge","1");
-          support.addEventListener("click",function(ev){
-            var href=clean(support.getAttribute("href")||support.href);
-            if(!/^https?:\/\//i.test(href))return;
-            ev.preventDefault();
-            ev.stopPropagation();
-            try{
-              window.location.href="dmzranked-support://open?url="+encodeURIComponent(href);
-            }catch(e){}
-          },true);
-        }
+        support.removeAttribute("data-hs-support-bridge");
       }
       qa("a[href*='ko-fi.com/harleytg_']").forEach(function(link){
         link.setAttribute("target","_self");
