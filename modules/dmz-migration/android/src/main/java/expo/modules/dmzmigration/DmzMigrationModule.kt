@@ -2,6 +2,8 @@ package expo.modules.dmzmigration
 
 import android.net.Uri
 import android.os.Build
+import android.webkit.CookieManager
+import android.webkit.WebStorage
 import android.webkit.WebView
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -55,6 +57,39 @@ class DmzMigrationModule : Module() {
         }
       } catch (_: Throwable) {
         null
+      }
+    }
+
+    AsyncFunction("clearWebViewData") { promise: expo.modules.kotlin.Promise ->
+      val context = appContext.reactContext
+      if (context == null) {
+        promise.resolve(false)
+        return@AsyncFunction
+      }
+
+      try {
+        context.runOnUiThread {
+          try {
+            val webView = WebView(context)
+            webView.clearCache(true)
+            webView.clearHistory()
+            webView.destroy()
+            WebStorage.getInstance().deleteAllData()
+
+            val cookies = CookieManager.getInstance()
+            cookies.removeAllCookies {
+              try {
+                cookies.flush()
+              } catch (_: Throwable) {
+              }
+              promise.resolve(true)
+            }
+          } catch (_: Throwable) {
+            promise.resolve(false)
+          }
+        }
+      } catch (_: Throwable) {
+        promise.resolve(false)
       }
     }
 
