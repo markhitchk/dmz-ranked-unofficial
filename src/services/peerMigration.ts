@@ -139,3 +139,8 @@ export async function autoImportProductionToBeta(): Promise<PeerImportResult | n
   await AsyncStorage.setItem(PRODUCTION_MIGRATION_KEY, '1');
   return imported;
 }
+
+
+export async function resetProductionMigrationState(): Promise<void> {
+  await AsyncStorage.removeItem(PRODUCTION_MIGRATION_KEY);
+}

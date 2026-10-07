@@ -387,6 +387,19 @@ export async function configureBackgroundNotifications(
   }
 }
 
+export async function resetNotificationSyncState(): Promise<void> {
+  await AsyncStorage.multiRemove([
+    KEY_BASELINE,
+    KEY_SEASON,
+    KEY_LAST_SYNC,
+    KEY_HANDLED_RAID_REPORT,
+    KEY_HANDLED_OPERATOR_REPORT,
+    KEY_HANDLED_REVIEW,
+    KEY_HANDLED_VERIFIED,
+    KEY_HANDLED_SEASON
+  ]);
+}
+
 export async function getLastNotificationSync(): Promise<{
   at: number;
   result: string;
