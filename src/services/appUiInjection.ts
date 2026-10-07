@@ -1,32 +1,70 @@
 export const APP_UI_MARKER = 'DMZ Ranked Remote App UI v1';
 
+const APP_UI_MIN_CHARS = 1000;
+const APP_UI_MAX_CHARS = 512 * 1024;
+
 export function isValidAppUiPayload(text: string): boolean {
-  return text.length > 1000 && text.length <= 512 * 1024 && text.includes(APP_UI_MARKER);
+  return (
+    text.length > APP_UI_MIN_CHARS &&
+    text.length <= APP_UI_MAX_CHARS &&
+    text.includes(APP_UI_MARKER)
+  );
 }
 
-// Sending JavaScript is not completion. Wait for the document's acknowledgement.
-export function buildRemoteUiInjection(css: string, js: string, pageId: number): string {
+function payloadRevision(text: string): string {
+  const match = text.match(/DMZ Ranked Remote App UI v(\d+)/i);
+  return match ? `v${match[1]}` : '';
+}
+
+export function isValidAppUiPair(css: string, js: string): boolean {
+  const cssRevision = payloadRevision(css);
+  const jsRevision = payloadRevision(js);
+  return (
+    isValidAppUiPayload(css) &&
+    isValidAppUiPayload(js) &&
+    Boolean(cssRevision) &&
+    cssRevision === jsRevision
+  );
+}
+
+export function appUiPairRevision(css: string, js: string): string {
+  return isValidAppUiPair(css, js) ? payloadRevision(css) : '';
+}
+
+// Sending JavaScript is not completion. Wait for the document's acknowledgement,
+// then keep a lightweight watchdog alive for SPA/head rebuilds.
+export function buildRemoteUiInjection(
+  css: string,
+  js: string,
+  pageId: number,
+  revision = appUiPairRevision(css, js)
+): string {
   return `
 (function () {
   var id = ${JSON.stringify(pageId)};
   var css = ${JSON.stringify(css)};
   var js = ${JSON.stringify(js)};
+  var revision = ${JSON.stringify(revision)};
   var styleId = 'hs-remote-app-ui-style';
   var checks = 0;
   var done = false;
   var stable = false;
   var timer;
+  var watchdogTimer;
   if (window.__dmzRnCancelUiCheck) window.__dmzRnCancelUiCheck();
   window.__dmzRnCancelUiCheck = function () { done = true; clearTimeout(timer); };
+
   function send(type, message) {
     window.ReactNativeWebView.postMessage(JSON.stringify({type: type, pageId: id, message: message}));
   }
+
   function fail(error) {
     if (done) return;
     done = true;
     clearTimeout(timer);
     send('app-ui-error', String(error && error.message || error));
   }
+
   function ensureCss() {
     var style = document.getElementById(styleId);
     if (!style) {
@@ -38,42 +76,134 @@ export function buildRemoteUiInjection(css: string, js: string, pageId: number):
     window.__DMZ_APP_CSS_TEXT = css;
     return style;
   }
+
+  function executeAppUiIfNeeded() {
+    var missing =
+      typeof window.__dmzHsBetaTabsRefresh !== 'function' ||
+      !window.__hsAppQolInstalled;
+    if (!window.__dmzRnAppUiExecuted || missing) {
+      (0, eval)(js);
+      window.__dmzRnAppUiExecuted = true;
+      window.__dmzRnAppUiRevision = revision;
+    }
+  }
+
+  function refreshAppDom() {
+    try {
+      if (typeof window.__dmzHsBetaTabsRefresh === 'function') {
+        window.__dmzHsBetaTabsRefresh();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.__dmzHsUpdateMessage === 'function') {
+        window.__dmzHsUpdateMessage();
+      }
+    } catch (_) {}
+    try {
+      if (typeof window.__dmzRnRefreshOperatorLifecycle === 'function') {
+        window.__dmzRnRefreshOperatorLifecycle();
+      }
+    } catch (_) {}
+  }
+
+  function ensureActive() {
+    var style = ensureCss();
+    executeAppUiIfNeeded();
+    document.documentElement.setAttribute('data-dmz-app-ui', 'installed');
+    document.documentElement.setAttribute('data-dmz-app-css', 'active');
+    refreshAppDom();
+    return style;
+  }
+
+  window.__dmzRnRevalidateAppUi = function () {
+    try {
+      ensureActive();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  function installWatchdog() {
+    if (window.__dmzRnUiObserver) {
+      try { window.__dmzRnUiObserver.disconnect(); } catch (_) {}
+    }
+    if (window.__dmzRnUiWatchdogTimer) {
+      clearInterval(window.__dmzRnUiWatchdogTimer);
+    }
+
+    var scheduled = false;
+    function schedule() {
+      if (scheduled) return;
+      scheduled = true;
+      clearTimeout(watchdogTimer);
+      watchdogTimer = setTimeout(function () {
+        scheduled = false;
+        try { ensureActive(); } catch (_) {}
+      }, 120);
+    }
+
+    try {
+      window.__dmzRnUiObserver = new MutationObserver(schedule);
+      window.__dmzRnUiObserver.observe(
+        document.documentElement || document.body,
+        { subtree: true, childList: true }
+      );
+    } catch (_) {}
+
+    window.__dmzRnUiWatchdogTimer = setInterval(function () {
+      try { ensureActive(); } catch (_) {}
+    }, 1600);
+  }
+
+  function readyState(style) {
+    return (
+      style &&
+      style.textContent.indexOf(${JSON.stringify(APP_UI_MARKER)}) >= 0 &&
+      style.textContent.length > ${APP_UI_MIN_CHARS} &&
+      style.sheet &&
+      style.sheet.cssRules.length > 0 &&
+      document.documentElement.getAttribute('data-dmz-app-ui') === 'installed' &&
+      document.documentElement.getAttribute('data-dmz-app-css') === 'active' &&
+      typeof window.__dmzHsBetaTabsRefresh === 'function' &&
+      window.__hsAppQolInstalled &&
+      document.querySelector('nav.tabs.hs-site-tabs [data-hs-unofficial-app]') &&
+      document.getElementById('unofficial-app') &&
+      document.getElementById('dmz-hs-active-user-stats')
+    );
+  }
+
   function check() {
     if (done) return;
     try {
-      var style = ensureCss();
-      if (window.__dmzHsBetaTabsRefresh) window.__dmzHsBetaTabsRefresh();
-      var ready = style.textContent.indexOf(${JSON.stringify(APP_UI_MARKER)}) >= 0 &&
-        style.textContent.length > 1000 && style.sheet && style.sheet.cssRules.length > 0 &&
-        document.documentElement.getAttribute('data-dmz-app-ui') === 'installed' &&
-        document.documentElement.getAttribute('data-dmz-app-css') === 'active' &&
-        typeof window.__dmzHsBetaTabsRefresh === 'function' && window.__hsAppQolInstalled &&
-        document.querySelector('nav.tabs.hs-site-tabs [data-hs-unofficial-app]') &&
-        document.getElementById('unofficial-app') && document.getElementById('dmz-hs-active-user-stats');
-      // Check twice across a rendering interval to catch head/DOM rebuilds.
+      var style = ensureActive();
+      var ready = readyState(style);
       if (ready && stable) {
         done = true;
+        installWatchdog();
         send('app-ui-ready');
         return;
       }
       stable = Boolean(ready);
-      if (++checks >= 100) { fail('App interface did not become ready'); return; }
+      if (++checks >= 100) {
+        fail('App interface did not become ready');
+        return;
+      }
       timer = setTimeout(check, 120);
-    } catch (error) { fail(error); }
+    } catch (error) {
+      fail(error);
+    }
   }
+
   try {
-    if (css.length <= 1000 || css.indexOf(${JSON.stringify(APP_UI_MARKER)}) < 0 ||
-        js.length <= 1000 || js.indexOf(${JSON.stringify(APP_UI_MARKER)}) < 0) {
-      throw new Error('Invalid app interface payload');
+    if (!${JSON.stringify(isValidAppUiPair(css, js))}) {
+      throw new Error('Invalid or mismatched app interface payload pair');
     }
-    ensureCss();
-    if (!window.__dmzRnAppUiExecuted) {
-      (0, eval)(js);
-      window.__dmzRnAppUiExecuted = true;
-    }
-    document.documentElement.setAttribute('data-dmz-app-ui', 'installed');
+    ensureActive();
     check();
-  } catch (error) { fail(error); }
+  } catch (error) {
+    fail(error);
+  }
 })();
 true;`;
 }
