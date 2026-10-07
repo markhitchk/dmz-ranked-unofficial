@@ -102,6 +102,8 @@ export function DmzDialog({
 
   if (!mounted && !visible) return null;
 
+  const densityScale = Math.max(0.75, Math.min(1.25, contentScale));
+  const inverseDensity = 100 / densityScale;
   const borderColor = danger ? colors.red : colors.cardBorderGold;
   const gradient = danger
     ? ['#1A1718', colors.card, colors.panelDeep]
@@ -115,33 +117,39 @@ export function DmzDialog({
       onRequestClose={onNegative}
     >
       <Pressable style={styles.scrim} onPress={onNegative}>
-        <Animated.View
+        <View
           style={[
-            styles.cardShell,
+            styles.densityFrame,
             {
-              borderColor,
-              borderWidth: danger ? 2 : 1,
-              opacity: animation,
-              transform: [
-                {
-                  translateY: animation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [10, 0]
-                  })
-                },
-                {
-                  scale: Animated.multiply(
-                    animation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.97, 1]
-                    }),
-                    Math.max(0.75, Math.min(1.25, contentScale))
-                  )
-                }
-              ]
+              width: `${inverseDensity}%`,
+              transform: [{ scale: densityScale }]
             }
           ]}
         >
+          <Animated.View
+            style={[
+              styles.cardShell,
+              {
+                borderColor,
+                borderWidth: danger ? 2 : 1,
+                opacity: animation,
+                transform: [
+                  {
+                    translateY: animation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [10, 0]
+                    })
+                  },
+                  {
+                    scale: animation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.97, 1]
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
           <Pressable onPress={() => undefined}>
             <LinearGradient
               colors={gradient as [string, string, string]}
@@ -321,7 +329,8 @@ export function DmzDialog({
               )}
             </LinearGradient>
           </Pressable>
-        </Animated.View>
+          </Animated.View>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -332,7 +341,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.78)',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
+  },
+  densityFrame: {
+    alignItems: 'center',
     paddingHorizontal: 14
   },
   cardShell: {
