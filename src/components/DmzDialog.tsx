@@ -2,13 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Modal,
+  Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, condensedFont } from '../theme';
 
 export type DmzDialogChoice = {
@@ -84,6 +87,7 @@ export function DmzDialog({
   onNegative
 }: Props) {
   const animation = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(visible);
 
   useEffect(() => {
@@ -114,9 +118,25 @@ export function DmzDialog({
       visible={visible}
       transparent
       animationType="none"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onNegative}
     >
-      <Pressable style={styles.scrim} onPress={onNegative}>
+      <Pressable
+        style={[
+          styles.scrim,
+          {
+            paddingTop:
+              Platform.OS === 'android'
+                ? Math.max(insets.top, StatusBar.currentHeight ?? 0)
+                : insets.top,
+            paddingRight: insets.right,
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left
+          }
+        ]}
+        onPress={onNegative}
+      >
         <View
           style={[
             styles.densityFrame,
