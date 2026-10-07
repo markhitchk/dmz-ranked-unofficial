@@ -56,6 +56,7 @@ export type DmzWebHandle = {
   clearCache: () => void;
   clearWebsiteData: () => void;
   refreshOperator: () => void;
+  selectOperator: (operatorName: string) => Promise<boolean>;
   captureOperatorBackup: () => void;
   restoreOperatorBackup: (operatorName: string) => Promise<boolean>;
   openAppTab: () => void;
@@ -220,6 +221,34 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       );
     }, []);
 
+    const selectOperator = useCallback(
+      async (operatorName: string): Promise<boolean> => {
+        const name = operatorName.trim();
+        if (!name || !webRef.current) return false;
+
+        const script = \`(function(){try{
+          var name=\${JSON.stringify(name)};
+          var input=document.getElementById('playerName');
+          var pick=document.getElementById('playerPick');
+          function touched(e){if(e&&e.isTrusted){window.__dmzRnOperatorTouched=true;}}
+          if(input&&!input.__dmzRnOperatorGuard){input.__dmzRnOperatorGuard=true;input.addEventListener('input',touched,true);input.addEventListener('change',touched,true);}
+          if(pick&&!pick.__dmzRnOperatorGuard){pick.__dmzRnOperatorGuard=true;pick.addEventListener('change',touched,true);}
+          if(window.__dmzRnOperatorTouched){return 'user';}
+          if(!input&&!pick){return 'wait';}
+          var target=name.toLowerCase(),pickMatched=false;
+          if(pick){for(var i=1;i<pick.options.length;i++){var o=pick.options[i];var v=String(o.value||o.textContent||'').trim();if(v.toLowerCase()===target){pickMatched=true;if(pick.selectedIndex!==i){pick.selectedIndex=i;pick.dispatchEvent(new Event('change',{bubbles:true}));}break;}}}
+          if(input){var cur=String(input.value||'').trim();if(cur.toLowerCase()!==target){input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}}
+          try{localStorage.setItem('dmz_myname',name);}catch(e){}
+          if(window.__dmzRnReadOperator){setTimeout(window.__dmzRnReadOperator,0);}
+          return (input?'ready':'wait')+'|'+(pickMatched?'pick':'nopick');
+        }catch(e){return 'error';}})();true;\`;
+
+        webRef.current.injectJavaScript(script);
+        return true;
+      },
+      []
+    );
+
     const captureOperatorBackup = useCallback(() => {
       webRef.current?.injectJavaScript(
         'if(window.__dmzRnCaptureBackup){window.__dmzRnCaptureBackup();}true;'
@@ -260,6 +289,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           );
         },
         refreshOperator,
+        selectOperator,
         captureOperatorBackup,
         restoreOperatorBackup,
         openAppTab: () => {
@@ -268,7 +298,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           );
         }
       }),
-      [captureOperatorBackup, refreshOperator, restoreOperatorBackup]
+      [captureOperatorBackup, refreshOperator, restoreOperatorBackup, selectOperator]
     );
 
     const showOverlay = useCallback(
