@@ -563,7 +563,7 @@ export function SettingsPanel({
       visible={visible}
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent={false}
+      statusBarTranslucent
       navigationBarTranslucent
     >
       <AppSafeArea contentScale={contentScaleFactor(settings.contentSize)}>
