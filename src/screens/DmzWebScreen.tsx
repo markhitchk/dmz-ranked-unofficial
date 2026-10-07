@@ -210,6 +210,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     ref
   ) {
     const webRef = useRef<WebView>(null);
+    const webHostRef = useRef<View>(null);
     const userAgent = useMemo(
       () =>
         Platform.OS === 'android'
@@ -261,8 +262,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     );
 
     const installBrowserDialogParity = useCallback(() => {
-      if (Platform.OS !== 'android' || !webRef.current) return;
-      const reactTag = findNodeHandle(webRef.current);
+      if (Platform.OS !== 'android' || !webHostRef.current) return;
+      const reactTag = findNodeHandle(webHostRef.current);
       if (typeof reactTag !== 'number') return;
 
       void installWebChromeParity(
@@ -831,7 +832,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
 
     return (
       <View style={styles.container}>
-        <WebView
+        <View ref={webHostRef} style={styles.webHost}>
+          <WebView
           ref={webRef}
           source={{ uri: initialUrl.current }}
           style={styles.webview}
@@ -925,7 +927,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             }
           }}
           allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
-        />
+          />
+        </View>
 
         {!overlayVisible && loading && progress < 100 ? (
           <View style={styles.topTrack}>
@@ -977,6 +980,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.black },
+  webHost: { flex: 1, backgroundColor: colors.black },
   webview: { flex: 1, backgroundColor: colors.black },
   topTrack: {
     position: 'absolute',
