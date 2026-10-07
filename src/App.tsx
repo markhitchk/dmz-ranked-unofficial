@@ -100,14 +100,11 @@ function AppContent() {
   useEffect(() => {
     if (!ready) return;
     const subscription = AppState.addEventListener('change', nextState => {
-      const previous = appState.current;
+      const wasActive = appState.current === 'active';
       appState.current = nextState;
       if (!settings.siteNotifications) return;
 
-      if (
-        nextState === 'active' ||
-        (previous === 'active' && nextState !== 'active')
-      ) {
+      if (nextState === 'active' || wasActive) {
         void syncNotificationsNow();
       }
     });

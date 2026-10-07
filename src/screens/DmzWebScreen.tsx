@@ -201,9 +201,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     useEffect(() => {
       if (previousDesktopMode.current === settings.desktopSite) return;
       previousDesktopMode.current = settings.desktopSite;
-      showOverlay('Applying display mode…', 0);
       webRef.current?.reload();
-    }, [settings.desktopSite, showOverlay]);
+    }, [settings.desktopSite]);
 
     const bridge = useMemo(() => createBridgeBootstrap(channel), [channel]);
 
