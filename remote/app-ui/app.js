@@ -168,31 +168,116 @@
     const fallback = document.getElementById("hs-stat-rank-fallback");
     if (!image || !fallback) return;
 
-    image.hidden = true;
-    image.removeAttribute("src");
-    fallback.hidden = false;
     fallback.className = "hs-stat-rank-fallback " + rankTierClass(stats && stats.rankLabel);
     fallback.textContent = stats ? stats.rankLabel : "DMZ";
 
-    if (!stats) return;
+    function showFallback() {
+      image.onload = null;
+      image.onerror = null;
+      image.hidden = true;
+      image.removeAttribute("src");
+      if (image.dataset) {
+        delete image.dataset.hsRankSource;
+        delete image.dataset.hsRankPending;
+      }
+      fallback.hidden = false;
+    }
+
+    if (!stats) {
+      showFallback();
+      return;
+    }
+
     const key = badgeKey(stats.rankLabel);
-    if (!key) return;
+    if (!key) {
+      showFallback();
+      return;
+    }
 
     try {
       const badges = await loadBadgeMap();
       const source = badges && badges[key];
-      if (!source) return;
-      if (!lastStats || lastStats.rankLabel !== stats.rankLabel || lastStats.position !== stats.position) return;
-      image.onload = () => {
+      if (!source) {
+        showFallback();
+        return;
+      }
+      if (!lastStats || badgeKey(lastStats.rankLabel) !== key) return;
+
+      const href = new URL(source, "https://dmzranked.com/").href;
+      let currentSource = "";
+      try {
+        currentSource =
+          (image.dataset && image.dataset.hsRankSource) ||
+          image.currentSrc ||
+          image.getAttribute("src") ||
+          "";
+        if (currentSource) {
+          currentSource = new URL(currentSource, "https://dmzranked.com/").href;
+        }
+      } catch (_) {
+        currentSource = "";
+      }
+
+      if (currentSource === href && !image.hidden) {
+        if (image.dataset) {
+          image.dataset.hsRankSource = href;
+          delete image.dataset.hsRankPending;
+        }
+        fallback.hidden = true;
+        return;
+      }
+
+      const pendingSource =
+        image.dataset && image.dataset.hsRankPending
+          ? image.dataset.hsRankPending
+          : "";
+      if (pendingSource === href) {
+        if (!image.hidden && currentSource) fallback.hidden = true;
+        return;
+      }
+
+      if (image.dataset) image.dataset.hsRankPending = href;
+
+      const hasVisibleBadge = !image.hidden && Boolean(currentSource);
+      if (hasVisibleBadge) {
+        fallback.hidden = true;
+      } else {
+        image.hidden = true;
+        fallback.hidden = false;
+      }
+
+      const preloader = new Image();
+      preloader.onload = () => {
+        if (
+          image.dataset &&
+          image.dataset.hsRankPending &&
+          image.dataset.hsRankPending !== href
+        ) return;
+        if (!lastStats || badgeKey(lastStats.rankLabel) !== key) return;
+
+        image.onload = null;
+        image.onerror = null;
+        image.src = href;
+        if (image.dataset) {
+          image.dataset.hsRankSource = href;
+          delete image.dataset.hsRankPending;
+        }
         image.hidden = false;
         fallback.hidden = true;
       };
-      image.onerror = () => {
+      preloader.onerror = () => {
+        if (
+          image.dataset &&
+          image.dataset.hsRankPending &&
+          image.dataset.hsRankPending !== href
+        ) return;
+        if (image.dataset) delete image.dataset.hsRankPending;
         image.hidden = true;
         fallback.hidden = false;
       };
-      image.src = new URL(source, "https://dmzranked.com/").href;
+      preloader.src = href;
     } catch (_) {
+      if (image.dataset) delete image.dataset.hsRankPending;
       image.hidden = true;
       fallback.hidden = false;
     }
@@ -411,7 +496,14 @@
       el.textContent = appChannelLabel();
       el.classList.toggle("stable", appChannelLabel() === "STABLE");
     });
-    renderRankBadge(stats);
+    const badgeStats =
+      stats ||
+      (state === "loading" &&
+      operator &&
+      clean(operator).toLowerCase() === clean(lastStatsOperator).toLowerCase()
+        ? lastStats
+        : null);
+    renderRankBadge(badgeStats);
     renderMessages(state, operator, stats);
   }
 
