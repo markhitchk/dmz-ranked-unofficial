@@ -131,7 +131,7 @@ function settingsQueryForTarget(target?: string): string {
   const key = String(target ?? '')
     .trim()
     .toLowerCase()
-    .replace(/[\\s_]+/g, '-');
+    .replace(/[\s_]+/g, '-');
   return SETTINGS_TARGET_QUERIES[key] ?? '';
 }
 
