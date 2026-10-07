@@ -10,12 +10,16 @@ const PUBLIC_STATE_URL = 'https://dmzranked.com/api/v1/data/public-state';
 const KEY_BASELINE = 'dmz_notification_sync_baseline_v1';
 const KEY_SEASON = 'dmz_notification_sync_season_v1';
 const KEY_LAST_SYNC = 'dmz_notification_sync_last_v1';
+const KEY_APP_FOREGROUND = 'dmz_notification_app_foreground_v1';
 const KEY_HANDLED_RAID_REPORT = 'dmz_notification_handled_raid_report_v1';
 const KEY_HANDLED_OPERATOR_REPORT = 'dmz_notification_handled_operator_report_v1';
 const KEY_HANDLED_REVIEW = 'dmz_notification_handled_review_v1';
 const KEY_HANDLED_VERIFIED = 'dmz_notification_handled_verified_v1';
 const KEY_HANDLED_SEASON = 'dmz_notification_handled_season_v1';
 const RECENT_FOREGROUND_EVENT_MS = 30 * 60 * 1000;
+const BACKGROUND_KICK_MS = 60 * 1000;
+
+let backgroundKickTimer: ReturnType<typeof setTimeout> | null = null;
 
 type RaidSnapshot = {
   reports: number;
@@ -177,7 +181,9 @@ async function syncSeason(root: any): Promise<void> {
   await AsyncStorage.setItem(KEY_SEASON, key);
 }
 
-export async function syncNotificationsNow(): Promise<boolean> {
+export async function syncNotificationsNow(
+  options: { skipWhileAppForeground?: boolean } = {}
+): Promise<boolean> {
   const settings = await loadSettings();
   if (!settings.siteNotifications) return true;
 
@@ -226,6 +232,14 @@ export async function syncNotificationsNow(): Promise<boolean> {
     if (!previous || previous.operatorKey !== operatorKey) {
       await AsyncStorage.setItem(KEY_BASELINE, JSON.stringify(nextBaseline));
       await markSync('OK • baseline primed');
+      return true;
+    }
+
+    if (
+      options.skipWhileAppForeground &&
+      (await AsyncStorage.getItem(KEY_APP_FOREGROUND)) === '1'
+    ) {
+      await markSync('OK • app active');
       return true;
     }
 
@@ -363,7 +377,7 @@ export async function processForegroundOperatorState(
 }
 
 TaskManager.defineTask(TASK_NAME, async () => {
-  const ok = await syncNotificationsNow();
+  const ok = await syncNotificationsNow({ skipWhileAppForeground: true });
   return ok
     ? BackgroundTask.BackgroundTaskResult.Success
     : BackgroundTask.BackgroundTaskResult.Failed;
@@ -380,11 +394,36 @@ export async function configureBackgroundNotifications(
     return;
   }
 
-  if (!registered) {
-    await BackgroundTask.registerTaskAsync(TASK_NAME, {
-      minimumInterval: 15
-    });
+  await BackgroundTask.registerTaskAsync(TASK_NAME, {
+    minimumInterval: 15
+  });
+}
+
+export async function setNotificationAppForeground(
+  foreground: boolean
+): Promise<void> {
+  await AsyncStorage.setItem(KEY_APP_FOREGROUND, foreground ? '1' : '0');
+  if (foreground && backgroundKickTimer) {
+    clearTimeout(backgroundKickTimer);
+    backgroundKickTimer = null;
   }
+}
+
+export async function primeNotificationBaseline(): Promise<void> {
+  const settings = await loadSettings();
+  if (!settings.siteNotifications) return;
+  const baseline = await AsyncStorage.getItem(KEY_BASELINE);
+  if (!baseline) {
+    await syncNotificationsNow({ skipWhileAppForeground: false });
+  }
+}
+
+export function scheduleNotificationBackgroundKick(): void {
+  if (backgroundKickTimer) clearTimeout(backgroundKickTimer);
+  backgroundKickTimer = setTimeout(() => {
+    backgroundKickTimer = null;
+    void syncNotificationsNow({ skipWhileAppForeground: true });
+  }, BACKGROUND_KICK_MS);
 }
 
 export async function resetNotificationSyncState(): Promise<void> {
@@ -396,7 +435,8 @@ export async function resetNotificationSyncState(): Promise<void> {
     KEY_HANDLED_OPERATOR_REPORT,
     KEY_HANDLED_REVIEW,
     KEY_HANDLED_VERIFIED,
-    KEY_HANDLED_SEASON
+    KEY_HANDLED_SEASON,
+    KEY_APP_FOREGROUND
   ]);
 }
 
