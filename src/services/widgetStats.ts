@@ -226,7 +226,7 @@ async function fetchJson(url: string): Promise<any> {
         Accept: 'application/json',
         'Cache-Control': 'no-cache',
         'User-Agent':
-          'DMZRankedReactWidget/1.0.61 (HarleysStudios; com.harleytg.dmzranked)'
+          'DMZRankedReactWidget/1.0.65 (HarleysStudios; com.harleytg.dmzranked)'
       }
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
