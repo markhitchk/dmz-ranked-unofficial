@@ -1265,6 +1265,7 @@
     var FIRST_RUN_KEY="hs_dmz_app_get_started_v1";
     var KOFI_URL="https://ko-fi.com/harleytg_#checkoutModal";
     var IOS_SUPPORT_CAMPAIGN_KEY="hs_dmz_ios_release_campaign_v2";
+    var IOS_APPLE_SVG="<svg class='hs-ios-support-apple' viewBox='0 0 384 512' focusable='false' aria-hidden='true'><path fill='currentColor' d='M279.55 258.94c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-72.4-19.7C34.5 131.3 0 170 0 219.8c0 29.4 10.7 59.8 32.1 91.4 25.5 37.3 58.9 83.8 100.9 82.3 21.4-.5 36.5-15.2 64.9-15.2 27.6 0 41.6 15.2 65.9 15.2 42.4-.6 73.8-42.9 98.1-80.3-49.2-23.2-82.3-77.9-82.4-54.3zM222.4 94.8c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z'/></svg>";
     var firstRunQueued=false;
 
     function q(sel){try{return document.querySelector(sel);}catch(e){return null;}}
@@ -1313,11 +1314,7 @@
     function iosSupportPopupMarkup(){
       return "<div class='hs-ios-support-card' role='dialog' aria-modal='true' aria-labelledby='hs-ios-support-title'>"+
         "<button type='button' class='hs-ios-support-close' data-hs-ios-dismiss='1' aria-label='Close'>×</button>"+
-        "<div class='hs-ios-support-icon' aria-hidden='true'>"+
-        "<svg class='hs-ios-support-apple' viewBox='0 0 64 74' focusable='false' aria-hidden='true'>"+
-          "<path fill='currentColor' d='M33.2 18.6c-.3-5.7 4.1-11.3 9.7-12.6.7 6-3.7 11.5-9.7 12.6Zm19 16.9c0-6.2 3.4-11.8 8.4-14.8-3.1-4.5-7.9-7.2-13.4-7.7-5.8-.6-11.4 3.4-14.3 3.4-3 0-7.5-3.3-12.4-3.2-6.4.1-12.4 3.8-15.7 9.5-6.8 11.7-1.7 29 4.8 38.4 3.2 4.6 7 9.8 12 9.6 4.8-.2 6.6-3.1 12.4-3.1 5.7 0 7.4 3.1 12.5 3 5.1-.1 8.4-4.6 11.5-9.2 3.7-5.3 5.2-10.5 5.3-10.8-6.1-2.4-11.1-8.5-11.1-15.1Z'/>"+
-        "</svg>"+
-        "</div>"+
+        "<div class='hs-ios-support-icon' aria-hidden='true'>"+IOS_APPLE_SVG+"</div>"+
         "<div class='hs-ios-support-kicker'>Harley's Studios · DMZ Ranked App</div>"+
         "<h2 id='hs-ios-support-title'>Help bring DMZ Ranked to iOS</h2>"+
         "<p class='hs-ios-support-lead'>We want to bring the unofficial DMZ Ranked App to <b>iPhone and iPad</b>.</p>"+
@@ -1852,6 +1849,18 @@
           "<div class='hs-app-account-state' id='hs-app-operator-state'>Checking operator…</div>"+
           "<div class='hs-app-actions'><button type='button' class='hs-app-action-btn' id='hs-app-get-started-btn'>Get Started</button><button type='button' class='hs-app-action-btn ghost' id='hs-app-manage-pin'>Manage PIN</button></div>";
 
+        var iosRelease=document.createElement("div");
+        iosRelease.id="hs-app-ios-release-card";
+        iosRelease.className="card hs-app-ios-release-card";
+        iosRelease.innerHTML=
+          "<div class='hs-app-heading-row'><div><div class='hs-app-eyebrow'>Apple expansion</div><h2 class='section-title'>DMZ Ranked for iOS</h2></div><span class='hs-ios-release-badge'>PLANNED</span></div>"+
+          "<div class='hs-ios-release-body'>"+
+            "<div class='hs-ios-release-icon' aria-hidden='true'>"+IOS_APPLE_SVG+"</div>"+
+            "<div class='hs-ios-release-copy'><strong>Help bring DMZ Ranked to iPhone and iPad.</strong><span>Voluntary support helps Harley's Studios cover preparation, testing, and publishing costs for an Apple release.</span></div>"+
+          "</div>"+
+          "<div class='hs-ios-release-note'><b>Android is staying.</b> This is an expansion campaign only. Donations are voluntary and do not guarantee a release date.</div>"+
+          "<a class='hs-kofi-btn hs-ios-release-button' id='hs-app-ios-support' href='"+KOFI_URL+"' target='_self' rel='noopener noreferrer'>Support the iOS Release</a>";
+
         var support=document.createElement("div");
         support.id="hs-app-support-card";
         support.className="card hs-app-support-card";
@@ -1863,9 +1872,11 @@
         var before=app.querySelector(".hs-app-about");
         if(before){
           app.insertBefore(account,before);
+          app.insertBefore(iosRelease,before);
           app.insertBefore(support,before);
         }else{
           app.appendChild(account);
+          app.appendChild(iosRelease);
           app.appendChild(support);
         }
 
@@ -1875,6 +1886,13 @@
           if(!name)showGetStarted(true);
           else showPinModal(pinModeForCurrent(),name);
         });
+        q("#hs-app-ios-support").addEventListener("click",function(ev){
+          ev.preventDefault();
+          ev.stopPropagation();
+          try{
+            window.location.href="dmzranked-support://open?url="+encodeURIComponent(KOFI_URL);
+          }catch(e){}
+        },true);
       }
       updatePinUi();
     }
