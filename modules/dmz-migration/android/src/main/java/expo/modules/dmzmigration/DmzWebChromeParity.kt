@@ -25,6 +25,7 @@ import android.webkit.WebView
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.facebook.react.uimanager.UIManagerHelper
 import java.util.WeakHashMap
 
@@ -53,6 +54,20 @@ internal object DmzWebChromeParity {
     } ?: return false
 
     val webView = findWebView(root) ?: return false
+
+    // Match MainActivity.configureWebView() where react-native-webview's
+    // defaults differ from the original Java client.
+    webView.settings.apply {
+      loadsImagesAutomatically = true
+      javaScriptEnabled = true
+      domStorageEnabled = true
+      javaScriptCanOpenWindowsAutomatically = false
+      setSupportMultipleWindows(false)
+      allowFileAccess = false
+      allowContentAccess = true
+      builtInZoomControls = false
+    }
+
     val existing = clients[webView]
     if (existing != null && webView.webChromeClient === existing) {
       existing.updatePreferences(animations, contentScale.toFloat())
@@ -184,7 +199,21 @@ private class DmzDelegatingChromeClient(
     webView: WebView,
     filePathCallback: ValueCallback<Array<Uri>>,
     fileChooserParams: FileChooserParams
-  ): Boolean = delegate.onShowFileChooser(webView, filePathCallback, fileChooserParams)
+  ): Boolean {
+    val handled = delegate.onShowFileChooser(
+      webView,
+      filePathCallback,
+      fileChooserParams
+    )
+    if (!handled) {
+      Toast.makeText(
+        webView.context,
+        "No file picker is available.",
+        Toast.LENGTH_SHORT
+      ).show()
+    }
+    return handled
+  }
 
   override fun onCreateWindow(
     view: WebView,
