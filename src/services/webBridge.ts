@@ -1,10 +1,19 @@
 import type { BridgeMessage } from '../types';
+import * as Application from 'expo-application';
+import dmzLogo from '../../assets/dmz_logo_data.json';
 
 export function createBridgeBootstrap(channel: string): string {
   const channelLiteral = JSON.stringify(channel);
+  const appInfoLiteral = JSON.stringify({
+    channel,
+    versionName: Application.nativeApplicationVersion ?? '1.0.62',
+    versionCode: Application.nativeBuildVersion ?? '166',
+    logoUrl: dmzLogo.dataUri
+  });
 
   return [
     '(function () {',
+    '  window.__DMZ_APP_INFO = Object.assign({}, window.__DMZ_APP_INFO || {}, ' + appInfoLiteral + ');',
     '  if (window.__DMZ_RN_BRIDGE__) return true;',
     '  window.__DMZ_RN_BRIDGE__ = true;',
     '  function clean(value) { return String(value == null ? "" : value).replace(/\\s+/g, " ").trim(); }',

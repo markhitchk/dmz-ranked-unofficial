@@ -3,6 +3,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.file.Files;
+import java.util.Base64;
 import javax.imageio.ImageIO;
 
 /** Reproduces main/app/build.gradle's original DMZ artwork preparation. */
@@ -22,6 +24,10 @@ public class GenerateDmzArtwork {
             }
         }
         write(assets, "dmz_ranked_logo_display.png", logo);
+        String dataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(
+                Files.readAllBytes(new File(assets, "dmz_ranked_logo_display.png").toPath()));
+        Files.writeString(new File(assets, "dmz_logo_data.json").toPath(),
+                "{\"dataUri\":\"" + dataUri + "\"}\n");
         write(assets, "dmz_launcher_foreground.png", canvas(logo, 360, null));
         write(assets, "dmz_launcher_icon.png", canvas(logo, 420, new Color(17, 17, 17, 255)));
     }
