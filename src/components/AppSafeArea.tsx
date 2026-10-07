@@ -1,5 +1,11 @@
 import React, { type PropsWithChildren } from 'react';
-import { Platform, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  Platform,
+  StatusBar,
+  StyleSheet,
+  useWindowDimensions,
+  View
+} from 'react-native';
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -17,7 +23,13 @@ function SafeAreaFrame({
   contentScale = 1
 }: PropsWithChildren<{ contentScale?: number }>) {
   const measuredInsets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const initialInsets = initialWindowMetrics?.insets;
+  const initialFrame = initialWindowMetrics?.frame;
+  const sameOrientation =
+    !initialFrame ||
+    (width >= height) === (initialFrame.width >= initialFrame.height);
+  const fallbackInsets = sameOrientation ? initialInsets : undefined;
 
   // Android 15/16 can report a zero top inset briefly for translucent modal
   // windows. Keep the system notification/status tray outside app content by
@@ -26,19 +38,19 @@ function SafeAreaFrame({
     Platform.OS === 'android'
       ? Math.max(
           measuredInsets.top,
-          initialInsets?.top ?? 0,
+          fallbackInsets?.top ?? 0,
           StatusBar.currentHeight ?? 0
         )
-      : Math.max(measuredInsets.top, initialInsets?.top ?? 0);
+      : Math.max(measuredInsets.top, fallbackInsets?.top ?? 0);
   const rightInset = Math.max(
     measuredInsets.right,
-    initialInsets?.right ?? 0
+    fallbackInsets?.right ?? 0
   );
   const bottomInset = Math.max(
     measuredInsets.bottom,
-    initialInsets?.bottom ?? 0
+    fallbackInsets?.bottom ?? 0
   );
-  const leftInset = Math.max(measuredInsets.left, initialInsets?.left ?? 0);
+  const leftInset = Math.max(measuredInsets.left, fallbackInsets?.left ?? 0);
 
   const scale = Math.max(0.75, Math.min(1.25, contentScale));
   const inverse = 100 / scale;

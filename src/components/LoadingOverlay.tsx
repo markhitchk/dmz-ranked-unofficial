@@ -28,8 +28,8 @@ export function LoadingOverlay({
   animations
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const version = Application.nativeApplicationVersion ?? '1.0.66';
-  const build = Application.nativeBuildVersion ?? '170';
+  const version = Application.nativeApplicationVersion ?? '1.0.69';
+  const build = Application.nativeBuildVersion ?? '173';
 
   useEffect(() => {
     pulse.stopAnimation();

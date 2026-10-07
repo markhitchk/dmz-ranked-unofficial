@@ -243,8 +243,8 @@ export function SettingsPanel({
   onReset,
   onAction
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.67';
-  const build = Application.nativeBuildVersion ?? '171';
+  const version = Application.nativeApplicationVersion ?? '1.0.69';
+  const build = Application.nativeBuildVersion ?? '173';
   const [query, setQuery] = useState('');
   const [creditsExpanded, setCreditsExpanded] = useState(false);
   const [backupNames, setBackupNames] = useState<string[]>([]);
@@ -348,7 +348,12 @@ export function SettingsPanel({
     }
   }, [q]);
 
-  const contentSummary = 'Choose how much DMZ Ranked fits on screen.';
+  const contentSummary =
+    settings.contentSize === 'compact'
+      ? 'Compact • smaller cards, controls, text, and website content.'
+      : settings.contentSize === 'large'
+        ? 'Large • larger cards, controls, text, and website content.'
+        : 'Standard • default app and website sizing.';
 
   const toast = (message: string, long = false) => {
     if (Platform.OS === 'android') {
@@ -983,6 +988,9 @@ export function SettingsPanel({
                       {backupCount
                         ? `${backupCount} backup${backupCount === 1 ? '' : 's'} saved locally • maximum 2 operators`
                         : 'No operator backup saved yet.'}
+                    </Text>
+                    <Text style={styles.backupSafeNotice}>
+                      Safe data only • PINs, passwords, cookies, sessions, auth tokens, JWTs and API keys are never stored in operator backups.
                     </Text>
 
                     <View style={styles.backupActionRow}>
@@ -1754,6 +1762,12 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     lineHeight: 17
+  },
+  backupSafeNotice: {
+    marginTop: 7,
+    color: colors.goldSoft,
+    fontSize: 10.5,
+    lineHeight: 15
   },
   backupActionRow: { flexDirection: 'row', marginTop: 10 },
   backupActionButton: {

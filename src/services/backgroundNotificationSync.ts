@@ -70,7 +70,7 @@ async function fetchPublicState(): Promise<any> {
         Referer: 'https://dmzranked.com/',
         'Accept-Language': 'en-US,en;q=0.9',
         'User-Agent':
-          'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36 DMZRanked/1.0.65'
+          'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36 DMZRanked/1.0.69'
       }
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
