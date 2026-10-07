@@ -8,6 +8,7 @@ export type WebViewPackageInfo = {
 
 type DmzMigrationNative = {
   readPeerPayload(): Promise<string | null>;
+  getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   clearWebViewData(): Promise<boolean>;
   installWebChromeParity(
@@ -25,6 +26,10 @@ const nativeModule =
 
 export async function readPeerPayload(): Promise<string | null> {
   return nativeModule?.readPeerPayload() ?? null;
+}
+
+export function getDefaultWebViewUserAgent(): string | null {
+  return nativeModule?.getDefaultWebViewUserAgent() ?? null;
 }
 
 export async function getWebViewPackage(): Promise<WebViewPackageInfo | null> {
