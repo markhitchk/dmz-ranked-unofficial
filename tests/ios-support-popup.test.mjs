@@ -44,7 +44,7 @@ test('iOS support campaign v2 is new for users who already saw v1', () => {
   assert.equal(match[1], 'hs_dmz_ios_release_campaign_v2');
 
   const context = vm.createContext({
-    navigator: { userAgent: 'DMZRankedApp/1.0.69 (Android 16; com.harleytg.dmzranked.beta)' },
+    navigator: { userAgent: 'DMZRankedApp/1.1.0 (Android 16; com.harleytg.dmzranked.beta)' },
     IOS_SUPPORT_CAMPAIGN_KEY: match[1],
     getStore(key) {
       return key === 'hs_dmz_ios_release_campaign_v1' ? '1' : '';
@@ -64,7 +64,7 @@ test('iOS support campaign only prompts eligible Android app users once', () => 
   let seen = '';
   let blocked = false;
   const context = vm.createContext({
-    navigator: { userAgent: 'DMZRankedApp/1.0.69 (Android 16; com.harleytg.dmzranked.beta)' },
+    navigator: { userAgent: 'DMZRankedApp/1.1.0 (Android 16; com.harleytg.dmzranked.beta)' },
     IOS_SUPPORT_CAMPAIGN_KEY: 'hs_dmz_ios_release_campaign_v1',
     getStore() { return seen; },
     hasBlockingPopup() { return blocked; }
@@ -80,7 +80,7 @@ test('iOS support campaign only prompts eligible Android app users once', () => 
   assert.equal(context.shouldShowIosSupportPopup(), false);
 
   blocked = false;
-  context.navigator.userAgent = 'DMZRankedApp/1.0.69 (iPhone; iOS)';
+  context.navigator.userAgent = 'DMZRankedApp/1.1.0 (iPhone; iOS)';
   assert.equal(context.shouldShowIosSupportPopup(), false);
 });
 
