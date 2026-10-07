@@ -46,6 +46,24 @@ export type BridgeMessage =
   | { type: 'open-settings' }
   | { type: 'notification'; title?: string; body?: string }
   | {
+      type: 'operator-alert-state';
+      snapshot?: {
+        playerId?: string;
+        name?: string;
+        reports?: number;
+        raids?: Record<
+          string,
+          {
+            reports?: number;
+            pending?: boolean;
+            verified?: boolean;
+            pendingReason?: string;
+          }
+        >;
+      };
+    }
+  | { type: 'back-result'; result?: string }
+  | {
       type: 'operator';
       name?: string;
       verified?: boolean;

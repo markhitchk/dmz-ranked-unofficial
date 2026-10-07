@@ -10,6 +10,12 @@ const PUBLIC_STATE_URL = 'https://dmzranked.com/api/v1/data/public-state';
 const KEY_BASELINE = 'dmz_notification_sync_baseline_v1';
 const KEY_SEASON = 'dmz_notification_sync_season_v1';
 const KEY_LAST_SYNC = 'dmz_notification_sync_last_v1';
+const KEY_HANDLED_RAID_REPORT = 'dmz_notification_handled_raid_report_v1';
+const KEY_HANDLED_OPERATOR_REPORT = 'dmz_notification_handled_operator_report_v1';
+const KEY_HANDLED_REVIEW = 'dmz_notification_handled_review_v1';
+const KEY_HANDLED_VERIFIED = 'dmz_notification_handled_verified_v1';
+const KEY_HANDLED_SEASON = 'dmz_notification_handled_season_v1';
+const RECENT_FOREGROUND_EVENT_MS = 30 * 60 * 1000;
 
 type RaidSnapshot = {
   reports: number;
@@ -21,6 +27,13 @@ type RaidSnapshot = {
 type Baseline = {
   operatorKey: string;
   playerReports: number;
+  raids: Record<string, RaidSnapshot>;
+};
+
+export type ForegroundOperatorAlertState = {
+  playerId: string;
+  name: string;
+  reports: number;
   raids: Record<string, RaidSnapshot>;
 };
 
@@ -89,8 +102,59 @@ function collectRaids(
   return out;
 }
 
-async function post(title: string, body: string): Promise<void> {
+async function recentlyHandled(key: string): Promise<boolean> {
+  const raw = await AsyncStorage.getItem(key);
+  const value = Number(raw || 0);
+  return value > 0 && Date.now() - value < RECENT_FOREGROUND_EVENT_MS;
+}
+
+async function markHandled(key: string): Promise<void> {
+  await AsyncStorage.setItem(key, String(Date.now()));
+}
+
+function handledKeyFor(title: string, body: string): string | null {
+  const text = `${title} ${body}`.toLowerCase();
+  if (
+    (text.includes('one of your raids') || text.includes('your raid')) &&
+    text.includes('report')
+  ) {
+    return KEY_HANDLED_RAID_REPORT;
+  }
+  if (
+    text.includes('operator') &&
+    text.includes('report') &&
+    (text.includes('your operator') || text.includes('profile'))
+  ) {
+    return KEY_HANDLED_OPERATOR_REPORT;
+  }
+  if (text.includes('under review') || text.includes('review hold')) {
+    return KEY_HANDLED_REVIEW;
+  }
+  if (text.includes('approved') || text.includes('verified')) {
+    return KEY_HANDLED_VERIFIED;
+  }
+  if (text.includes('season update') || text.includes('new season')) {
+    return KEY_HANDLED_SEASON;
+  }
+  return null;
+}
+
+export async function recordForegroundNotification(
+  title: string,
+  body: string
+): Promise<void> {
+  const key = handledKeyFor(title, body);
+  if (key) await markHandled(key);
+}
+
+async function post(
+  title: string,
+  body: string,
+  handledKey?: string
+): Promise<void> {
+  if (handledKey && (await recentlyHandled(handledKey))) return;
   await showWebsiteNotification(title, body);
+  if (handledKey) await markHandled(handledKey);
 }
 
 async function syncSeason(root: any): Promise<void> {
@@ -106,7 +170,8 @@ async function syncSeason(root: any): Promise<void> {
       '[System] Season update',
       name
         ? `DMZ Ranked is now showing ${name}.`
-        : 'DMZ Ranked season information changed.'
+        : 'DMZ Ranked season information changed.',
+      KEY_HANDLED_SEASON
     );
   }
   await AsyncStorage.setItem(KEY_SEASON, key);
@@ -167,7 +232,8 @@ export async function syncNotificationsNow(): Promise<boolean> {
     if (nextPlayerReports > previous.playerReports) {
       await post(
         '[Reports] Operator reported',
-        `Hey ${canonicalName} — your operator profile was reported`
+        `Hey ${canonicalName} — your operator profile was reported`,
+        KEY_HANDLED_OPERATOR_REPORT
       );
     }
 
@@ -182,7 +248,8 @@ export async function syncNotificationsNow(): Promise<boolean> {
       if (next.reports > before.reports) {
         await post(
           '[Reports] Raid reported',
-          `Hey ${canonicalName} — one of your raids was reported`
+          `Hey ${canonicalName} — one of your raids was reported`,
+          KEY_HANDLED_RAID_REPORT
         );
       }
 
@@ -190,14 +257,16 @@ export async function syncNotificationsNow(): Promise<boolean> {
         const reason = shorten(next.pendingReason, 160);
         await post(
           '[Review] Raid under review',
-          `Hey ${canonicalName} — one of your raids is under review${reason ? ` • ${reason}` : ''}`
+          `Hey ${canonicalName} — one of your raids is under review${reason ? ` • ${reason}` : ''}`,
+          KEY_HANDLED_REVIEW
         );
       }
 
       if (next.verified && !before.verified) {
         await post(
           '[Approved] Raid approved',
-          `Hey ${canonicalName} — one of your raids was approved and verified`
+          `Hey ${canonicalName} — one of your raids was approved and verified`,
+          KEY_HANDLED_VERIFIED
         );
       }
     }
@@ -218,6 +287,79 @@ export async function syncNotificationsNow(): Promise<boolean> {
     await markSync(`ERROR • ${shorten(error instanceof Error ? error.message : error, 120)}`);
     return false;
   }
+}
+
+
+export async function processForegroundOperatorState(
+  next: ForegroundOperatorAlertState
+): Promise<void> {
+  const settings = await loadSettings();
+  if (!settings.siteNotifications) return;
+
+  const selected = clean(settings.selectedOperator);
+  const name = clean(next.name) || selected;
+  if (!selected || !name || name.toLowerCase() !== selected.toLowerCase()) return;
+
+  const playerId = clean(next.playerId);
+  const operatorKey = `${playerId}|${name.toLowerCase()}`.trim();
+  const raids = next.raids && typeof next.raids === 'object' ? next.raids : {};
+  const playerReports = Math.max(0, Number(next.reports) || 0);
+  const nextBaseline: Baseline = {
+    operatorKey,
+    playerReports,
+    raids
+  };
+
+  let previous: Baseline | null = null;
+  try {
+    const raw = await AsyncStorage.getItem(KEY_BASELINE);
+    previous = raw ? (JSON.parse(raw) as Baseline) : null;
+  } catch {
+    previous = null;
+  }
+
+  if (!previous || previous.operatorKey !== operatorKey) {
+    await AsyncStorage.setItem(KEY_BASELINE, JSON.stringify(nextBaseline));
+    return;
+  }
+
+  if (playerReports > previous.playerReports) {
+    await post(
+      '[Reports] Operator reported',
+      `Hey ${name} — your operator profile was reported`,
+      KEY_HANDLED_OPERATOR_REPORT
+    );
+  }
+
+  for (const [raidId, state] of Object.entries(raids)) {
+    const before = previous.raids[raidId];
+    if (!before) continue;
+
+    if (state.reports > before.reports) {
+      await post(
+        '[Reports] Raid reported',
+        `Hey ${name} — one of your raids was reported`,
+        KEY_HANDLED_RAID_REPORT
+      );
+    }
+    if (state.pending && !before.pending) {
+      const reason = shorten(state.pendingReason, 160);
+      await post(
+        '[Review] Raid under review',
+        `Hey ${name} — one of your raids is under review${reason ? ` • ${reason}` : ''}`,
+        KEY_HANDLED_REVIEW
+      );
+    }
+    if (state.verified && !before.verified) {
+      await post(
+        '[Approved] Raid approved',
+        `Hey ${name} — one of your raids was approved and verified`,
+        KEY_HANDLED_VERIFIED
+      );
+    }
+  }
+
+  await AsyncStorage.setItem(KEY_BASELINE, JSON.stringify(nextBaseline));
 }
 
 TaskManager.defineTask(TASK_NAME, async () => {
