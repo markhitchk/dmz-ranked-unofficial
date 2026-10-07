@@ -68,6 +68,7 @@ test('DMZ Ranked remains the in-app WebView origin', () => {
   assert.equal(context.isInternal('https://dmzranked.com/'), true);
   assert.equal(context.isInternal('https://www.dmzranked.com/path'), true);
   assert.equal(context.isInternal('https://dmz-ticker.netlify.app/'), false);
+  assert.equal(context.isInternal('not a url'), false);
 });
 
 
@@ -90,4 +91,12 @@ test('header Support button keeps the website HTTPS donation URL', () => {
   assert.match(fn, /support\.setAttribute\("target","_self"\)/);
   assert.doesNotMatch(fn, /dmzranked-support:\/\/open/);
   assert.doesNotMatch(fn, /preventDefault\(\)/);
+});
+
+
+test('new-window links have an explicit external routing path', () => {
+  assert.match(source, /setSupportMultipleWindows\s*\n\s*onOpenWindow=\{handleOpenWindow\}/);
+  assert.match(source, /const handleOpenWindow = useCallback/);
+  assert.match(source, /event\.nativeEvent\.targetUrl/);
+  assert.match(source, /handleExternalUrl\(url\)/);
 });
