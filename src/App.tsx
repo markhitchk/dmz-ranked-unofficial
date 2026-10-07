@@ -52,6 +52,7 @@ import { renderDmzWidget } from './widgets/widgetTaskHandler';
 import { colors, contentScaleFactor } from './theme';
 import type { AppChannel } from './types';
 import { AppSafeArea } from './components/AppSafeArea';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 
 const PLAY_PACKAGE_STABLE = 'com.harleytg.dmzranked';
 const PLAY_PACKAGE_BETA = 'com.harleytg.dmzranked.beta';
@@ -65,7 +66,11 @@ type AppDialog = {
 } | null;
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
+  );
 }
 
 function AppContent() {
