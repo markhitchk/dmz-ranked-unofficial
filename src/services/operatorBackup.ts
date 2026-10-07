@@ -154,6 +154,6 @@ export function buildOperatorRestoreScript(
     operator
       ? `localStorage.setItem('dmz_myname',${JSON.stringify(operator)});`
       : '',
-    "return 'restored:'+restored;}catch(e){return 'error:'+String(e&&e.message||e);}})();true;"
+    "return 'restored:'+restored;}catch(e){return 'error:'+String(e&&e.message||e);}})()"
   ].join('');
 }
