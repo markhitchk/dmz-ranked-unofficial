@@ -4,9 +4,14 @@ import { colors } from '../theme';
 
 export type DmzIconName =
   | 'back'
+  | 'close'
+  | 'copy'
   | 'database'
+  | 'forward'
   | 'globe'
+  | 'lock'
   | 'notification'
+  | 'reload'
   | 'search'
   | 'settings'
   | 'sync';
@@ -26,6 +31,46 @@ export function DmzIcon({
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24">
         <Path fill={fill} d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z" />
+      </Svg>
+    );
+  }
+
+  if (name === 'forward') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={fill} d="m12 4-1.42 1.41L16.17 11H4v2h12.17l-5.59 5.59L12 20l8-8z" />
+      </Svg>
+    );
+  }
+
+  if (name === 'reload') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={fill} d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h8V3z" />
+      </Svg>
+    );
+  }
+
+  if (name === 'lock') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={fill} d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zm-7-2a2 2 0 1 1 4 0v2h-4zm7 13H7v-9h10z" />
+      </Svg>
+    );
+  }
+
+  if (name === 'close') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={fill} d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.29 19.71 2.88 18.3 9.17 12 2.88 5.71 4.29 4.29l6.3 6.3 6.3-6.3z" />
+      </Svg>
+    );
+  }
+
+  if (name === 'copy') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={fill} d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z" />
       </Svg>
     );
   }
