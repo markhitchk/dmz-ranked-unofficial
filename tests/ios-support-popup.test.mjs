@@ -37,6 +37,29 @@ function extractFunction(name) {
   throw new Error('Could not extract ' + name);
 }
 
+
+test('iOS support campaign v2 is new for users who already saw v1', () => {
+  const match = source.match(/var IOS_SUPPORT_CAMPAIGN_KEY="([^"]+)"/);
+  assert.ok(match, 'campaign key must be declared in bundled App UI');
+  assert.equal(match[1], 'hs_dmz_ios_release_campaign_v2');
+
+  const context = vm.createContext({
+    navigator: { userAgent: 'DMZRankedApp/1.0.69 (Android 16; com.harleytg.dmzranked.beta)' },
+    IOS_SUPPORT_CAMPAIGN_KEY: match[1],
+    getStore(key) {
+      return key === 'hs_dmz_ios_release_campaign_v1' ? '1' : '';
+    },
+    hasBlockingPopup() { return false; }
+  });
+  vm.runInContext(extractFunction('shouldShowIosSupportPopup'), context);
+
+  assert.equal(
+    context.shouldShowIosSupportPopup(),
+    true,
+    'seeing campaign v1 must not suppress campaign v2'
+  );
+});
+
 test('iOS support campaign only prompts eligible Android app users once', () => {
   let seen = '';
   let blocked = false;
