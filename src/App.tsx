@@ -11,10 +11,6 @@ import Constants from 'expo-constants';
 import * as Application from 'expo-application';
 import * as KeepAwake from 'expo-keep-awake';
 import NetInfo from '@react-native-community/netinfo';
-import {
-  requestPinWidget,
-  requestWidgetUpdate
-} from 'react-native-android-widget';
 import { AppHeader } from './components/AppHeader';
 import { DmzDialog } from './components/DmzDialog';
 import { FeedbackPanel } from './components/FeedbackPanel';
@@ -50,12 +46,16 @@ import {
   importFromPeer,
   publishMigrationPayload
 } from './services/peerMigration';
-import { renderDmzWidget } from './widgets/widgetTaskHandler';
 import { colors, contentScaleFactor } from './theme';
 import type { AppChannel } from './types';
 import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
-import { clearWebViewData } from '../modules/dmz-migration';
+import {
+  clearWebViewData,
+  refreshDmzWidgets,
+  requestPinDmzWidget,
+  syncWidgetSettings
+} from '../modules/dmz-migration';
 
 const PLAY_PACKAGE_STABLE = 'com.harleytg.dmzranked';
 const PLAY_PACKAGE_BETA = 'com.harleytg.dmzranked.beta';
@@ -187,19 +187,12 @@ function AppContent() {
   }, [backupRevision, ready, settings]);
 
   useEffect(() => {
-    if (
-      !ready ||
-      Platform.OS !== 'android' ||
-      !settings.selectedOperator.trim()
-    ) {
-      return;
-    }
+    if (!ready || Platform.OS !== 'android') return;
 
     const timer = setTimeout(() => {
-      void requestWidgetUpdate({
-        widgetName: 'DMZRanked',
-        renderWidget: renderDmzWidget
-      });
+      void syncWidgetSettings(settings.selectedOperator).then(() =>
+        refreshDmzWidgets()
+      );
     }, 450);
 
     return () => clearTimeout(timer);
@@ -350,10 +343,8 @@ function AppContent() {
 
   const refreshWidgets = async () => {
     if (Platform.OS !== 'android') return;
-    await requestWidgetUpdate({
-      widgetName: 'DMZRanked',
-      renderWidget: renderDmzWidget
-    });
+    await syncWidgetSettings(settings.selectedOperator);
+    await refreshDmzWidgets();
   };
 
   const handleAction = async (action: SettingsAction) => {
@@ -519,9 +510,8 @@ function AppContent() {
       case 'add-widget': {
         if (Platform.OS !== 'android') return;
         try {
-          const accepted = await requestPinWidget({
-            widgetName: 'DMZRanked'
-          });
+          await syncWidgetSettings(settings.selectedOperator);
+          const accepted = await requestPinDmzWidget();
           if (accepted) {
             showNotice('Choose where to place the DMZ Ranked widget.');
           } else {
