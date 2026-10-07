@@ -11,6 +11,7 @@ import {
   Alert,
   Animated,
   BackHandler,
+  findNodeHandle,
   Linking,
   Platform,
   Pressable,
@@ -21,7 +22,7 @@ import {
 import NetInfo from '@react-native-community/netinfo';
 import { WebView } from 'react-native-webview';
 import type { AppSettings } from '../types';
-import { colors, condensedFont } from '../theme';
+import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { loadRemoteAppUi } from '../services/remoteAppUi';
 import { buildRemoteUiInjection } from '../services/appUiInjection';
@@ -41,6 +42,7 @@ import {
   latestOperatorBackup,
   saveOperatorBackup
 } from '../services/operatorBackup';
+import { installWebChromeParity } from '../../modules/dmz-migration';
 
 const HOME_URL = 'https://dmzranked.com/';
 const PAYPAL_SHARE_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
@@ -202,6 +204,22 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
       >()
     );
+
+    const installBrowserDialogParity = useCallback(() => {
+      if (Platform.OS !== 'android' || !webRef.current) return;
+      const reactTag = findNodeHandle(webRef.current);
+      if (typeof reactTag !== 'number') return;
+
+      void installWebChromeParity(
+        reactTag,
+        settings.appAnimations,
+        contentScaleFactor(settings.contentSize)
+      );
+    }, [settings.appAnimations, settings.contentSize]);
+
+    useEffect(() => {
+      installBrowserDialogParity();
+    }, [installBrowserDialogParity]);
 
     const clearLoadTimers = useCallback(() => {
       if (finishTimer.current) clearTimeout(finishTimer.current);
@@ -768,7 +786,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           userAgent={settings.desktopSite ? DESKTOP_UA : undefined}
           textZoom={contentZoom(settings.contentSize)}
           injectedJavaScriptBeforeContentLoaded={bridge}
-          onLoadStart={event => handleLoadStart(event.nativeEvent.url)}
+          onLoadStart={event => {
+            installBrowserDialogParity();
+            handleLoadStart(event.nativeEvent.url);
+          }}
           onLoadProgress={event => {
             if (page.current.loaded || !gate.isCurrent(page.current.id)) return;
             const next = Math.min(94, Math.round(event.nativeEvent.progress * 100));
