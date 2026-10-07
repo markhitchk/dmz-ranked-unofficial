@@ -111,7 +111,7 @@ export type DmzWebHandle = {
 type Props = {
   settings: AppSettings;
   channel: 'stable' | 'beta';
-  onOpenSettings: () => void;
+  onOpenSettings: (target?: string) => void;
   onLoadingChange: (loading: boolean) => void;
   onUpdateSetting: <K extends keyof AppSettings>(
     key: K,
@@ -745,7 +745,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
 
         if (message.type === 'open-settings') {
-          onOpenSettings();
+          onOpenSettings(message.target);
           return;
         }
 
