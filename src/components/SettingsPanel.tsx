@@ -548,7 +548,11 @@ export function SettingsPanel({
   const showPageActions = matches(q, 'page actions reload clear web cache');
   const showBeta =
     channel === 'beta' &&
-    matches(q, 'beta program discord ticker builder obs themed experimental');
+    matches(q, 'beta program discord testing experimental');
+  const showWebsiteTools = matches(
+    q,
+    'website tools dmz ranked site ticker builder obs themed overlay stream'
+  );
   const showHelp = matches(
     q,
     'help community feedback report support app website discord main group rankings rules server'
@@ -577,6 +581,7 @@ export function SettingsPanel({
     showUpdates ||
     showPageActions ||
     showBeta ||
+    showWebsiteTools ||
     showHelp ||
     showTransfer ||
     showDanger ||
@@ -1131,15 +1136,21 @@ export function SettingsPanel({
                 label="OPEN ↗"
                 onPress={() => open(APP_SUPPORT_DISCORD)}
               />
+            </>
+          ) : null}
+
+          {showWebsiteTools ? (
+            <>
+              <SectionLabel>DMZ RANKED WEBSITE TOOLS</SectionLabel>
               <ActionCard
                 title="DMZ Ticker Builder"
-                summary="Open the DMZ ticker builder."
+                summary="Open the DMZ Ranked website ticker builder."
                 label="OPEN ↗"
                 onPress={() => open(TICKER_BUILDER)}
               />
               <ActionCard
                 title="DMZ Themed OBS Builder"
-                summary="Open the DMZ themed OBS overlay builder."
+                summary="Open the DMZ Ranked website themed OBS overlay builder."
                 label="OPEN ↗"
                 onPress={() => open(OBS_BUILDER)}
               />
