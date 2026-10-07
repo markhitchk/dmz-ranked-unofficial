@@ -63,6 +63,9 @@ function toPatch(preferences: LegacyPreferences): Partial<AppSettings> {
   if (typeof preferences.app_animations === 'boolean') {
     patch.appAnimations = preferences.app_animations;
   }
+  if (typeof preferences.webview_debug === 'boolean') {
+    patch.webviewDebug = preferences.webview_debug;
+  }
 
   return patch;
 }
@@ -109,7 +112,8 @@ export async function publishMigrationPayload(
     website_operator_source: settings.operatorSource,
     operator_auto_save: settings.operatorAutoSave,
     content_size: settings.contentSize,
-    app_animations: settings.appAnimations
+    app_animations: settings.appAnimations,
+    webview_debug: settings.webviewDebug
   };
 
   const payload = JSON.stringify({

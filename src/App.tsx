@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  AppState,
   Linking,
   Platform,
   StyleSheet,
@@ -66,6 +67,7 @@ export default function App() {
 function AppContent() {
   const { settings, ready, update, replace, reset } = useSettings();
   const webRef = useRef<DmzWebHandle>(null);
+  const appState = useRef(AppState.currentState);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [online, setOnline] = useState(true);
@@ -93,6 +95,23 @@ function AppContent() {
     if (settings.siteNotifications) {
       void syncNotificationsNow();
     }
+  }, [ready, settings.siteNotifications]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const subscription = AppState.addEventListener('change', nextState => {
+      const previous = appState.current;
+      appState.current = nextState;
+      if (!settings.siteNotifications) return;
+
+      if (
+        nextState === 'active' ||
+        (previous === 'active' && nextState !== 'active')
+      ) {
+        void syncNotificationsNow();
+      }
+    });
+    return () => subscription.remove();
   }, [ready, settings.siteNotifications]);
 
   useEffect(() => {

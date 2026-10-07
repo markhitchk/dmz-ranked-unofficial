@@ -36,6 +36,35 @@ export async function initializeNotifications(enabled: boolean): Promise<void> {
   }
 }
 
+function normalizeAlert(title: string, body: string): {
+  line: string;
+  body: string;
+} {
+  let line = title.trim() || '[System] Alert';
+  let text = body.trim();
+
+  if (/^\[RAID\]/i.test(line)) {
+    line = '[Raids] Raid submitted';
+  } else if (/^\[REPORTS?\]/i.test(line)) {
+    line = /operator/i.test(`${title} ${body}`)
+      ? '[Reports] Operator reported'
+      : '[Reports] Raid reported';
+  } else if (/^\[APPROVED\]/i.test(line)) {
+    line = '[Approved] Raid approved';
+  } else if (/^\[REVIEW\]/i.test(line)) {
+    line = '[Review] Raid under review';
+  } else if (/^\[UPDATE\]/i.test(line)) {
+    line = '[System] Update available';
+  } else if (/^\[SEASON\]/i.test(line)) {
+    line = '[System] Season update';
+  } else if (/^\[WEBSITE\]/i.test(line)) {
+    line = '[System] Website alert';
+  }
+
+  if (text.length > 320) text = text.slice(0, 319) + '…';
+  return { line, body: text };
+}
+
 export async function showWebsiteNotification(
   title: string,
   body: string
@@ -43,8 +72,9 @@ export async function showWebsiteNotification(
   const permission = await Notifications.getPermissionsAsync();
   if (permission.status !== 'granted') return;
 
-  const alertLine = title.trim() || '[System] Alert';
-  const alertBody = body.trim();
+  const normalized = normalizeAlert(title, body);
+  const alertLine = normalized.line;
+  const alertBody = normalized.body;
   const preview = alertBody ? `${alertLine} • ${alertBody}` : alertLine;
 
   await Notifications.scheduleNotificationAsync({
