@@ -954,6 +954,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           <WebView
           ref={webRef}
           source={{ uri: initialUrl.current }}
+          originWhitelist={['http://*', 'https://*', 'dmzranked-support://*']}
           style={styles.webview}
           javaScriptEnabled
           javaScriptCanOpenWindowsAutomatically={false}
