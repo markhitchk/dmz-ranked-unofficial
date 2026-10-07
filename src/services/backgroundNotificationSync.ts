@@ -388,6 +388,10 @@ export async function configureBackgroundNotifications(
 ): Promise<void> {
   const registered = await TaskManager.isTaskRegisteredAsync(TASK_NAME);
   if (!enabled) {
+    if (backgroundKickTimer) {
+      clearTimeout(backgroundKickTimer);
+      backgroundKickTimer = null;
+    }
     if (registered) {
       await BackgroundTask.unregisterTaskAsync(TASK_NAME);
     }
