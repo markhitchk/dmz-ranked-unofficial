@@ -183,7 +183,7 @@ export function createBridgeBootstrap(channel: string, selectedOperator = ''): s
     '    channel: ' + channelLiteral + ',',
     '    notify: function (title, body) { emit(title || "DMZ Ranked", body || "", "manual:" + title + ":" + body); },',
     '    setOperator: function (name, verified) { send({ type: "operator", name: clean(name), verified: !!verified }); },',
-    '    openSettings: function () { send({ type: "open-settings" }); },',
+    '    openSettings: function (target) { send({ type: "open-settings", target: clean(target) }); },',
     '    log: function (message) { send({ type: "log", message: clean(message) }); }',
     '  };',
     '  window.addEventListener("dmz-ranked-notification", function (event) { var detail = event && event.detail ? event.detail : {}; emit(detail.title || "DMZ Ranked", detail.body || "", "event:" + detail.title + ":" + detail.body); });',
