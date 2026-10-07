@@ -11,7 +11,7 @@
   }
 
   function openNativeAppSettings(target) {
-    const section = clean(target).toLowerCase().replace(/[\\s_]+/g, "-");
+    const section = clean(target).toLowerCase().replace(/[\s_]+/g, "-");
     try {
       if (
         window.HarleysStudiosApp &&
