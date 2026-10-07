@@ -81,6 +81,7 @@ function AppContent() {
   const webRef = useRef<DmzWebHandle>(null);
   const appState = useRef(AppState.currentState);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTarget, setSettingsTarget] = useState<string | undefined>();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -110,6 +111,41 @@ function AppContent() {
   const channel =
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
     'stable';
+
+  const openSettings = (target?: string) => {
+    const nextTarget = target?.trim() || undefined;
+    setSettingsTarget(nextTarget);
+    setSettingsOpen(true);
+  };
+
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    setSettingsTarget(undefined);
+  };
+
+  useEffect(() => {
+    const handleSettingsUrl = (url: string | null) => {
+      if (!url) return;
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol.toLowerCase() !== 'dmzranked:') return;
+        const parts = [
+          parsed.hostname,
+          ...parsed.pathname.split('/').filter(Boolean)
+        ].filter(Boolean);
+        if ((parts[0] || '').toLowerCase() !== 'settings') return;
+        openSettings(parts[1] ? decodeURIComponent(parts[1]) : undefined);
+      } catch {
+        // Ignore unrelated or malformed deep links.
+      }
+    };
+
+    void Linking.getInitialURL().then(handleSettingsUrl);
+    const subscription = Linking.addEventListener('url', event =>
+      handleSettingsUrl(event.url)
+    );
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -537,7 +573,7 @@ function AppContent() {
         return;
 
       case 'feedback':
-        setSettingsOpen(false);
+        closeSettings();
         setFeedbackOpen(true);
         return;
 
@@ -583,14 +619,14 @@ function AppContent() {
         online={online}
         loading={loading}
         animations={settings.appAnimations}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => openSettings()}
       />
 
       <DmzWebScreen
         ref={webRef}
         settings={settings}
         channel={channel}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={openSettings}
         onLoadingChange={setLoading}
         onUpdateSetting={update}
         onOperatorBackupSaved={() =>
@@ -600,11 +636,12 @@ function AppContent() {
 
       <SettingsPanel
         visible={settingsOpen}
+        target={settingsTarget}
         settings={settings}
         channel={channel}
         backupRevision={backupRevision}
         updateStatus={updateStatus}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         onUpdate={update}
         onReset={() => void reset()}
         onAction={action => void handleAction(action)}
