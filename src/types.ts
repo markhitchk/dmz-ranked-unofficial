@@ -1,5 +1,6 @@
 export type AppChannel = 'stable' | 'beta';
 export type ContentSize = 'compact' | 'standard' | 'large';
+export type AppExperienceVersion = 'v1' | 'v2';
 
 export type AppSettings = {
   desktopSite: boolean;
@@ -11,6 +12,8 @@ export type AppSettings = {
   appUiOverrides: boolean;
   appAnimations: boolean;
   contentSize: ContentSize;
+  developerMode: boolean;
+  experienceVersion: AppExperienceVersion;
   operatorAutoSave: boolean;
   webviewDebug: boolean;
   lastPageUrl: string;
@@ -31,6 +34,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   appUiOverrides: true,
   appAnimations: true,
   contentSize: 'standard',
+  developerMode: false,
+  experienceVersion: 'v2',
   operatorAutoSave: true,
   webviewDebug: false,
   lastPageUrl: 'https://dmzranked.com/',
