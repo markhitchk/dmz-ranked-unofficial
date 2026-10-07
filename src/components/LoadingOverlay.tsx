@@ -28,8 +28,8 @@ export function LoadingOverlay({
   animations
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const version = Application.nativeApplicationVersion ?? '1.0.61';
-  const build = Application.nativeBuildVersion ?? '165';
+  const version = Application.nativeApplicationVersion ?? '1.0.62';
+  const build = Application.nativeBuildVersion ?? '166';
 
   useEffect(() => {
     if (!animations) {
@@ -77,7 +77,7 @@ export function LoadingOverlay({
           }}
         >
           <Image
-            source={require('../../assets/dmz_ranked_logo.png')}
+            source={require('../../assets/dmz_ranked_logo_display.png')}
             style={styles.logo}
             resizeMode="contain"
           />

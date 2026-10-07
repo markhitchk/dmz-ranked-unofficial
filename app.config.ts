@@ -19,7 +19,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         targetCellWidth: 2,
         targetCellHeight: 1,
         resizeMode: 'horizontal|vertical',
-        previewImage: './assets/dmz_ranked_logo.png',
+        previewImage: './assets/dmz_ranked_logo_display.png',
         updatePeriodMillis: 1800000
       }
     ]
@@ -29,18 +29,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: isBeta ? 'DMZ Ranked [Beta]' : 'DMZ Ranked',
     slug: 'dmz-ranked-unofficial',
-    version: '1.0.61',
+    version: '1.0.62',
     orientation: 'default',
-    icon: './assets/dmz_ranked_logo.png',
+    icon: './assets/dmz_launcher_icon.png',
     scheme: 'dmzranked',
     userInterfaceStyle: 'dark',
     androidStatusBar: {
       backgroundColor: '#080A09',
-      barStyle: 'light-content'
+      barStyle: 'light-content',
+      hidden: false
     },
     ios: {
       bundleIdentifier: packageId,
-      buildNumber: '165',
+      buildNumber: '166',
       supportsTablet: true,
       infoPlist: {
         LSApplicationQueriesSchemes: ['itms-apps']
@@ -48,16 +49,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: packageId,
-      versionCode: 165,
+      versionCode: 166,
       allowBackup: true,
       adaptiveIcon: {
-        foregroundImage: './assets/dmz_ranked_logo.png',
-        backgroundColor: '#111111'
+        foregroundImage: './assets/dmz_launcher_foreground.png',
+        backgroundColor: '#080A09'
       },
       permissions: ['POST_NOTIFICATIONS'],
       predictiveBackGestureEnabled: false
     },
     plugins: [
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/dmz_ranked_logo_display.png',
+          imageWidth: 156,
+          resizeMode: 'contain',
+          backgroundColor: '#080A09'
+        }
+      ],
       ['react-native-android-widget', widgetConfig],
       [
         'expo-notifications',

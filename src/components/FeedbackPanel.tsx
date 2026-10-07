@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AppSafeArea } from './AppSafeArea';
 import {
   Image,
   Linking,
@@ -88,14 +89,20 @@ export function FeedbackPanel({
   };
 
   return (
-    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View style={styles.root}>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <AppSafeArea>
         <View style={styles.toolbar}>
           <Pressable style={styles.back} onPress={onClose}>
             <DmzIcon name="back" size={24} />
           </Pressable>
           <Image
-            source={require('../../assets/dmz_ranked_logo.png')}
+            source={require('../../assets/dmz_ranked_logo_display.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -268,7 +275,7 @@ export function FeedbackPanel({
             setResultMessage('');
           }}
         />
-      </View>
+      </AppSafeArea>
     </Modal>
   );
 }

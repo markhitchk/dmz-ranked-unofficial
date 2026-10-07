@@ -106,7 +106,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={require('../../assets/dmz_ranked_logo.png')}
+            image={require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={26}
             imageHeight={26}
           />
@@ -272,7 +272,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={require('../../assets/dmz_ranked_logo.png')}
+            image={require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={34}
             imageHeight={34}
           />
@@ -352,7 +352,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={require('../../assets/dmz_ranked_logo.png')}
+            image={require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={76}
             imageHeight={84}
           />
@@ -481,7 +481,7 @@ export function DmzRankedWidget({
         style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center' }}
       >
         <ImageWidget
-          image={require('../../assets/dmz_ranked_logo.png')}
+          image={require('../../assets/dmz_ranked_logo_display.png')}
           imageWidth={30}
           imageHeight={30}
         />
@@ -556,7 +556,7 @@ export function DmzRankedWidget({
         }}
       >
         <ImageWidget
-          image={require('../../assets/dmz_ranked_logo.png')}
+          image={require('../../assets/dmz_ranked_logo_display.png')}
           imageWidth={52}
           imageHeight={58}
         />

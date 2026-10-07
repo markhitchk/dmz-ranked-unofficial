@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Linking,
   Platform,
-  SafeAreaView,
-  StatusBar,
   StyleSheet,
   View
 } from 'react-native';
@@ -48,6 +46,7 @@ import {
 import { renderDmzWidget } from './widgets/widgetTaskHandler';
 import { colors } from './theme';
 import type { AppChannel } from './types';
+import { AppSafeArea } from './components/AppSafeArea';
 
 const PLAY_PACKAGE_STABLE = 'com.harleytg.dmzranked';
 const PLAY_PACKAGE_BETA = 'com.harleytg.dmzranked.beta';
@@ -61,6 +60,14 @@ type AppDialog = {
 } | null;
 
 export default function App() {
+  return (
+    <AppSafeArea initialWindow>
+      <AppContent />
+    </AppSafeArea>
+  );
+}
+
+function AppContent() {
   const { settings, ready, update, replace, reset } = useSettings();
   const webRef = useRef<DmzWebHandle>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -359,12 +366,7 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={colors.black}
-        translucent={false}
-      />
+    <View style={styles.safe}>
 
       <AppHeader
         channel={channel}
@@ -417,7 +419,7 @@ export default function App() {
         }}
         onNegative={() => setAppDialog(null)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

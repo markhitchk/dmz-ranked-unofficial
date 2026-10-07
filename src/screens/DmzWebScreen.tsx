@@ -44,7 +44,7 @@ const MAIN_DISCORD_URL = 'https://discord.gg/jTaTHqw45F';
 const BETA_GROUP_URL = 'https://groups.google.com/g/dmz-ranked';
 
 const DESKTOP_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36 DMZRankedApp/1.0.61';
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36 DMZRankedApp/1.0.62';
 
 export type DmzWebHandle = {
   reload: () => void;

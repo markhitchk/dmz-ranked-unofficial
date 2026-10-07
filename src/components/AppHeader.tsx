@@ -28,8 +28,8 @@ export function AppHeader({
   animations,
   onOpenSettings
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.61';
-  const build = Application.nativeBuildVersion ?? '165';
+  const version = Application.nativeApplicationVersion ?? '1.0.62';
+  const build = Application.nativeBuildVersion ?? '166';
   const messages = useMemo(
     () => [
       `Version ${version} • Build ${build}`,
@@ -93,7 +93,7 @@ export function AppHeader({
   return (
     <View style={styles.header}>
       <Image
-        source={require('../../assets/dmz_ranked_logo.png')}
+        source={require('../../assets/dmz_ranked_logo_display.png')}
         style={styles.logo}
         resizeMode="contain"
       />

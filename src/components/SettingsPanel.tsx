@@ -28,6 +28,7 @@ import {
 import { getLastNotificationSync } from '../services/backgroundNotificationSync';
 import type { AppSettings, ContentSize } from '../types';
 import { colors, condensedFont } from '../theme';
+import { AppSafeArea } from './AppSafeArea';
 
 const PAYPAL_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
 const KOFI_URL = 'https://ko-fi.com/harleytg_#checkoutModal';
@@ -200,8 +201,8 @@ export function SettingsPanel({
   onReset,
   onAction
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.61';
-  const build = Application.nativeBuildVersion ?? '165';
+  const version = Application.nativeApplicationVersion ?? '1.0.62';
+  const build = Application.nativeBuildVersion ?? '166';
   const [query, setQuery] = useState('');
   const [creditsExpanded, setCreditsExpanded] = useState(false);
   const [backupNames, setBackupNames] = useState<string[]>([]);
@@ -446,8 +447,14 @@ export function SettingsPanel({
     showDeveloper;
 
   return (
-    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View style={styles.root}>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <AppSafeArea>
         <View style={styles.toolbar}>
           <Pressable
             accessibilityLabel="Back"
@@ -457,7 +464,7 @@ export function SettingsPanel({
             <DmzIcon name="back" size={24} />
           </Pressable>
           <Image
-            source={require('../../assets/dmz_ranked_logo.png')}
+            source={require('../../assets/dmz_ranked_logo_display.png')}
             style={styles.toolbarLogo}
             resizeMode="contain"
           />
@@ -507,7 +514,7 @@ export function SettingsPanel({
               <View style={styles.aboutCard}>
                 <View style={styles.aboutTop}>
                   <Image
-                    source={require('../../assets/dmz_ranked_logo.png')}
+                    source={require('../../assets/dmz_ranked_logo_display.png')}
                     style={styles.aboutLogo}
                     resizeMode="contain"
                   />
@@ -1116,7 +1123,7 @@ export function SettingsPanel({
           }}
           onNegative={() => setDialog(null)}
         />
-      </View>
+      </AppSafeArea>
     </Modal>
   );
 }
