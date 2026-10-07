@@ -60,7 +60,7 @@ const IOS_DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
 
 function appUserAgentIdentity(): string {
-  const version = Application.nativeApplicationVersion ?? '1.0.66';
+  const version = Application.nativeApplicationVersion ?? '1.0.67';
   const packageName = Application.applicationId ?? 'com.harleytg.dmzranked';
   return `DMZRankedApp/${version} (HarleysStudios; AndroidClient; ${packageName})`;
 }
@@ -316,7 +316,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       webRef.current?.reload();
     }, [settings.desktopSite]);
 
-    const bridge = useMemo(() => createBridgeBootstrap(channel), [channel]);
+    const bridge = useMemo(
+      () => createBridgeBootstrap(channel, settings.selectedOperator),
+      [channel, settings.selectedOperator]
+    );
 
     const setLoadingState = useCallback(
       (value: boolean) => {
@@ -398,6 +401,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       },
       []
     );
+
+    useEffect(() => {
+      const savedOperator = settings.selectedOperator.trim();
+      if (!savedOperator || loading || !webRef.current) return;
+      void selectOperator(savedOperator);
+    }, [loading, selectOperator, settings.selectedOperator]);
 
     const captureOperatorBackup = useCallback(() => {
       webRef.current?.injectJavaScript(
