@@ -1314,7 +1314,7 @@
       return "<div class='hs-ios-support-card' role='dialog' aria-modal='true' aria-labelledby='hs-ios-support-title'>"+
         "<button type='button' class='hs-ios-support-close' data-hs-ios-dismiss='1' aria-label='Close'>×</button>"+
         "<div class='hs-ios-support-icon' aria-hidden='true'>"+
-        "<svg class='hs-ios-support-apple' viewBox='0 0 64 64' focusable='false' aria-hidden='true'>"+
+        "<svg class='hs-ios-support-apple' viewBox='0 0 64 74' focusable='false' aria-hidden='true'>"+
           "<path fill='currentColor' d='M33.2 18.6c-.3-5.7 4.1-11.3 9.7-12.6.7 6-3.7 11.5-9.7 12.6Zm19 16.9c0-6.2 3.4-11.8 8.4-14.8-3.1-4.5-7.9-7.2-13.4-7.7-5.8-.6-11.4 3.4-14.3 3.4-3 0-7.5-3.3-12.4-3.2-6.4.1-12.4 3.8-15.7 9.5-6.8 11.7-1.7 29 4.8 38.4 3.2 4.6 7 9.8 12 9.6 4.8-.2 6.6-3.1 12.4-3.1 5.7 0 7.4 3.1 12.5 3 5.1-.1 8.4-4.6 11.5-9.2 3.7-5.3 5.2-10.5 5.3-10.8-6.1-2.4-11.1-8.5-11.1-15.1Z'/>"+
         "</svg>"+
         "</div>"+
