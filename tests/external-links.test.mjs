@@ -65,3 +65,12 @@ test('DMZ Ranked remains the in-app WebView origin', () => {
   assert.equal(context.isInternal('https://www.dmzranked.com/path'), true);
   assert.equal(context.isInternal('https://dmz-ticker.netlify.app/'), false);
 });
+
+
+test('website Support bridge custom scheme reaches the navigation handler', () => {
+  assert.match(
+    source,
+    /originWhitelist=\{\['http:\/\/\*', 'https:\/\/\*', 'dmzranked-support:\/\/\*'\]\}/
+  );
+  assert.match(source, /url\.toLowerCase\(\)\.startsWith\('dmzranked-support:'\)/);
+});
