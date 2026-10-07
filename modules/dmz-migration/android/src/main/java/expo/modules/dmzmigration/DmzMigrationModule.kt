@@ -93,12 +93,30 @@ class DmzMigrationModule : Module() {
       }
     }
 
-    AsyncFunction("installWebChromeParity") { reactTag: Int, animations: Boolean, contentScale: Double ->
-      val context = appContext.reactContext ?: return@AsyncFunction false
-      try {
-        DmzWebChromeParity.install(context, reactTag, animations, contentScale)
-      } catch (_: Throwable) {
-        false
+    AsyncFunction("installWebChromeParity") {
+      reactTag: Int,
+      animations: Boolean,
+      contentScale: Double,
+      promise: expo.modules.kotlin.Promise ->
+      val context = appContext.reactContext
+      if (context == null) {
+        promise.resolve(false)
+        return@AsyncFunction
+      }
+
+      context.runOnUiThread {
+        try {
+          promise.resolve(
+            DmzWebChromeParity.install(
+              context,
+              reactTag,
+              animations,
+              contentScale
+            )
+          )
+        } catch (_: Throwable) {
+          promise.resolve(false)
+        }
       }
     }
 
