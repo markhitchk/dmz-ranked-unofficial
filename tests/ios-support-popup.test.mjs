@@ -114,7 +114,7 @@ test('bundled App UI includes dedicated popup styling without changing website m
 test('iOS campaign is owned by the remote override files', () => {
   assert.equal(source, remoteJs, 'bundled JS fallback must mirror remote/app-ui/app.js');
   assert.equal(css, remoteCss, 'bundled CSS fallback must mirror remote/app-ui/app.css');
-  assert.match(remoteJs, /hs_ios_release_campaign_v2/);
+  assert.match(remoteJs, /hs_dmz_ios_release_campaign_v2/);
   assert.match(remoteCss, /iOS release campaign branding/);
   assert.doesNotMatch(injectionSource, /IOS_SUPPORT_ENHANCEMENT_CSS/);
   assert.doesNotMatch(injectionSource, /hs-ios-support-app-card/);
