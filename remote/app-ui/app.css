@@ -2050,6 +2050,13 @@ html.hs-ios-support-open body{
   letter-spacing:.8px;
   box-shadow:0 0 24px rgba(230,169,43,.14);
 }
+#hs-ios-support-overlay .hs-ios-support-apple{
+  display:block;
+  width:29px;
+  height:36px;
+  color:var(--gold-b,#f5c451);
+  filter:drop-shadow(0 0 7px rgba(245,196,81,.22));
+}
 #hs-ios-support-overlay .hs-ios-support-kicker{
   color:var(--gold-b,#f5c451);
   font-size:9px;
