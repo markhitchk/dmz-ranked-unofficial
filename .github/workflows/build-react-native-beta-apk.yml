@@ -46,6 +46,10 @@ jobs:
           grep -R "com.harleytg.dmzranked.beta" android/app/build.gradle android/app/src/main/AndroidManifest.xml || true
           npx expo config --type public | grep -F "com.harleytg.dmzranked.beta"
 
+      - name: Compile native migration bridge
+        working-directory: android
+        run: ./gradlew :dmz-migration:compileReleaseKotlin --stacktrace
+
       - name: Build standalone release APK
         working-directory: android
         run: ./gradlew assembleRelease --stacktrace
