@@ -2,6 +2,7 @@ package expo.modules.dmzmigration
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -16,6 +17,21 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class DmzMigrationModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("DmzMigration")
+
+    AsyncFunction("launchLegacyExperience") {
+      val context = appContext.reactContext ?: return@AsyncFunction false
+      try {
+        val intent = Intent(
+          context,
+          com.harleytg.dmzranked.legacy.MainActivity::class.java
+        )
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+        true
+      } catch (_: Throwable) {
+        false
+      }
+    }
 
     AsyncFunction("readPeerPayload") {
       val context = appContext.reactContext ?: return@AsyncFunction null
