@@ -39,7 +39,7 @@ function extractFunction(name) {
 
 test('external website routing accepts arbitrary HTTP and HTTPS destinations', () => {
   const context = vm.createContext({ URL });
-  vm.runInContext(extractFunction('isAllowedExternal'), context);
+  vm.runInContext(extractFunction('isAllowedExternal').replace('(url: string): boolean', '(url)'), context);
 
   assert.equal(context.isAllowedExternal('https://dmz-ticker.netlify.app/'), true);
   assert.equal(context.isAllowedExternal('https://dmz-themed-obs.netlify.app/'), true);
@@ -49,7 +49,7 @@ test('external website routing accepts arbitrary HTTP and HTTPS destinations', (
 
 test('external website routing rejects non-web and malformed destinations', () => {
   const context = vm.createContext({ URL });
-  vm.runInContext(extractFunction('isAllowedExternal'), context);
+  vm.runInContext(extractFunction('isAllowedExternal').replace('(url: string): boolean', '(url)'), context);
 
   assert.equal(context.isAllowedExternal('javascript:alert(1)'), false);
   assert.equal(context.isAllowedExternal('file:///tmp/test.html'), false);
@@ -59,7 +59,7 @@ test('external website routing rejects non-web and malformed destinations', () =
 
 test('DMZ Ranked remains the in-app WebView origin', () => {
   const context = vm.createContext({ URL });
-  vm.runInContext(extractFunction('isInternal'), context);
+  vm.runInContext(extractFunction('isInternal').replace('(url: string): boolean', '(url)'), context);
 
   assert.equal(context.isInternal('https://dmzranked.com/'), true);
   assert.equal(context.isInternal('https://www.dmzranked.com/path'), true);
