@@ -11,6 +11,7 @@ const css = String(bundle.css || '');
 const remoteJs = readFileSync(new URL('../remote/app-ui/app.js', import.meta.url), 'utf8');
 const remoteCss = readFileSync(new URL('../remote/app-ui/app.css', import.meta.url), 'utf8');
 const injectionSource = readFileSync(new URL('../src/services/appUiInjection.ts', import.meta.url), 'utf8');
+const remoteLoaderSource = readFileSync(new URL('../src/services/remoteAppUi.ts', import.meta.url), 'utf8');
 
 function extractFunction(name) {
   const needles = ['function ' + name + '(', 'async function ' + name + '('];
@@ -126,4 +127,10 @@ test('override campaign uses real logos and remains available on the App page', 
   assert.match(remoteJs, /Help bring DMZ Ranked to iOS/);
   assert.match(remoteJs, /Support the iOS release/);
   assert.match(remoteCss, /\.hs-ios-support-app-card/);
+});
+
+
+test('React Native streams the migration branch override rather than main', () => {
+  assert.match(remoteLoaderSource, /REMOTE_UI_BRANCH = 'react-native-migration'/);
+  assert.doesNotMatch(remoteLoaderSource, /commits\/main/);
 });

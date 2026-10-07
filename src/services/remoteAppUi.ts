@@ -7,7 +7,8 @@ import {
 } from './appUiInjection';
 
 const REPO = 'markhitchk/dmz-ranked-unofficial';
-const COMMIT_URL = `https://api.github.com/repos/${REPO}/commits/main`;
+const REMOTE_UI_BRANCH = 'react-native-migration';
+const COMMIT_URL = `https://api.github.com/repos/${REPO}/commits/${REMOTE_UI_BRANCH}`;
 const rawUrl = (revision: string, path: string) =>
   `https://raw.githubusercontent.com/${REPO}/${revision}/${path}`;
 const TIMEOUT_MS = 3500;
