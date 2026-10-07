@@ -102,8 +102,8 @@ const SETTINGS_TARGET_QUERIES: Record<string, string> = {
   all: '',
   settings: '',
   about: 'about',
-  build: 'about build',
-  credits: 'about credits',
+  build: 'about',
+  credits: 'credits',
   appearance: 'appearance',
   display: 'appearance',
   compact: 'appearance compact',
@@ -121,8 +121,8 @@ const SETTINGS_TARGET_QUERIES: Record<string, string> = {
   beta: 'beta program',
   'website-tools': 'website tools',
   website: 'website tools',
-  support: 'help support',
-  help: 'help support',
+  support: 'feedback',
+  help: 'feedback',
   transfer: 'app data transfer',
   danger: 'danger zone'
 };
