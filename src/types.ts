@@ -45,7 +45,7 @@ export type BridgeMessage =
   | { type: 'ready' }
   | { type: 'app-ui-ready'; pageId: number }
   | { type: 'app-ui-error'; pageId: number; message?: string }
-  | { type: 'open-settings' }
+  | { type: 'open-settings'; target?: string }
   | { type: 'notification'; title?: string; body?: string }
   | {
       type: 'operator-alert-state';
