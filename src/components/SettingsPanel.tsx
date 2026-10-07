@@ -548,7 +548,7 @@ export function SettingsPanel({
   const showPageActions = matches(q, 'page actions reload clear web cache');
   const showBeta =
     channel === 'beta' &&
-    matches(q, 'beta program discord testing experimental');
+    matches(q, 'beta program discord testing experimental google group join');
   const showWebsiteTools = matches(
     q,
     'website tools dmz ranked site ticker builder obs themed overlay stream'
@@ -1136,6 +1136,12 @@ export function SettingsPanel({
                 label="OPEN ↗"
                 onPress={() => open(APP_SUPPORT_DISCORD)}
               />
+              <ActionCard
+                title="Join Beta Google Group"
+                summary="Join the DMZ Ranked app beta testing Google Group."
+                label="OPEN ↗"
+                onPress={() => open(BETA_GROUP)}
+              />
             </>
           ) : null}
 
@@ -1171,12 +1177,6 @@ export function SettingsPanel({
                 summary="Use App Support for this unofficial client: app bugs, WebView/loading, appearance, notifications, widgets, compatibility, and app-only features."
                 label="OPEN ↗"
                 onPress={() => open(APP_SUPPORT_DISCORD)}
-              />
-              <ActionCard
-                title="Join App Beta Group"
-                summary="Testing access and beta-app discussion."
-                label="OPEN ↗"
-                onPress={() => open(BETA_GROUP)}
               />
 
               <SectionLabel>WEBSITE SUPPORT ZONE</SectionLabel>
