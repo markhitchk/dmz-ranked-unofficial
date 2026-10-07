@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.DMZRanked" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@color/dmz_black</item>
+        <item name="android:colorAccent">@color/dmz_gold</item>
+        <item name="android:alertDialogTheme">@style/Theme.DMZRanked.Dialog</item>
+        <item name="android:navigationBarColor">@color/dmz_black</item>
+        <item name="android:statusBarColor">@color/dmz_black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <style name="Theme.DMZRanked.Dialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/dmz_dialog_background</item>
+        <item name="android:colorAccent">@color/dmz_gold</item>
+        <item name="android:textColorPrimary">@color/dmz_white</item>
+        <item name="android:textColorSecondary">@color/dmz_muted</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>
