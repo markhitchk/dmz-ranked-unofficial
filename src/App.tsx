@@ -20,6 +20,7 @@ import {
 } from './components/SettingsPanel';
 import {
   DmzWebScreen,
+  type DmzNavigationState,
   type DmzWebHandle
 } from './screens/DmzWebScreen';
 import { useSettings } from './hooks/useSettings';
@@ -85,6 +86,11 @@ function AppContent() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [navigation, setNavigation] = useState<DmzNavigationState>({
+    url: 'https://dmzranked.com/',
+    canGoBack: false,
+    canGoForward: false
+  });
   const [backupRevision, setBackupRevision] = useState(0);
   const [appDialog, setAppDialog] = useState<AppDialog>(null);
   const [updateStatus, setUpdateStatus] = useState(
@@ -619,6 +625,13 @@ function AppContent() {
         online={online}
         loading={loading}
         animations={settings.appAnimations}
+        currentUrl={navigation.url}
+        canGoBack={navigation.canGoBack}
+        canGoForward={navigation.canGoForward}
+        onGoBack={() => webRef.current?.goBack()}
+        onGoForward={() => webRef.current?.goForward()}
+        onReload={() => webRef.current?.reload()}
+        onNavigate={url => webRef.current?.navigate(url)}
         onOpenSettings={() => openSettings()}
       />
 
@@ -628,6 +641,7 @@ function AppContent() {
         channel={channel}
         onOpenSettings={openSettings}
         onLoadingChange={setLoading}
+        onNavigationChange={setNavigation}
         onUpdateSetting={update}
         onOperatorBackupSaved={() =>
           setBackupRevision(value => value + 1)
