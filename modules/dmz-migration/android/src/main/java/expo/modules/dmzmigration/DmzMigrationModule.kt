@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Build
 import android.webkit.CookieManager
 import android.webkit.WebStorage
+import android.webkit.WebSettings
 import android.webkit.WebView
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -38,6 +39,15 @@ class DmzMigrationModule : Module() {
         null
       } finally {
         cursor?.close()
+      }
+    }
+
+    Function("getDefaultWebViewUserAgent") {
+      val context = appContext.reactContext ?: return@Function null
+      try {
+        WebSettings.getDefaultUserAgent(context)
+      } catch (_: Throwable) {
+        null
       }
     }
 
