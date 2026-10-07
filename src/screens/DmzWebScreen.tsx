@@ -125,7 +125,7 @@ function isInternal(url: string): boolean {
     const host = new URL(url).hostname.toLowerCase();
     return host === 'dmzranked.com' || host.endsWith('.dmzranked.com');
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -889,38 +889,59 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       ]
     );
 
+    const handleExternalUrl = useCallback((url: string) => {
+      if (url.toLowerCase().startsWith('dmzranked-support:')) {
+        try {
+          const target = new URL(url).searchParams.get('url');
+          if (target && isAllowedExternal(target)) {
+            void openExternalUrl(target);
+          } else {
+            showLinkMessage('The website donation link is invalid.');
+          }
+        } catch {
+          showLinkMessage('Could not open the website donation link.');
+        }
+        return true;
+      }
+
+      if (isAllowedExternal(url)) {
+        void openExternalUrl(url);
+        return true;
+      }
+
+      return false;
+    }, []);
+
     const handleShouldStart = useCallback(
       (request: { url: string }) => {
         const url = request.url;
         if (isInternal(url) || url === 'about:blank') return true;
 
-        if (url.toLowerCase().startsWith('dmzranked-support:')) {
-          try {
-            const target = new URL(url).searchParams.get('url');
-            if (target && /^https?:/i.test(target)) {
-              void openExternalUrl(target);
-            } else {
-              showLinkMessage('The website donation link is invalid.');
-            }
-          } catch {
-            showLinkMessage('Could not open the website donation link.');
-          }
-          return false;
+        if (!handleExternalUrl(url)) {
+          showLinkMessage('External link blocked.');
         }
-
-        if (/^https?:/i.test(url)) {
-          if (isAllowedExternal(url)) {
-            void openExternalUrl(url);
-          } else {
-            showLinkMessage('Could not open this external website.');
-          }
-          return false;
-        }
-
-        showLinkMessage('External link blocked.');
         return false;
       },
-      []
+      [handleExternalUrl]
+    );
+
+    const handleOpenWindow = useCallback(
+      (event: { nativeEvent: { targetUrl?: string } }) => {
+        const url = event.nativeEvent.targetUrl?.trim() ?? '';
+        if (!url || url === 'about:blank') return;
+
+        if (isInternal(url)) {
+          webRef.current?.injectJavaScript(
+            `window.location.assign(${JSON.stringify(url)});true;`
+          );
+          return;
+        }
+
+        if (!handleExternalUrl(url)) {
+          showLinkMessage('External link blocked.');
+        }
+      },
+      [handleExternalUrl]
     );
 
     const retry = useCallback(async () => {
@@ -962,7 +983,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
           allowFileAccess={false}
-          setSupportMultipleWindows={false}
+          setSupportMultipleWindows
+          onOpenWindow={handleOpenWindow}
           webviewDebuggingEnabled={settings.webviewDebug}
           pullToRefreshEnabled={Platform.OS === 'ios' && settings.pullToRefresh}
           userAgent={userAgent}
