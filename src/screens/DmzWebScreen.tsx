@@ -17,9 +17,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  ToastAndroid,
   View
 } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import * as Application from 'expo-application';
 import { WebView } from 'react-native-webview';
 import type { AppSettings } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
@@ -42,7 +44,10 @@ import {
   latestOperatorBackup,
   saveOperatorBackup
 } from '../services/operatorBackup';
-import { installWebChromeParity } from '../../modules/dmz-migration';
+import {
+  getDefaultWebViewUserAgent,
+  installWebChromeParity
+} from '../../modules/dmz-migration';
 
 const HOME_URL = 'https://dmzranked.com/';
 const PAYPAL_SHARE_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
@@ -51,8 +56,31 @@ const APP_SUPPORT_DISCORD_URL = 'https://discord.gg/kdHneTZkyd';
 const MAIN_DISCORD_URL = 'https://discord.gg/jTaTHqw45F';
 const BETA_GROUP_URL = 'https://groups.google.com/g/dmz-ranked';
 
-const DESKTOP_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36 DMZRankedApp/1.0.65';
+const IOS_DESKTOP_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+
+function appUserAgentIdentity(): string {
+  const version = Application.nativeApplicationVersion ?? '1.0.65';
+  const packageName = Application.applicationId ?? 'com.harleytg.dmzranked';
+  return `DMZRankedApp/${version} (HarleysStudios; AndroidClient; ${packageName})`;
+}
+
+function javaAndroidUserAgent(desktop: boolean): string | undefined {
+  if (Platform.OS !== 'android') return undefined;
+
+  const identity = appUserAgentIdentity();
+  const mobile = getDefaultWebViewUserAgent();
+  if (!mobile) {
+    return desktop
+      ? `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 ${identity}`
+      : undefined;
+  }
+
+  if (!desktop) return `${mobile} ${identity}`;
+
+  const chromeToken = mobile.match(/Chrome\/[^\s]+/)?.[0] ?? 'Chrome/120.0.0.0';
+  return `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) ${chromeToken} Safari/537.36 ${identity}`;
+}
 
 export type OperatorRestoreResult =
   | { ok: true; operatorName: string }
@@ -166,6 +194,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     ref
   ) {
     const webRef = useRef<WebView>(null);
+    const userAgent = useMemo(
+      () =>
+        Platform.OS === 'android'
+          ? javaAndroidUserAgent(settings.desktopSite)
+          : settings.desktopSite
+            ? IOS_DESKTOP_UA
+            : undefined,
+      [settings.desktopSite]
+    );
+    const applicationNameForUserAgent =
+      Platform.OS === 'android' ? appUserAgentIdentity() : 'DMZRankedApp';
     const initialUrl = useRef(
       settings.rememberLastPage
         ? settings.lastPageUrl || HOME_URL
@@ -783,7 +822,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           setSupportMultipleWindows={false}
           webviewDebuggingEnabled={settings.webviewDebug}
           pullToRefreshEnabled={Platform.OS === 'ios' && settings.pullToRefresh}
-          userAgent={settings.desktopSite ? DESKTOP_UA : undefined}
+          userAgent={userAgent}
+          applicationNameForUserAgent={
+            Platform.OS === 'android' && userAgent
+              ? undefined
+              : applicationNameForUserAgent
+          }
           textZoom={contentZoom(settings.contentSize)}
           injectedJavaScriptBeforeContentLoaded={bridge}
           onLoadStart={event => {
@@ -843,12 +887,15 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               failLoad(page.current.id, 'network');
             }
           }}
-          onFileDownload={() =>
-            Alert.alert(
-              'DMZ Ranked',
-              'Downloads are disabled in this unofficial client.'
-            )
-          }
+          onFileDownload={() => {
+            const message =
+              'Downloads are disabled in this unofficial client.';
+            if (Platform.OS === 'android') {
+              ToastAndroid.show(message, ToastAndroid.SHORT);
+            } else {
+              Alert.alert('DMZ Ranked', message);
+            }
+          }}
           allowsBackForwardNavigationGestures={Platform.OS === 'ios'}
         />
 
