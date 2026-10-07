@@ -338,7 +338,7 @@ function AppContent() {
         update('operatorSyncMs', Date.now());
         const selected = await webRef.current?.selectOperator(operatorName);
         if (!selected) {
-          setDialog({
+          setAppDialog({
             title: 'SELECT OPERATOR',
             message: 'Open DMZ Ranked before switching the selected operator.'
           });
