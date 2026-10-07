@@ -38,7 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       backgroundColor: '#080A09',
       barStyle: 'light-content',
       hidden: false,
-      translucent: false
+      translucent: true
     },
     ios: {
       bundleIdentifier: packageId,
