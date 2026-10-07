@@ -1973,6 +1973,117 @@ body > .modal .modal-backdrop{
   min-width:190px;
 }
 
+/* App-page iOS release campaign section. */
+#unofficial-app .hs-app-ios-release-card{
+  overflow:hidden;
+  border-top-color:rgba(230,169,43,.72);
+  background:
+    radial-gradient(90% 170% at 0% 0%,rgba(230,169,43,.13),transparent 58%),
+    var(--panel,rgba(17,23,25,.86));
+}
+#unofficial-app .hs-ios-release-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:24px;
+  padding:4px 8px;
+  border:1px solid rgba(230,169,43,.45);
+  border-radius:5px;
+  background:rgba(230,169,43,.10);
+  color:var(--gold-b,#f5c451);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:8.5px;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.75px;
+  text-transform:uppercase;
+}
+#unofficial-app .hs-ios-release-body{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  margin-bottom:11px;
+}
+#unofficial-app .hs-ios-release-icon{
+  flex:0 0 58px;
+  width:58px;
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(230,169,43,.42);
+  border-radius:15px;
+  background:linear-gradient(180deg,rgba(245,196,81,.18),rgba(230,169,43,.06));
+  color:var(--gold-b,#f5c451);
+  box-shadow:0 0 24px rgba(230,169,43,.12);
+}
+#unofficial-app .hs-ios-release-icon .hs-ios-support-apple{
+  display:block;
+  width:29px;
+  height:38px;
+  color:currentColor;
+  filter:drop-shadow(0 0 7px rgba(245,196,81,.20));
+}
+#unofficial-app .hs-ios-release-copy{
+  min-width:0;
+  flex:1 1 auto;
+}
+#unofficial-app .hs-ios-release-copy strong{
+  display:block;
+  margin-bottom:3px;
+  color:var(--txt,#e9ede9);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:13px;
+  font-weight:800;
+  line-height:1.3;
+}
+#unofficial-app .hs-ios-release-copy span{
+  display:block;
+  color:var(--muted,#9aa39b);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:11.5px;
+  line-height:1.45;
+}
+#unofficial-app .hs-ios-release-note{
+  margin:0 0 12px;
+  padding:9px 10px;
+  border-left:3px solid var(--gold,#e6a92b);
+  border-radius:0 7px 7px 0;
+  background:rgba(230,169,43,.07);
+  color:var(--muted,#9aa39b);
+  font-family:var(--f-ui,'Rajdhani',system-ui,sans-serif);
+  font-size:11px;
+  line-height:1.45;
+}
+#unofficial-app .hs-ios-release-note b{
+  color:var(--txt,#e9ede9);
+}
+#unofficial-app .hs-ios-release-button{
+  min-width:210px;
+}
+@media(max-width:520px){
+  #unofficial-app .hs-ios-release-body{
+    align-items:flex-start;
+    gap:10px;
+  }
+  #unofficial-app .hs-ios-release-icon{
+    flex-basis:50px;
+    width:50px;
+    height:50px;
+    border-radius:13px;
+  }
+  #unofficial-app .hs-ios-release-icon .hs-ios-support-apple{
+    width:25px;
+    height:33px;
+  }
+  #unofficial-app .hs-ios-release-copy strong{font-size:12px}
+  #unofficial-app .hs-ios-release-copy span{font-size:10.5px}
+  #unofficial-app .hs-ios-release-button{
+    width:100%;
+    min-width:0;
+  }
+}
+
 /* App-only iOS release support campaign.
    Uses the same dark/gold popup language as the website and app dialogs, but
    remains isolated from dmzranked.com's own modal classes. */
