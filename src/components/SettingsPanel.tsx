@@ -11,6 +11,7 @@ import {
   Switch,
   Text,
   TextInput,
+  ToastAndroid,
   View
 } from 'react-native';
 import * as Application from 'expo-application';
@@ -322,6 +323,15 @@ export function SettingsPanel({
     return 'Standard • default app and website sizing.';
   }, [settings.contentSize]);
 
+  const toast = (message: string, long = false) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(
+        message,
+        long ? ToastAndroid.LONG : ToastAndroid.SHORT
+      );
+    }
+  };
+
   const operatorStatus = settings.selectedOperator
     ? [
         settings.selectedOperator,
@@ -379,6 +389,7 @@ export function SettingsPanel({
       setDialog(null);
       setPin('');
       setPinError('');
+      toast('Developer tools unlocked.');
       return;
     }
 
@@ -391,6 +402,10 @@ export function SettingsPanel({
       developerLockoutUntil.current = Date.now() + DEV_PIN_LOCKOUT_MS;
       setPinError(
         'Too many incorrect attempts. Developer access is locked for 30 seconds.'
+      );
+      toast(
+        'Too many incorrect PIN attempts. Developer access locked for 30 seconds.',
+        true
       );
     }
   };
@@ -414,12 +429,13 @@ export function SettingsPanel({
   };
 
   const copyDiagnostics = async () => {
+    const platformName = Platform.OS === 'ios' ? 'iOS' : 'Android';
     const report = [
-      'DMZ Ranked Android Diagnostics',
+      `DMZ Ranked ${platformName} Diagnostics`,
       `App: ${version} (${build})`,
       `Package: ${Application.applicationId ?? 'unknown'}`,
       `Channel: ${channel}`,
-      `Android: ${Device.osVersion ?? String(Platform.Version)} (API ${Device.platformApiLevel ?? String(Platform.Version)})`,
+      `${platformName}: ${Device.osVersion ?? String(Platform.Version)}${Platform.OS === 'android' ? ` (API ${Device.platformApiLevel ?? String(Platform.Version)})` : ''}`,
       `Device: ${[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown'}`,
       `WebView: ${webViewPackageText}`,
       `Notification permission: ${notificationStatus}`,
@@ -435,7 +451,12 @@ export function SettingsPanel({
       `Operator backups: ${backupCount}`,
       `Last notification sync: ${lastSyncText}`
     ].join('\n');
-    await Clipboard.setStringAsync(report);
+    try {
+      await Clipboard.setStringAsync(report);
+      toast('Diagnostic report copied.');
+    } catch {
+      toast('Clipboard is unavailable.', true);
+    }
   };
 
   const exportBackups = async () => {
@@ -1138,7 +1159,10 @@ export function SettingsPanel({
                 title="Lock developer tools"
                 summary="Hide developer controls again until the five-tap PIN unlock is completed."
                 label="LOCK"
-                onPress={() => setDeveloperUnlocked(false)}
+                onPress={() => {
+                  setDeveloperUnlocked(false);
+                  toast('Developer tools locked.');
+                }}
               />
             </>
           ) : null}
