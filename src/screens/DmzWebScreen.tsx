@@ -60,7 +60,7 @@ const IOS_DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
 
 function appUserAgentIdentity(): string {
-  const version = Application.nativeApplicationVersion ?? '1.0.65';
+  const version = Application.nativeApplicationVersion ?? '1.0.66';
   const packageName = Application.applicationId ?? 'com.harleytg.dmzranked';
   return `DMZRankedApp/${version} (HarleysStudios; AndroidClient; ${packageName})`;
 }
