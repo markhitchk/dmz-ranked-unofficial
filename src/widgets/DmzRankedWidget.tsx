@@ -85,6 +85,14 @@ export function DmzRankedWidget({
   const large = width >= 330 && height >= 165;
 
   if (compact) {
+    const stateLabel = loading
+      ? 'SYNCING'
+      : stats
+        ? stats.fromCache
+          ? 'CACHED'
+          : 'LIVE'
+        : 'NO OPERATOR';
+
     return (
       <FlexWidget
         style={{
@@ -95,30 +103,83 @@ export function DmzRankedWidget({
           borderWidth: 1,
           borderColor: GOLD_DARK,
           borderRadius: 18,
-          padding: 8
+          padding: 5
         }}
       >
         <FlexWidget
           style={{
             width: 'match_parent',
+            flex: 1,
             flexDirection: 'row',
             alignItems: 'center'
           }}
         >
           <ImageWidget
             image={stats?.badgeData || require('../../assets/dmz_ranked_logo_display.png')}
-            imageWidth={26}
-            imageHeight={26}
+            imageWidth={38}
+            imageHeight={40}
           />
+
           <FlexWidget
             style={{
               flex: 1,
-              marginLeft: 7,
+              marginLeft: 6,
               flexDirection: 'column'
             }}
           >
+            <FlexWidget
+              style={{
+                width: 'match_parent',
+                flexDirection: 'row',
+                alignItems: 'center'
+              }}
+            >
+              <ImageWidget
+                image={require('../../assets/dmz_ranked_logo_display.png')}
+                imageWidth={14}
+                imageHeight={14}
+              />
+              <TextWidget
+                text="DMZ RANKED"
+                style={{
+                  color: WHITE,
+                  fontSize: 8,
+                  fontWeight: 'bold',
+                  marginLeft: 4
+                }}
+              />
+              {beta ? (
+                <TextWidget
+                  text="[BETA]"
+                  style={{
+                    color: '#080A09',
+                    backgroundColor: GOLD,
+                    fontSize: 6,
+                    fontWeight: 'bold',
+                    paddingHorizontal: 4,
+                    paddingVertical: 1,
+                    borderRadius: 4,
+                    marginLeft: 4
+                  }}
+                />
+              ) : null}
+              <TextWidget
+                text={stateLabel}
+                style={{
+                  color: GOLD,
+                  backgroundColor: CHIP,
+                  fontSize: 6,
+                  fontWeight: 'bold',
+                  paddingHorizontal: 4,
+                  paddingVertical: 1,
+                  borderRadius: 4,
+                  marginLeft: 4
+                }}
+              />
+            </FlexWidget>
+
             <TextWidget
-              text={stats?.name || 'DMZ RANKED'}
+              text={stats?.name || 'SELECT AN OPERATOR'}
               truncate="END"
               maxLines={1}
               style={{
@@ -128,7 +189,11 @@ export function DmzRankedWidget({
               }}
             />
             <TextWidget
-              text={loading ? 'Loading…' : stats?.rankLabel || 'Pick an operator'}
+              text={
+                loading
+                  ? 'Refreshing live standings…'
+                  : stats?.rankLabel || 'Open DMZ Ranked → Operators'
+              }
               truncate="END"
               maxLines={1}
               style={{
@@ -139,21 +204,40 @@ export function DmzRankedWidget({
             />
           </FlexWidget>
 
-          {beta ? (
+          <FlexWidget
+            style={{
+              width: 54,
+              marginLeft: 5,
+              flexDirection: 'column',
+              alignItems: 'flex-end'
+            }}
+          >
             <TextWidget
-              text="[BETA]"
+              text={stats ? `${formatNumber(stats.sr)} SR` : '— SR'}
+              style={{ color: WHITE, fontSize: 13, fontWeight: 'bold' }}
+            />
+            <TextWidget
+              text={
+                stats
+                  ? `#${stats.position} / ${Math.max(stats.totalPlayers, stats.position)}`
+                  : '#— / —'
+              }
+              style={{ color: WHITE, fontSize: 7, fontWeight: 'bold' }}
+            />
+            <TextWidget
+              text={stats ? signed(stats.lastDelta) : 'NO DATA'}
               style={{
-                color: '#080A09',
-                backgroundColor: GOLD,
-                fontSize: 6,
-                fontWeight: 'bold',
-                paddingHorizontal: 5,
-                paddingVertical: 2,
-                borderRadius: 5,
-                marginRight: 4
+                color:
+                  !stats || stats.lastDelta === 0
+                    ? MUTED
+                    : stats.lastDelta > 0
+                      ? GREEN
+                      : RED,
+                fontSize: 7,
+                fontWeight: 'bold'
               }}
             />
-          ) : null}
+          </FlexWidget>
 
           <FlexWidget
             clickAction="refresh"
@@ -161,6 +245,7 @@ export function DmzRankedWidget({
             style={{
               width: 26,
               height: 26,
+              marginLeft: 4,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: CHIP,
@@ -176,54 +261,20 @@ export function DmzRankedWidget({
           </FlexWidget>
         </FlexWidget>
 
-        <FlexWidget
-          style={{
-            width: 'match_parent',
-            marginTop: 4,
-            flexDirection: 'row',
-            alignItems: 'flex-end'
-          }}
-        >
-          <TextWidget
-            text={stats ? `${formatNumber(stats.sr)} SR` : '… SR'}
-            style={{
-              color: WHITE,
-              fontSize: 13,
-              fontWeight: 'bold',
-              width: Math.max(50, width - 112)
-            }}
-          />
-          <TextWidget
-            text={
-              stats
-                ? `#${stats.position} / ${Math.max(stats.totalPlayers, stats.position)}`
-                : '#… / …'
-            }
-            style={{ color: WHITE, fontSize: 7, fontWeight: 'bold', marginRight: 5 }}
-          />
-          <TextWidget
-            text={stats ? signed(stats.lastDelta) : '+0 SR'}
-            style={{
-              color:
-                !stats || stats.lastDelta === 0
-                  ? MUTED
-                  : stats.lastDelta > 0
-                    ? GREEN
-                    : RED,
-              fontSize: 7,
-              fontWeight: 'bold'
-            }}
-          />
-        </FlexWidget>
-
-        <FlexWidget style={{ marginTop: 3 }}>
-          <Progress width={Math.max(30, width - 18)} pct={stats?.progressPct ?? 0} height={2} />
-        </FlexWidget>
+        {stats ? (
+          <FlexWidget style={{ marginTop: 1 }}>
+            <Progress
+              width={Math.max(30, width - 10)}
+              pct={stats.progressPct}
+              height={2}
+            />
+          </FlexWidget>
+        ) : null}
 
         <FlexWidget
           style={{
             width: 'match_parent',
-            marginTop: 2,
+            marginTop: 1,
             flexDirection: 'row',
             alignItems: 'center'
           }}
@@ -232,17 +283,31 @@ export function DmzRankedWidget({
             text="MADE BY HARLEY'S STUDIOS"
             truncate="END"
             maxLines={1}
-            style={{ color: MUTED, fontSize: 5, fontWeight: 'bold', width: Math.max(50, width - 95) }}
+            style={{
+              color: MUTED,
+              fontSize: 5,
+              fontWeight: 'bold',
+              flex: 1
+            }}
           />
           <TextWidget
-            text={stats?.fromCache ? 'CACHED' : 'LIVE'}
+            text={
+              stats
+                ? `${stats.fromCache ? 'CACHED • ' : ''}UPDATED ${timeLabel(stats.updatedAt)}`
+                : 'READING LIVE DATA'
+            }
             style={{ color: MUTED, fontSize: 5, marginLeft: 4 }}
           />
           <TextWidget
-            text={stats?.seasonName?.toUpperCase() || 'SEASON'}
+            text={stats?.seasonName?.toUpperCase() || 'DMZRANKED.COM'}
             truncate="END"
             maxLines={1}
-            style={{ color: GOLD, fontSize: 5, fontWeight: 'bold', marginLeft: 4 }}
+            style={{
+              color: GOLD,
+              fontSize: 5,
+              fontWeight: 'bold',
+              marginLeft: 4
+            }}
           />
         </FlexWidget>
       </FlexWidget>
@@ -272,7 +337,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={stats?.badgeData || require('../../assets/dmz_ranked_logo_display.png')}
+            image={require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={34}
             imageHeight={34}
           />
@@ -474,7 +539,7 @@ export function DmzRankedWidget({
         borderWidth: 1,
         borderColor: GOLD_DARK,
         borderRadius: 18,
-        padding: 11
+        padding: 10
       }}
     >
       <FlexWidget
@@ -482,8 +547,8 @@ export function DmzRankedWidget({
       >
         <ImageWidget
           image={require('../../assets/dmz_ranked_logo_display.png')}
-          imageWidth={30}
-          imageHeight={30}
+          imageWidth={26}
+          imageHeight={26}
         />
         <FlexWidget style={{ flex: 1, marginLeft: 8, flexDirection: 'column' }}>
           <TextWidget
@@ -556,9 +621,9 @@ export function DmzRankedWidget({
         }}
       >
         <ImageWidget
-          image={require('../../assets/dmz_ranked_logo_display.png')}
-          imageWidth={52}
-          imageHeight={58}
+          image={stats?.badgeData || require('../../assets/dmz_ranked_logo_display.png')}
+          imageWidth={58}
+          imageHeight={64}
         />
         <FlexWidget style={{ flex: 1, marginLeft: 10, flexDirection: 'column' }}>
           <TextWidget
