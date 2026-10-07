@@ -53,6 +53,7 @@ import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import {
   clearWebViewData,
+  launchLegacyExperience,
   refreshDmzWidgets,
   requestPinDmzWidget,
   syncWidgetSettings
@@ -97,6 +98,7 @@ function AppContent() {
     installedVersionLabel() + ' • Live monitoring'
   );
   const lastAnnouncedStoreVersion = useRef('');
+  const legacyLaunchAttempted = useRef(false);
   const foregroundAnnouncedStoreVersion = useRef('');
 
   const showNotice = (
@@ -152,6 +154,29 @@ function AppContent() {
     );
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    if (!ready || Platform.OS !== 'android') return;
+
+    if (settings.experienceVersion !== 'v1') {
+      legacyLaunchAttempted.current = false;
+      return;
+    }
+
+    if (legacyLaunchAttempted.current) return;
+    legacyLaunchAttempted.current = true;
+
+    void launchLegacyExperience().then(opened => {
+      if (!opened) {
+        legacyLaunchAttempted.current = false;
+        showNotice(
+          'The V1 Java experience could not be opened on this build.',
+          true,
+          'V1 LEGACY'
+        );
+      }
+    });
+  }, [ready, settings.experienceVersion]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
