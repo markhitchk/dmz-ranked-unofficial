@@ -18,6 +18,7 @@ function pageHarness() {
   const attrs = new Map();
   const messages = [];
   const timers = new Map();
+  const intervals = new Map();
   let serial = 0;
   const state = { tab: false, rules: false };
   const document = {
@@ -37,7 +38,9 @@ function pageHarness() {
     document,
     ReactNativeWebView: { postMessage: raw => messages.push(JSON.parse(raw)) },
     setTimeout: fn => { timers.set(++serial, fn); return serial; },
-    clearTimeout: id => timers.delete(id)
+    clearTimeout: id => timers.delete(id),
+    setInterval: fn => { intervals.set(++serial, fn); return serial; },
+    clearInterval: id => intervals.delete(id)
   });
   context.window = context;
   const tick = () => {
