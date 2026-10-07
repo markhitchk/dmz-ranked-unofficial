@@ -93,6 +93,15 @@ class DmzMigrationModule : Module() {
       }
     }
 
+    AsyncFunction("installWebChromeParity") { reactTag: Int, animations: Boolean, contentScale: Double ->
+      val context = appContext.reactContext ?: return@AsyncFunction false
+      try {
+        DmzWebChromeParity.install(context, reactTag, animations, contentScale)
+      } catch (_: Throwable) {
+        false
+      }
+    }
+
     AsyncFunction("setExportPayload") { payload: String ->
       val context = appContext.reactContext ?: return@AsyncFunction false
       context
