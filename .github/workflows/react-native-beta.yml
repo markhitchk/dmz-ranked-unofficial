@@ -1,6 +1,8 @@
 name: React Native Beta Verify and APK
 
 on:
+  push:
+    branches: [ react-native-migration ]
   pull_request:
     branches: [ react-native-migration ]
   workflow_dispatch:
