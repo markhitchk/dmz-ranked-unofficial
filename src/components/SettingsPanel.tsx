@@ -72,6 +72,7 @@ export type SettingsAction =
 
 type Props = {
   visible: boolean;
+  target?: string;
   settings: AppSettings;
   channel: 'stable' | 'beta';
   backupRevision: number;
@@ -95,6 +96,43 @@ type DialogMode =
 
 function matches(query: string, keywords: string): boolean {
   return !query || keywords.toLowerCase().includes(query);
+}
+
+const SETTINGS_TARGET_QUERIES: Record<string, string> = {
+  all: '',
+  settings: '',
+  about: 'about',
+  build: 'about build',
+  credits: 'about credits',
+  appearance: 'appearance',
+  display: 'appearance',
+  compact: 'appearance compact',
+  widgets: 'widget',
+  widget: 'widget',
+  experience: 'app experience',
+  operator: 'operators',
+  operators: 'operators',
+  notifications: 'notifications',
+  notification: 'notifications',
+  updates: 'app updates',
+  update: 'app updates',
+  'page-actions': 'page actions',
+  page: 'page actions',
+  beta: 'beta program',
+  'website-tools': 'website tools',
+  website: 'website tools',
+  support: 'help support',
+  help: 'help support',
+  transfer: 'app data transfer',
+  danger: 'danger zone'
+};
+
+function settingsQueryForTarget(target?: string): string {
+  const key = String(target ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\\s_]+/g, '-');
+  return SETTINGS_TARGET_QUERIES[key] ?? '';
 }
 
 function SectionLabel({
@@ -236,6 +274,7 @@ function CreditSupportCard({
 
 export function SettingsPanel({
   visible,
+  target,
   settings,
   channel,
   backupRevision,
@@ -270,6 +309,14 @@ export function SettingsPanel({
   const contentEntry = useRef(new Animated.Value(1)).current;
 
   const q = query.trim().toLowerCase();
+
+  useEffect(() => {
+    if (!visible) {
+      setQuery('');
+      return;
+    }
+    setQuery(settingsQueryForTarget(target));
+  }, [target, visible]);
 
   const refreshBackupState = async () => {
     const [names, count, latest] = await Promise.all([
