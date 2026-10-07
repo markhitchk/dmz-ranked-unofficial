@@ -509,7 +509,7 @@ export function SettingsPanel({
   return (
     <Modal
       visible={visible}
-      animationType={settings.appAnimations ? 'fade' : 'none'}
+      animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
       navigationBarTranslucent
