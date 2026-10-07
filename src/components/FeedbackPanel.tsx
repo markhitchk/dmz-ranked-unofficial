@@ -3,6 +3,7 @@ import { AppSafeArea } from './AppSafeArea';
 import {
   Image,
   Linking,
+  Platform,
   Modal,
   Pressable,
   ScrollView,
@@ -42,6 +43,8 @@ export function FeedbackPanel({
   contentSize: ContentSize;
   onClose: () => void;
 }) {
+  const platformName = Platform.OS === 'ios' ? 'iOS' : 'Android';
+  const platformClient = Platform.OS === 'ios' ? 'iOS client' : 'Android client';
   const [category, setCategory] = useState(CATEGORIES[0]!);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [subject, setSubject] = useState('');
@@ -112,7 +115,7 @@ export function FeedbackPanel({
           <View style={styles.titleWrap}>
             <Text style={styles.title}>APP FEEDBACK</Text>
             <Text style={styles.subtitle}>
-              DMZ RANKED • UNOFFICIAL ANDROID CLIENT
+              DMZ RANKED • UNOFFICIAL {platformName.toUpperCase()} CLIENT
             </Text>
           </View>
           <View style={styles.goldLine} />
@@ -127,10 +130,10 @@ export function FeedbackPanel({
             <View style={styles.intro}>
               <Text style={styles.introTitle}>APP FEEDBACK &amp; SUPPORT</Text>
               <Text style={styles.copy}>
-                Send feedback only for this unofficial Android app: app bugs,
-                WebView/loading problems, app features, compatibility, and app
-                support. The app team cannot change or fix the dmzranked.com
-                website itself.
+                Send feedback only for this unofficial {platformName} app: app
+                bugs, WebView/loading problems, app features, compatibility, and
+                app support. The app team cannot change or fix the
+                dmzranked.com website itself.
               </Text>
             </View>
           </DmzCard>
@@ -175,7 +178,7 @@ export function FeedbackPanel({
                   setDetails(value);
                   setDetailsError('');
                 }}
-                placeholder="Describe what happened in the Android app, what you expected, or what app feature you want…"
+                placeholder={`Describe what happened in the ${platformName} app, what you expected, or what app feature you want…`}
                 placeholderTextColor={colors.muted}
                 style={[styles.input, styles.details]}
                 multiline
@@ -204,13 +207,13 @@ export function FeedbackPanel({
 
           <Text style={styles.scope}>
             APP ONLY • Website content, rankings, rules, operator data, or
-            server-side problems are controlled by DMZ Ranked, not this Android
-            client.
+            server-side problems are controlled by DMZ Ranked, not this
+            {platformClient}.
           </Text>
 
           <Text style={styles.privacy}>
-            The report automatically includes app version, Android version, and
-            device model so app issues can be diagnosed. Do not include
+            The report automatically includes app version, {platformName} version,
+            and device model so app issues can be diagnosed. Do not include
             passwords, PINs, account tokens, cookies, or other private
             credentials.
           </Text>

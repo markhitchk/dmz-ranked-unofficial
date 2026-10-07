@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Asset } from 'expo-asset';
 import * as Application from 'expo-application';
@@ -97,10 +98,11 @@ export async function sendFeedback(
   const version = Application.nativeApplicationVersion ?? 'Unknown';
   const build = Application.nativeBuildVersion ?? 'Unknown';
   const packageName = Application.applicationId ?? 'unknown';
+  const platformName = Platform.OS === 'ios' ? 'iOS' : 'Android';
   const device = [
     Device.manufacturer ?? '',
     Device.modelName ?? Device.deviceName ?? 'Unknown device',
-    Device.osName ?? 'Android',
+    Device.osName ?? platformName,
     Device.osVersion ?? String(Device.platformApiLevel ?? '')
   ]
     .filter(Boolean)
@@ -118,7 +120,7 @@ export async function sendFeedback(
     ],
     embeds: [
       {
-        author: { name: 'DMZ Ranked • Android App Feedback' },
+        author: { name: `DMZ Ranked • ${platformName} App Feedback` },
         title: truncate(payload.subject, 180),
         description: truncate(payload.details, 3500),
         color: 16172115,
@@ -126,7 +128,7 @@ export async function sendFeedback(
         fields: [
           { name: 'Report ID', value: `\`\`${reportId}\`\``, inline: true },
           { name: 'Type', value: payload.category, inline: true },
-          { name: 'Scope', value: 'Android app only', inline: true },
+          { name: 'Scope', value: `${platformName} app only`, inline: true },
           { name: 'App Version', value: `${version} (${build})`, inline: true },
           { name: 'Package', value: `\`\`${packageName}\`\``, inline: true },
           {

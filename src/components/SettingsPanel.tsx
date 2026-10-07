@@ -467,10 +467,12 @@ export function SettingsPanel({
     q,
     'notifications report review approval website alerts permission sound vibration test'
   );
-  const showUpdates = matches(
-    q,
-    'app updates google play live update installed version check store'
-  );
+  const showUpdates =
+    Platform.OS === 'android' &&
+    matches(
+      q,
+      'app updates google play live update installed version check store'
+    );
   const showPageActions = matches(q, 'page actions reload clear web cache');
   const showBeta =
     channel === 'beta' &&
@@ -479,10 +481,12 @@ export function SettingsPanel({
     q,
     'help community feedback report support app website discord main group rankings rules server'
   );
-  const showTransfer = matches(
-    q,
-    'app data transfer import other stable beta supported settings operator backups'
-  );
+  const showTransfer =
+    Platform.OS === 'android' &&
+    matches(
+      q,
+      'app data transfer import other stable beta supported settings operator backups'
+    );
   const showDanger = matches(
     q,
     'danger zone clear website data cookies storage reset settings defaults'
@@ -1111,7 +1115,7 @@ export function SettingsPanel({
                 <View style={styles.diagnosticsCard}>
                   <Text style={styles.actionTitle}>Runtime information</Text>
                   <Text style={styles.cardSummary}>
-                    Android {Device.osVersion ?? String(Platform.Version)} • {[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown device'}
+                    {Platform.OS === 'ios' ? 'iOS' : 'Android'} {Device.osVersion ?? String(Platform.Version)} • {[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown device'}
                     {'\n'}WebView: {webViewPackageText}
                     {'\n'}Notifications: {notificationStatus} • Desktop: {settings.desktopSite ? 'On' : 'Off'} • Pull refresh: {settings.pullToRefresh ? 'On' : 'Off'}
                     {'\n'}Remember page: {settings.rememberLastPage ? 'On' : 'Off'} • WebView debug: {settings.webviewDebug ? 'On' : 'Off'}
