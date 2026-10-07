@@ -165,7 +165,6 @@ private class DmzDelegatingChromeClient(
       host,
       title = "WEBSITE INPUT",
       message = message.orEmpty(),
-      defaultValue = defaultValue.orEmpty(),
       animations = animationsEnabled,
       scale = scale,
       onPositive = result::confirm,
@@ -339,7 +338,6 @@ private object DmzBrowserDialog {
     activity: Activity,
     title: String,
     message: String,
-    defaultValue: String,
     animations: Boolean,
     scale: Float,
     onPositive: (String) -> Unit,
@@ -350,7 +348,6 @@ private object DmzBrowserDialog {
     val input = EditText(activity).apply {
       setSingleLine(true)
       hint = "Enter value"
-      setText(defaultValue)
       inputType = InputType.TYPE_CLASS_TEXT
       filters = arrayOf(InputFilter.LengthFilter(256))
       setTextColor(color(WHITE))
@@ -362,7 +359,6 @@ private object DmzBrowserDialog {
         dp(activity, 10, safeScale),
         dp(activity, 9, safeScale)
       )
-      textSize = sp(15f, safeScale)
     }
     card.addView(
       input,
@@ -434,7 +430,7 @@ private object DmzBrowserDialog {
         GradientDrawable.Orientation.TOP_BOTTOM,
         intArrayOf(color("#171C20"), color(CARD), color(PANEL_DEEP))
       ).apply {
-        cornerRadius = dp(activity, 16, scale).toFloat()
+        cornerRadius = dp(activity, 20, scale).toFloat()
         setStroke(dp(activity, 1, scale), color(CARD_BORDER_GOLD))
       }
     }
@@ -525,7 +521,7 @@ private object DmzBrowserDialog {
       dialog.window?.let { window ->
         window.setBackgroundDrawableResource(android.R.color.transparent)
         val width = minOf(
-          activity.resources.displayMetrics.widthPixels - dp(activity, 28, 1f),
+          activity.resources.displayMetrics.widthPixels - dp(activity, 28, scale),
           dp(activity, 450, scale)
         )
         window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
