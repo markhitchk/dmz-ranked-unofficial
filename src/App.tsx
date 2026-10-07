@@ -92,6 +92,18 @@ function AppContent() {
   const lastAnnouncedStoreVersion = useRef('');
   const foregroundAnnouncedStoreVersion = useRef('');
 
+  const showNotice = (
+    message: string,
+    duration: number = ToastAndroid.SHORT,
+    title = 'DMZ RANKED'
+  ) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, duration);
+    } else {
+      setAppDialog({ title, message });
+    }
+  };
+
   const channel =
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
     'stable';
@@ -349,10 +361,9 @@ function AppContent() {
 
       case 'clear-cache':
         webRef.current?.clearCache();
-        setAppDialog({
-          title: 'WEB CACHE CLEARED',
-          message: 'Cached DMZ Ranked web resources were cleared.'
-        });
+        showNotice(
+          'Web cache cleared. Cookies and website storage were kept.'
+        );
         return;
 
       case 'clear-data': {
@@ -370,14 +381,18 @@ function AppContent() {
           operatorSyncMs: 0
         });
         setBackupRevision(value => value + 1);
-        setAppDialog({
-          title: nativeCleared
-            ? 'WEBSITE DATA CLEARED'
-            : 'WEBSITE DATA CLEARED WITH WARNING',
-          message: nativeCleared
-            ? 'WebView cache, cookies, website storage, and the selected website operator were cleared. App operator backups were kept.'
-            : 'Page storage was cleared, but Android could not confirm that every WebView cookie was removed. App operator backups were kept.'
-        });
+        if (nativeCleared) {
+          showNotice(
+            'Website data cleared. App operator backups were kept.',
+            ToastAndroid.LONG
+          );
+        } else {
+          showNotice(
+            'Could not confirm that every Android WebView cookie was cleared. App operator backups were kept.',
+            ToastAndroid.LONG,
+            'WEBSITE DATA CLEARED WITH WARNING'
+          );
+        }
         return;
       }
 
@@ -396,10 +411,13 @@ function AppContent() {
         update('operatorSyncMs', Date.now());
         const selected = await webRef.current?.selectOperator(operatorName);
         if (!selected) {
-          setAppDialog({
-            title: 'SELECT OPERATOR',
-            message: 'Open DMZ Ranked before switching the selected operator.'
-          });
+          showNotice(
+            'Open DMZ Ranked before switching the selected operator.',
+            ToastAndroid.LONG,
+            'SELECT OPERATOR'
+          );
+        } else {
+          showNotice(`Switching to ${operatorName}…`);
         }
         return;
       }
@@ -409,10 +427,11 @@ function AppContent() {
           action.operatorName
         );
         if (!restored) {
-          setAppDialog({
-            title: 'OPERATOR RESTORE',
-            message: 'Open DMZ Ranked before restoring an operator.'
-          });
+          showNotice(
+            'Open DMZ Ranked before restoring an operator.',
+            ToastAndroid.LONG,
+            'OPERATOR RESTORE'
+          );
           return;
         }
 
@@ -431,10 +450,11 @@ function AppContent() {
                     : restored.reason === 'pin-required'
                       ? `${operatorName} is PIN protected. Select that operator on DMZ Ranked and enter its PIN first.`
                       : 'DMZ Ranked could not restore the saved operator data.';
-          setAppDialog({
-            title: 'OPERATOR RESTORE',
-            message
-          });
+          showNotice(
+            message,
+            ToastAndroid.LONG,
+            'OPERATOR RESTORE'
+          );
           return;
         }
 
@@ -454,8 +474,9 @@ function AppContent() {
       case 'test-notification':
         await showWebsiteNotification(
           '[System] Test notification',
-          'DMZ Ranked app notifications are working.'
+          'Heads-up notifications are working on this device. This is a local app test.'
         );
+        showNotice('Test notification sent.');
         return;
 
       case 'open-notification-settings':
@@ -468,10 +489,7 @@ function AppContent() {
           const result = await checkForAppUpdate(true);
           if (!result.available) {
             setUpdateStatus('Up to date • ' + installedVersionLabel());
-            setAppDialog({
-              title: 'GOOGLE PLAY UPDATES',
-              message: 'DMZ Ranked is up to date.'
-            });
+            showNotice('DMZ Ranked is up to date.');
           } else {
             setUpdateStatus(
               `Update available • ${result.storeVersion || 'newer build'} • Google Play update started.`
@@ -481,11 +499,12 @@ function AppContent() {
           setUpdateStatus(
             installedVersionLabel() + ' • Play check unavailable'
           );
-          setAppDialog({
-            title: 'GOOGLE PLAY UPDATES',
-            message:
-              'Google Play could not complete the in-app update check. You can still open the store listing directly.'
-          });
+          showNotice(
+            'Update status is unavailable. Opening Google Play.',
+            ToastAndroid.LONG,
+            'GOOGLE PLAY UPDATES'
+          );
+          void openPlayStore();
         }
         return;
       }
@@ -500,24 +519,27 @@ function AppContent() {
           const accepted = await requestPinWidget({
             widgetName: 'DMZRanked'
           });
-          if (!accepted) {
-            setAppDialog({
-              title: 'DMZ RANKED WIDGET',
-              message:
-                'This launcher does not support automatic widget pinning. Add the DMZ Ranked widget manually from your home-screen widget picker.'
-            });
+          if (accepted) {
+            showNotice('Choose where to place the DMZ Ranked widget.');
+          } else {
+            showNotice(
+              'Open your Android launcher’s Widgets menu and add DMZ Ranked.',
+              ToastAndroid.LONG,
+              'DMZ RANKED WIDGET'
+            );
           }
         } catch {
-          setAppDialog({
-            title: 'DMZ RANKED WIDGET',
-            message:
-              'The widget pin request could not be opened. Add the widget manually from your home-screen widget picker.'
-          });
+          showNotice(
+            'Open your Android launcher’s Widgets menu and add DMZ Ranked.',
+            ToastAndroid.LONG,
+            'DMZ RANKED WIDGET'
+          );
         }
         return;
       }
 
       case 'refresh-widgets':
+        showNotice('Refreshing DMZ Ranked widgets…');
         await refreshWidgets();
         return;
 
@@ -527,25 +549,26 @@ function AppContent() {
         return;
 
       case 'peer-import': {
+        const peerLabel =
+          channel === 'beta' ? 'DMZ Ranked' : 'DMZ Ranked [Beta]';
         const imported = await importFromPeer();
         if (!imported) {
-          setAppDialog({
-            title: 'APP DATA TRANSFER',
-            message:
-              'The other DMZ Ranked app is not installed or has no compatible data available.'
-          });
+          showNotice(
+            `${peerLabel} is not available to import from.`,
+            ToastAndroid.LONG,
+            'APP DATA TRANSFER'
+          );
           return;
         }
 
         replace({ ...settings, ...imported.patch });
         setBackupRevision(value => value + 1);
-        setAppDialog({
-          title: 'APP DATA TRANSFER',
-          message:
-            imported.importedOperators > 0
-              ? `Imported app settings and ${imported.importedOperators} operator backup${imported.importedOperators === 1 ? '' : 's'} from the other DMZ Ranked app.`
-              : 'Imported compatible app settings from the other DMZ Ranked app.'
-        });
+        const importedSettings = Object.keys(imported.patch).length;
+        showNotice(
+          `Imported ${importedSettings} app setting${importedSettings === 1 ? '' : 's'} and ${imported.importedOperators} operator backup${imported.importedOperators === 1 ? '' : 's'} from ${peerLabel}.`,
+          ToastAndroid.LONG,
+          'APP DATA TRANSFER'
+        );
         return;
       }
     }
