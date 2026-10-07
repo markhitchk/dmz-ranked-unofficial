@@ -190,6 +190,7 @@ function AppContent() {
   }, [ready, settings.selectedOperator]);
 
   useEffect(() => {
+    if (!settingsOpen) return;
     return listenForAppUpdateStatus(event => {
       setUpdateStatus(appUpdateStatusText(event));
       if (isDownloadedUpdate(event)) {
@@ -203,48 +204,54 @@ function AppContent() {
         });
       }
     });
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    void checkForAppUpdate(false)
-      .then(result => {
-        if (result.available) {
-          const store = result.storeVersion || 'newer build';
-          setUpdateStatus(
-            `Update available • ${store} • Tap CHECK to update.`
-          );
-          if (lastAnnouncedStoreVersion.current !== store) {
-            lastAnnouncedStoreVersion.current = store;
-            void showWebsiteNotification(
-              '[System] Update available',
-              `Google Play has DMZ Ranked ${store} ready to install.`
-            );
-            if (Platform.OS === 'android') {
-              ToastAndroid.show(
-                `Google Play update available • ${store}.`,
-                ToastAndroid.LONG
-              );
-            }
-          }
-        } else {
-          setUpdateStatus('Up to date • ' + installedVersionLabel());
-        }
-      })
-      .catch(() => {
-        setUpdateStatus(
-          installedVersionLabel() + ' • Play check unavailable'
-        );
-      });
-  }, [ready]);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const poll = setInterval(() => {
-      void checkForAppUpdate(false).catch(() => undefined);
-    }, 30_000);
-    return () => clearInterval(poll);
   }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!ready || !settingsOpen) return;
+
+    let cancelled = false;
+    const check = () => {
+      void checkForAppUpdate(false)
+        .then(result => {
+          if (cancelled) return;
+          if (result.available) {
+            const store = result.storeVersion || 'newer build';
+            setUpdateStatus(
+              `Update available • ${store} • Tap CHECK to update.`
+            );
+            if (lastAnnouncedStoreVersion.current !== store) {
+              lastAnnouncedStoreVersion.current = store;
+              void showWebsiteNotification(
+                '[System] Update available',
+                `Google Play has DMZ Ranked ${store} ready to install.`
+              );
+              if (Platform.OS === 'android') {
+                ToastAndroid.show(
+                  `Google Play update available • ${store}.`,
+                  ToastAndroid.LONG
+                );
+              }
+            }
+          } else {
+            setUpdateStatus('Up to date • ' + installedVersionLabel());
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setUpdateStatus(
+              installedVersionLabel() + ' • Play check unavailable'
+            );
+          }
+        });
+    };
+
+    check();
+    const poll = setInterval(check, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+    };
+  }, [ready, settingsOpen]);
 
   const openPlayStore = async () => {
     const packageName =
