@@ -245,7 +245,7 @@ export function SettingsPanel({
   onAction
 }: Props) {
   const version = Application.nativeApplicationVersion ?? '1.1.0';
-  const build = Application.nativeBuildVersion ?? '174';
+  const build = Application.nativeBuildVersion ?? '175';
   const [query, setQuery] = useState('');
   const [creditsExpanded, setCreditsExpanded] = useState(false);
   const [backupNames, setBackupNames] = useState<string[]>([]);

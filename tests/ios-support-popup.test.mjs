@@ -8,6 +8,8 @@ const bundle = JSON.parse(
 );
 const source = String(bundle.js || '');
 const css = String(bundle.css || '');
+const injectionSource = readFileSync(new URL('../src/services/appUiInjection.ts', import.meta.url), 'utf8');
+const bridgeSource = readFileSync(new URL('../src/services/webBridge.ts', import.meta.url), 'utf8');
 
 function extractFunction(name) {
   const needles = ['function ' + name + '(', 'async function ' + name + '('];
@@ -101,4 +103,20 @@ test('bundled App UI includes dedicated popup styling without changing website m
   assert.match(css, /\.hs-ios-support-card/);
   assert.match(css, /\.hs-ios-support-primary/);
   assert.match(css, /\.hs-ios-support-secondary/);
+});
+
+
+test('React Native campaign replaces the placeholder with bundled brand logos', () => {
+  assert.match(injectionSource, /hs-ios-support-branded/);
+  assert.match(injectionSource, /data-hs-dmz-logo/);
+  assert.match(injectionSource, /data-hs-studio-logo/);
+  assert.match(bridgeSource, /studioLogoUrl/);
+  assert.match(bridgeSource, /harleys_studios_logo_data\.json/);
+});
+
+test('React Native campaign is permanently available on the App page', () => {
+  assert.match(injectionSource, /hs-ios-support-app-card/);
+  assert.match(injectionSource, /Help bring DMZ Ranked to iOS/);
+  assert.match(injectionSource, /Support the iOS release/);
+  assert.match(injectionSource, /Android is staying/);
 });

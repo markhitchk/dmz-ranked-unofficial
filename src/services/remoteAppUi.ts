@@ -32,7 +32,7 @@ async function fetchText(url: string, accept = 'text/plain'): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const version = Application.nativeApplicationVersion ?? '1.0.69';
+    const version = Application.nativeApplicationVersion ?? '1.1.0';
     const response = await fetch(`${url}?ts=${Date.now()}`, {
       cache: 'no-store',
       signal: controller.signal,
