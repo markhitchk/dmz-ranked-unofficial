@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -97,15 +97,20 @@ function matches(query: string, keywords: string): boolean {
 
 function SectionLabel({
   children,
-  danger = false
+  danger = false,
+  badge
 }: {
   children: React.ReactNode;
   danger?: boolean;
+  badge?: string;
 }) {
   return (
-    <Text style={[styles.section, danger && styles.sectionDanger]}>
-      {children}
-    </Text>
+    <View style={styles.sectionRow}>
+      <Text style={[styles.section, danger && styles.sectionDanger]}>
+        {children}
+      </Text>
+      {badge ? <Text style={styles.sectionBadge}>{badge}</Text> : null}
+    </View>
   );
 }
 
@@ -194,6 +199,36 @@ function ActionCard({
         </DmzActionCard>
       </Pressable>
     </View>
+  );
+}
+
+function CreditSupportCard({
+  title,
+  summary,
+  label,
+  onPress
+}: {
+  title: string;
+  summary: string;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.creditSupportGap}>
+      <DmzActionCard>
+        <View style={styles.creditSupportCard}>
+          <View style={styles.flexCopy}>
+            <Text style={styles.creditSupportTitle}>{title}</Text>
+            <Text style={styles.creditSupportSummary}>{summary}</Text>
+          </View>
+          <DmzGoldButton>
+            <View style={styles.creditSupportButton}>
+              <Text style={styles.creditSupportButtonText}>{label}</Text>
+            </View>
+          </DmzGoldButton>
+        </View>
+      </DmzActionCard>
+    </Pressable>
   );
 }
 
@@ -313,15 +348,7 @@ export function SettingsPanel({
     }
   }, [q]);
 
-  const contentSummary = useMemo(() => {
-    if (settings.contentSize === 'compact') {
-      return 'Compact • smaller cards, controls, text, and website content.';
-    }
-    if (settings.contentSize === 'large') {
-      return 'Large • larger cards, controls, text, and website content.';
-    }
-    return 'Standard • default app and website sizing.';
-  }, [settings.contentSize]);
+  const contentSummary = 'Choose how much DMZ Ranked fits on screen.';
 
   const toast = (message: string, long = false) => {
     if (Platform.OS === 'android') {
@@ -536,7 +563,7 @@ export function SettingsPanel({
       visible={visible}
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent
+      statusBarTranslucent={false}
       navigationBarTranslucent
     >
       <AppSafeArea contentScale={contentScaleFactor(settings.contentSize)}>
@@ -654,18 +681,32 @@ export function SettingsPanel({
                   onPress={() => setCreditsExpanded(value => !value)}
                   style={styles.creditsToggle}
                 >
-                  <Text style={styles.creditsToggleText}>
-                    {creditsExpanded ? 'HIDE CREDITS' : 'VIEW CREDITS'}
-                  </Text>
+                  <DmzGoldButton>
+                    <View style={styles.creditsToggleInner}>
+                      <Text style={styles.creditsToggleText}>
+                        {creditsExpanded ? 'HIDE CREDITS' : 'VIEW CREDITS'}
+                      </Text>
+                    </View>
+                  </DmzGoldButton>
                 </Pressable>
 
                 {creditsExpanded ? (
                   <View style={styles.creditsContent}>
                     <Text style={styles.creditSectionLabel}>ANDROID APP</Text>
+
                     <Pressable
                       onPress={handleDeveloperTap}
-                      style={styles.creditProfile}
+                      style={styles.creditDeveloperIntro}
                     >
+                      <Text style={styles.creditDeveloperName}>
+                        Harley&apos;s Studios
+                      </Text>
+                      <Text style={styles.creditDeveloperSummary}>
+                        Built and maintained by Harley&apos;s Studios.
+                      </Text>
+                    </Pressable>
+
+                    <View style={styles.creditProfile}>
                       <Image
                         source={require('../../assets/harleys_studios_about.png')}
                         style={styles.creditBrandLogo}
@@ -674,10 +715,10 @@ export function SettingsPanel({
                       <View style={styles.flexCopy}>
                         <Text style={styles.creditName}>Harley&apos;s Studios</Text>
                         <Text style={styles.cardSummary}>
-                          Built and maintained by Harley&apos;s Studios.
+                          Android app developer &amp; maintainer
                         </Text>
                       </View>
-                    </Pressable>
+                    </View>
 
                     <View style={styles.creditProfile}>
                       <Image
@@ -693,8 +734,23 @@ export function SettingsPanel({
                       </View>
                     </View>
 
-                    <Text style={styles.creditSectionLabel}>
+                    <CreditSupportCard
+                      title="Support Harley's Studios on Ko-fi"
+                      summary="Support development and maintenance of the unofficial DMZ Ranked Android app."
+                      label="SUPPORT ↗"
+                      onPress={() => open(KOFI_URL)}
+                    />
+
+                    <Text
+                      style={[
+                        styles.creditSectionLabel,
+                        styles.websiteCreditSectionLabel
+                      ]}
+                    >
                       DMZ RANKED WEBSITE
+                    </Text>
+                    <Text style={styles.websiteCreditsSummary}>
+                      Website created by YoLando &amp; dCHINZ.
                     </Text>
 
                     <View style={styles.creatorRow}>
@@ -709,6 +765,7 @@ export function SettingsPanel({
                         </Text>
                       </View>
                     </View>
+
                     <View style={styles.creatorRow}>
                       <Image
                         source={{ uri: DCHINZ_AVATAR }}
@@ -722,18 +779,12 @@ export function SettingsPanel({
                       </View>
                     </View>
 
-                    <View style={styles.creditActionGap}>
-                      <GoldAction
-                        label="SUPPORT HARLEY'S STUDIOS ↗"
-                        onPress={() => open(KOFI_URL)}
-                      />
-                    </View>
-                    <View style={styles.creditActionGap}>
-                      <GoldAction
-                        label="SUPPORT DMZ RANKED CREATORS ↗"
-                        onPress={() => open(PAYPAL_URL)}
-                      />
-                    </View>
+                    <CreditSupportCard
+                      title="Support DMZ Ranked creators via PayPal"
+                      summary="Opens the DMZ Ranked creators' PayPal support link. Payments are not for Harley's Studios."
+                      label="OPEN ↗"
+                      onPress={() => open(PAYPAL_URL)}
+                    />
                   </View>
                 ) : null}
               </View>
@@ -760,7 +811,7 @@ export function SettingsPanel({
 
               <ToggleCard
                 title="App animations"
-                summary="Animate app transitions, loading, dialogs, and title status."
+                summary="Smooth fades and motion for loading, Settings, and app transitions."
                 value={settings.appAnimations}
                 onChange={value => onUpdate('appAnimations', value)}
               />
@@ -769,16 +820,16 @@ export function SettingsPanel({
 
           {showWidgets ? (
             <>
-              <SectionLabel>BETA WIDGETS</SectionLabel>
+              <SectionLabel badge="BETA ONLY">BETA WIDGETS</SectionLabel>
               <ActionCard
-                title="Add home screen widget"
-                summary="Pin the DMZ Ranked operator rank, SR, standing, and live-status widget."
-                label="BETA ONLY"
+                title="Add DMZ Ranked home widget"
+                summary="Pin your selected operator’s rank, SR, standing, last-raid change, season, and live status to the Android home screen."
+                label="ADD +"
                 onPress={() => onAction({ type: 'add-widget' })}
               />
               <ActionCard
-                title="Refresh widgets"
-                summary="Refresh every pinned DMZ Ranked widget now."
+                title="Refresh widgets now"
+                summary="Force all pinned DMZ Ranked widgets to pull the latest public leaderboard state now."
                 label="REFRESH"
                 onPress={() => onAction({ type: 'refresh-widgets' })}
               />
@@ -973,12 +1024,12 @@ export function SettingsPanel({
               <SectionLabel>NOTIFICATIONS</SectionLabel>
               <ToggleCard
                 title="Website notifications"
-                summary="Real-time DMZ Ranked report/review alerts use native notifications and background sync."
+                summary="Real-time DMZ Ranked report/review alerts use an ongoing Android foreground service and check the live board every few seconds. Turn this off to stop live monitoring."
                 value={settings.siteNotifications}
                 onChange={value => onUpdate('siteNotifications', value)}
               />
               <ActionCard
-                title="Notification settings"
+                title="Android notification settings"
                 summary={notificationStatus}
                 label="OPEN ›"
                 icon={<DmzIcon name="notification" size={28} />}
@@ -1018,7 +1069,7 @@ export function SettingsPanel({
               <SectionLabel>PAGE ACTIONS</SectionLabel>
               <ActionCard
                 title="Reload DMZ Ranked"
-                summary="Reload the current DMZ Ranked website page."
+                summary="Reload the current DMZ Ranked page."
                 label="RELOAD"
                 onPress={() => {
                   onAction({ type: 'reload' });
@@ -1027,7 +1078,7 @@ export function SettingsPanel({
               />
               <ActionCard
                 title="Clear web cache"
-                summary="Clear cached web resources without deleting website storage."
+                summary="Clear WebView cache without deleting website cookies or sign-in data."
                 label="CLEAR"
                 onPress={() => onAction({ type: 'clear-cache' })}
               />
@@ -1340,15 +1391,34 @@ const styles = StyleSheet.create({
     padding: 24,
     textAlign: 'center'
   },
-  section: {
+  sectionRow: {
+    minHeight: 18,
     marginLeft: 4,
     marginTop: 24,
     marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  section: {
     color: colors.gold,
     fontFamily: condensedFont,
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 1.8
+  },
+  sectionBadge: {
+    marginLeft: 10,
+    minWidth: 52,
+    textAlign: 'center',
+    color: colors.black,
+    backgroundColor: colors.gold,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    fontFamily: condensedFont,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.7
   },
   sectionDanger: { color: colors.red },
   cardGap: { marginTop: 10 },
@@ -1398,58 +1468,112 @@ const styles = StyleSheet.create({
   },
   creditsToggle: {
     marginTop: 12,
-    minHeight: 40,
+    alignSelf: 'flex-end'
+  },
+  creditsToggleInner: {
+    minHeight: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.panelDeep
+    justifyContent: 'center'
   },
   creditsToggleText: {
-    color: colors.gold,
+    color: colors.black,
     fontFamily: condensedFont,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
-    letterSpacing: 0.8
+    letterSpacing: 0.5
   },
   creditsContent: {
     marginTop: 14,
     borderTopWidth: 1,
     borderTopColor: colors.cardBorder,
-    paddingTop: 12
+    paddingTop: 14
   },
   creditSectionLabel: {
     color: colors.gold,
     fontFamily: condensedFont,
     fontWeight: '900',
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.4,
-    marginBottom: 8,
-    marginTop: 6
+    marginTop: 0
+  },
+  creditDeveloperIntro: {
+    marginTop: 5
+  },
+  creditDeveloperName: {
+    color: colors.white,
+    fontSize: 17,
+    fontWeight: '900'
+  },
+  creditDeveloperSummary: {
+    marginTop: 3,
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 17
   },
   creditProfile: {
-    minHeight: 62,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginTop: 12
   },
-  creditBrandLogo: { width: 58, height: 48, marginRight: 12 },
-  creditName: { color: colors.white, fontSize: 15, fontWeight: '900' },
+  creditBrandLogo: { width: 48, height: 48, marginRight: 12 },
+  creditName: { color: colors.white, fontSize: 16, fontWeight: '900' },
+  websiteCreditSectionLabel: {
+    marginTop: 16
+  },
+  websiteCreditsSummary: {
+    marginTop: 5,
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '900'
+  },
   creatorRow: {
-    minHeight: 54,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8
+    marginTop: 12
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     marginRight: 12,
     backgroundColor: colors.panelDeep
   },
-  creditActionGap: { marginTop: 10 },
+  creditSupportGap: {
+    marginTop: 14
+  },
+  creditSupportCard: {
+    minHeight: 76,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  creditSupportTitle: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '900'
+  },
+  creditSupportSummary: {
+    marginTop: 3,
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 16
+  },
+  creditSupportButton: {
+    marginLeft: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  creditSupportButtonText: {
+    color: colors.black,
+    fontSize: 11,
+    fontWeight: '900'
+  },
   goldButtonInner: {
     minHeight: 36,
     paddingHorizontal: 12,
@@ -1513,7 +1637,8 @@ const styles = StyleSheet.create({
   leadingIcon: { marginRight: 10 },
   actionTitle: {
     color: colors.white,
-    fontSize: 16,
+    fontFamily: condensedFont,
+    fontSize: 17,
     fontWeight: '900'
   },
   dangerButton: {
