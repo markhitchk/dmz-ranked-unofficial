@@ -181,6 +181,22 @@ function contentZoom(size: AppSettings['contentSize']): number {
   return 100;
 }
 
+function showLinkMessage(message: string): void {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  } else {
+    Alert.alert('DMZ Ranked', message);
+  }
+}
+
+async function openExternalUrl(url: string): Promise<void> {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    showLinkMessage('No app can open this link.');
+  }
+}
+
 export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
   function DmzWebScreen(
     {
@@ -759,31 +775,28 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           try {
             const target = new URL(url).searchParams.get('url');
             if (target && /^https?:/i.test(target)) {
-              void Linking.openURL(target);
+              void openExternalUrl(target);
             } else {
-              Alert.alert(
-                'DMZ Ranked',
-                'The website donation link is invalid.'
-              );
+              showLinkMessage('The website donation link is invalid.');
             }
           } catch {
-            Alert.alert(
-              'DMZ Ranked',
-              'Could not open the website donation link.'
+            showLinkMessage('Could not open the website donation link.');
+          }
+          return false;
+        }
+
+        if (/^https?:/i.test(url)) {
+          if (isAllowedExternal(url)) {
+            void openExternalUrl(url);
+          } else {
+            showLinkMessage(
+              "External link blocked. Allowed links are the approved PayPal, Harley's Studios Ko-fi, DMZ Ranked Discord invites, and app beta group."
             );
           }
           return false;
         }
 
-        if (/^https?:/i.test(url) && isAllowedExternal(url)) {
-          void Linking.openURL(url);
-          return false;
-        }
-
-        Alert.alert(
-          'External link blocked',
-          "Allowed links are the approved PayPal, Harley's Studios Ko-fi, DMZ Ranked Discord invites, and app beta group."
-        );
+        showLinkMessage('External link blocked.');
         return false;
       },
       []
@@ -870,6 +883,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             }
             if (event.nativeEvent.pageY - pullStartY.current >= 72) {
               pullTriggered.current = true;
+              if (Platform.OS === 'android') {
+                ToastAndroid.show(
+                  'Refreshing DMZ Ranked…',
+                  ToastAndroid.SHORT
+                );
+              }
               showOverlay('Refreshing DMZ Ranked…', 0);
               webRef.current?.reload();
             }
