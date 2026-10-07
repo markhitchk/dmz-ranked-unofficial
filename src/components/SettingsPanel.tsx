@@ -906,17 +906,14 @@ export function SettingsPanel({
                   <View style={styles.creditsContent}>
                     <Text style={styles.creditSectionLabel}>ANDROID APP</Text>
 
-                    <Pressable
-                      onPress={handleDeveloperTap}
-                      style={styles.creditDeveloperIntro}
-                    >
+                    <View style={styles.creditDeveloperIntro}>
                       <Text style={styles.creditDeveloperName}>
                         Harley&apos;s Studios
                       </Text>
                       <Text style={styles.creditDeveloperSummary}>
                         Built and maintained by Harley&apos;s Studios.
                       </Text>
-                    </Pressable>
+                    </View>
 
                     <View style={styles.creditProfile}>
                       <Image
