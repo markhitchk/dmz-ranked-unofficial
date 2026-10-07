@@ -1264,7 +1264,7 @@
 
     var FIRST_RUN_KEY="hs_dmz_app_get_started_v1";
     var KOFI_URL="https://ko-fi.com/harleytg_#checkoutModal";
-    var IOS_SUPPORT_CAMPAIGN_KEY="hs_dmz_ios_release_campaign_v1";
+    var IOS_SUPPORT_CAMPAIGN_KEY="hs_dmz_ios_release_campaign_v2";
     var firstRunQueued=false;
 
     function q(sel){try{return document.querySelector(sel);}catch(e){return null;}}
