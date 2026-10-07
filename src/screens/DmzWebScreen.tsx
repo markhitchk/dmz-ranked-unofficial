@@ -48,12 +48,45 @@ import {
   latestOperatorBackup,
   saveOperatorBackup
 } from '../services/operatorBackup';
+import { normalizeBrowserUrlInput } from '../services/urlNavigation';
 import {
   getDefaultWebViewUserAgent,
   installWebChromeParity
 } from '../../modules/dmz-migration';
 
 const HOME_URL = 'https://dmzranked.com/';
+
+const URL_OBSERVER_SCRIPT = `
+(function(){
+  if(window.__dmzRnUrlObserverInstalled){return true;}
+  window.__dmzRnUrlObserverInstalled=true;
+  var notify=function(){
+    try{
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type:'native-url',
+        url:String(window.location.href||'')
+      }));
+    }catch(e){}
+  };
+  var wrapHistory=function(name){
+    try{
+      var original=window.history&&window.history[name];
+      if(typeof original!=='function'){return;}
+      window.history[name]=function(){
+        var result=original.apply(this,arguments);
+        setTimeout(notify,0);
+        return result;
+      };
+    }catch(e){}
+  };
+  wrapHistory('pushState');
+  wrapHistory('replaceState');
+  window.addEventListener('popstate',notify);
+  window.addEventListener('hashchange',notify);
+  setTimeout(notify,0);
+  return true;
+})();true;
+`;
 
 const IOS_DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
@@ -95,7 +128,16 @@ export type OperatorRestoreResult =
       operatorName?: string;
     };
 
+export type DmzNavigationState = {
+  url: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+};
+
 export type DmzWebHandle = {
+  goBack: () => void;
+  goForward: () => void;
+  navigate: (url: string) => void;
   reload: () => void;
   clearCache: () => void;
   clearWebsiteData: () => void;
@@ -113,6 +155,7 @@ type Props = {
   channel: 'stable' | 'beta';
   onOpenSettings: (target?: string) => void;
   onLoadingChange: (loading: boolean) => void;
+  onNavigationChange?: (state: DmzNavigationState) => void;
   onUpdateSetting: <K extends keyof AppSettings>(
     key: K,
     value: AppSettings[K]
@@ -167,6 +210,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       channel,
       onOpenSettings,
       onLoadingChange,
+      onNavigationChange,
       onUpdateSetting,
       onOperatorBackupSaved
     },
@@ -216,6 +260,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const navHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const canGoBack = useRef(false);
+    const canGoForward = useRef(false);
     const pullStartY = useRef<number | null>(null);
     const pullTriggered = useRef(false);
     const webScrollY = useRef(0);
@@ -467,6 +512,30 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        goBack: () => {
+          if (canGoBack.current) webRef.current?.goBack();
+        },
+        goForward: () => {
+          if (canGoForward.current) webRef.current?.goForward();
+        },
+        navigate: value => {
+          const target = normalizeBrowserUrlInput(value);
+          if (!target) {
+            showLinkMessage('Enter a valid web address.');
+            return;
+          }
+          if (isInternal(target)) {
+            webRef.current?.injectJavaScript(
+              `window.location.assign(${JSON.stringify(target)});true;`
+            );
+            return;
+          }
+          if (isAllowedExternal(target)) {
+            void openExternalUrl(target);
+            return;
+          }
+          showLinkMessage('External link blocked.');
+        },
         reload: () => {
           forceOverlayNextNavigation.current = true;
           webRef.current?.reload();
@@ -719,6 +788,35 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           return;
         }
 
+        try {
+          const nativeMessage = JSON.parse(event.nativeEvent.data) as {
+            type?: string;
+            url?: string;
+          };
+          if (
+            nativeMessage?.type === 'native-url' &&
+            typeof nativeMessage.url === 'string'
+          ) {
+            const nextUrl = nativeMessage.url.trim();
+            if (
+              nextUrl &&
+              (isInternal(nextUrl) || nextUrl === 'about:blank')
+            ) {
+              if (settings.rememberLastPage && isInternal(nextUrl)) {
+                onUpdateSetting('lastPageUrl', nextUrl);
+              }
+              onNavigationChange?.({
+                url: nextUrl,
+                canGoBack: canGoBack.current,
+                canGoForward: canGoForward.current
+              });
+            }
+            return;
+          }
+        } catch {
+          // Normal app bridge messages are parsed below.
+        }
+
         const message = parseBridgeMessage(event.nativeEvent.data);
         if (!message) return;
 
@@ -863,6 +961,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         failLoad,
         gate,
         hideOverlay,
+        onNavigationChange,
         onOpenSettings,
         onOperatorBackupSaved,
         onUpdateSetting,
@@ -872,8 +971,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     );
 
     const handleNavigation = useCallback(
-      (nav: { url: string; canGoBack?: boolean }) => {
-        canGoBack.current = Boolean(nav.canGoBack);
+      (nav: { url: string; canGoBack?: boolean; canGoForward?: boolean }) => {
+        const back = Boolean(nav.canGoBack);
+        const forward = Boolean(nav.canGoForward);
+        canGoBack.current = back;
+        canGoForward.current = forward;
+        onNavigationChange?.({
+          url: nav.url,
+          canGoBack: back,
+          canGoForward: forward
+        });
         if (settings.rememberLastPage && isInternal(nav.url)) {
           onUpdateSetting('lastPageUrl', nav.url);
         }
@@ -883,6 +990,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       },
       [
         loading,
+        onNavigationChange,
         onUpdateSetting,
         revalidateWebLifecycle,
         settings.rememberLastPage
@@ -994,7 +1102,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               : applicationNameForUserAgent
           }
           textZoom={contentZoom(settings.contentSize)}
-          injectedJavaScriptBeforeContentLoaded={bridge}
+          injectedJavaScriptBeforeContentLoaded={bridge + '\n' + URL_OBSERVER_SCRIPT}
           onLoadStart={event => {
             installBrowserDialogParity();
             handleLoadStart(event.nativeEvent.url);
