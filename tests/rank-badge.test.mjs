@@ -129,6 +129,7 @@ test('loading state keeps the last live badge instead of reverting to fallback',
       querySelectorAll() { return []; }
     },
     appChannelLabel() { return 'BETA'; },
+    clean(value) { return String(value ?? '').replace(/\\s+/g, ' ').trim(); },
     setText() {},
     renderRankBadge(value) { renderCalls.push(value); },
     renderMessages() {}
