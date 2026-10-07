@@ -94,11 +94,14 @@ function AppContent() {
 
   const showNotice = (
     message: string,
-    duration: number = ToastAndroid.SHORT,
+    long = false,
     title = 'DMZ RANKED'
   ) => {
     if (Platform.OS === 'android') {
-      ToastAndroid.show(message, duration);
+      ToastAndroid.show(
+        message,
+        long ? ToastAndroid.LONG : ToastAndroid.SHORT
+      );
     } else {
       setAppDialog({ title, message });
     }
@@ -389,7 +392,7 @@ function AppContent() {
         } else {
           showNotice(
             'Could not confirm that every Android WebView cookie was cleared. App operator backups were kept.',
-            ToastAndroid.LONG,
+            true,
             'WEBSITE DATA CLEARED WITH WARNING'
           );
         }
@@ -413,7 +416,7 @@ function AppContent() {
         if (!selected) {
           showNotice(
             'Open DMZ Ranked before switching the selected operator.',
-            ToastAndroid.LONG,
+            true,
             'SELECT OPERATOR'
           );
         } else {
@@ -429,7 +432,7 @@ function AppContent() {
         if (!restored) {
           showNotice(
             'Open DMZ Ranked before restoring an operator.',
-            ToastAndroid.LONG,
+            true,
             'OPERATOR RESTORE'
           );
           return;
@@ -452,7 +455,7 @@ function AppContent() {
                       : 'DMZ Ranked could not restore the saved operator data.';
           showNotice(
             message,
-            ToastAndroid.LONG,
+            true,
             'OPERATOR RESTORE'
           );
           return;
@@ -501,7 +504,7 @@ function AppContent() {
           );
           showNotice(
             'Update status is unavailable. Opening Google Play.',
-            ToastAndroid.LONG,
+            true,
             'GOOGLE PLAY UPDATES'
           );
           void openPlayStore();
@@ -524,14 +527,14 @@ function AppContent() {
           } else {
             showNotice(
               'Open your Android launcher’s Widgets menu and add DMZ Ranked.',
-              ToastAndroid.LONG,
+            true,
               'DMZ RANKED WIDGET'
             );
           }
         } catch {
           showNotice(
             'Open your Android launcher’s Widgets menu and add DMZ Ranked.',
-            ToastAndroid.LONG,
+            true,
             'DMZ RANKED WIDGET'
           );
         }
@@ -555,7 +558,7 @@ function AppContent() {
         if (!imported) {
           showNotice(
             `${peerLabel} is not available to import from.`,
-            ToastAndroid.LONG,
+            true,
             'APP DATA TRANSFER'
           );
           return;
@@ -566,7 +569,7 @@ function AppContent() {
         const importedSettings = Object.keys(imported.patch).length;
         showNotice(
           `Imported ${importedSettings} app setting${importedSettings === 1 ? '' : 's'} and ${imported.importedOperators} operator backup${imported.importedOperators === 1 ? '' : 's'} from ${peerLabel}.`,
-          ToastAndroid.LONG,
+            true,
           'APP DATA TRANSFER'
         );
         return;
