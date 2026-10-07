@@ -70,6 +70,7 @@ type Props = {
   settings: AppSettings;
   channel: 'stable' | 'beta';
   backupRevision: number;
+  updateStatus: string;
   onClose: () => void;
   onUpdate: <K extends keyof AppSettings>(
     key: K,
@@ -197,6 +198,7 @@ export function SettingsPanel({
   settings,
   channel,
   backupRevision,
+  updateStatus,
   onClose,
   onUpdate,
   onReset,
@@ -950,7 +952,7 @@ export function SettingsPanel({
               <SectionLabel>APP UPDATES</SectionLabel>
               <ActionCard
                 title="Live Google Play updates"
-                summary={`Installed: ${version} (${build}) • Check Google Play for updates.`}
+                summary={updateStatus}
                 label="CHECK NOW"
                 onPress={() => onAction({ type: 'check-updates' })}
               />

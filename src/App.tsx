@@ -36,8 +36,10 @@ import {
   syncNotificationsNow
 } from './services/backgroundNotificationSync';
 import {
+  appUpdateStatusText,
   checkForAppUpdate,
   installDownloadedUpdate,
+  installedVersionLabel,
   isDownloadedUpdate,
   listenForAppUpdateStatus
 } from './services/appUpdates';
@@ -76,6 +78,10 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [backupRevision, setBackupRevision] = useState(0);
   const [appDialog, setAppDialog] = useState<AppDialog>(null);
+  const [updateStatus, setUpdateStatus] = useState(
+    installedVersionLabel() + ' • Live monitoring'
+  );
+  const lastAnnouncedStoreVersion = useRef('');
 
   const channel =
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
@@ -170,6 +176,7 @@ function AppContent() {
 
   useEffect(() => {
     return listenForAppUpdateStatus(event => {
+      setUpdateStatus(appUpdateStatusText(event));
       if (isDownloadedUpdate(event)) {
         setAppDialog({
           title: 'UPDATE READY',
@@ -188,19 +195,32 @@ function AppContent() {
     void checkForAppUpdate(false)
       .then(result => {
         if (result.available) {
-          setAppDialog({
-            title: 'UPDATE AVAILABLE',
-            message:
-              'Google Play has a newer DMZ Ranked build available.',
-            positiveLabel: 'UPDATE',
-            negativeLabel: 'LATER',
-            onPositive: () => {
-              void checkForAppUpdate(true);
+          const store = result.storeVersion || 'newer build';
+          setUpdateStatus(
+            `Update available • ${store} • Tap CHECK to update.`
+          );
+          if (lastAnnouncedStoreVersion.current !== store) {
+            lastAnnouncedStoreVersion.current = store;
+            void showWebsiteNotification(
+              '[System] Update available',
+              `Google Play has DMZ Ranked ${store} ready to install.`
+            );
+            if (Platform.OS === 'android') {
+              ToastAndroid.show(
+                `Google Play update available • ${store}.`,
+                ToastAndroid.LONG
+              );
             }
-          });
+          }
+        } else {
+          setUpdateStatus('Up to date • ' + installedVersionLabel());
         }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setUpdateStatus(
+          installedVersionLabel() + ' • Play check unavailable'
+        );
+      });
   }, [ready]);
 
   useEffect(() => {
@@ -312,14 +332,23 @@ function AppContent() {
 
       case 'check-updates': {
         try {
+          setUpdateStatus(installedVersionLabel() + ' • Checking Google Play now…');
           const result = await checkForAppUpdate(true);
           if (!result.available) {
+            setUpdateStatus('Up to date • ' + installedVersionLabel());
             setAppDialog({
               title: 'GOOGLE PLAY UPDATES',
-              message: 'No newer DMZ Ranked build is available for this app right now.'
+              message: 'DMZ Ranked is up to date.'
             });
+          } else {
+            setUpdateStatus(
+              `Update available • ${result.storeVersion || 'newer build'} • Google Play update started.`
+            );
           }
         } catch {
+          setUpdateStatus(
+            installedVersionLabel() + ' • Play check unavailable'
+          );
           setAppDialog({
             title: 'GOOGLE PLAY UPDATES',
             message:
@@ -426,6 +455,7 @@ function AppContent() {
         settings={settings}
         channel={channel}
         backupRevision={backupRevision}
+        updateStatus={updateStatus}
         onClose={() => setSettingsOpen(false)}
         onUpdate={update}
         onReset={() => void reset()}
