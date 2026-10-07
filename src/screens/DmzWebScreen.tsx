@@ -10,6 +10,7 @@ import React, {
 import {
   Alert,
   Animated,
+  AppState,
   BackHandler,
   findNodeHandle,
   Linking,
@@ -26,7 +27,10 @@ import { WebView } from 'react-native-webview';
 import type { AppSettings } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { LoadingOverlay } from '../components/LoadingOverlay';
-import { loadRemoteAppUi } from '../services/remoteAppUi';
+import {
+  loadRemoteAppUi,
+  type RemoteAppUiPayload
+} from '../services/remoteAppUi';
 import { buildRemoteUiInjection } from '../services/appUiInjection';
 import { AppUiLoadGate } from '../services/appUiLoadGate';
 import {
@@ -60,7 +64,7 @@ const IOS_DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
 
 function appUserAgentIdentity(): string {
-  const version = Application.nativeApplicationVersion ?? '1.0.67';
+  const version = Application.nativeApplicationVersion ?? '1.0.69';
   const packageName = Application.applicationId ?? 'com.harleytg.dmzranked';
   return `DMZRankedApp/${version} (HarleysStudios; AndroidClient; ${packageName})`;
 }
@@ -231,15 +235,27 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const [overlayVisible, setOverlayVisible] = useState(true);
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('Starting DMZ Ranked…');
+    const [navProgress, setNavProgress] = useState(0);
+    const [navProgressVisible, setNavProgressVisible] = useState(false);
     const [failed, setFailed] = useState(false);
     const [failureKind, setFailureKind] = useState<'network' | 'interface'>('network');
     const overlayOpacity = useRef(new Animated.Value(1)).current;
+    const navProgressOpacity = useRef(new Animated.Value(0)).current;
     const gate = useRef(new AppUiLoadGate()).current;
-    const page = useRef({ id: 0, url: initialUrl.current, loaded: false, requiresOverrides: settings.appUiOverrides });
-    const payload = useRef<Promise<{ css: string; js: string }> | null>(null);
+    const page = useRef({
+      id: 0,
+      url: initialUrl.current,
+      loaded: false,
+      uiStarted: false,
+      requiresOverrides: settings.appUiOverrides
+    });
+    const startupComplete = useRef(false);
+    const forceOverlayNextNavigation = useRef(false);
+    const payload = useRef<Promise<RemoteAppUiPayload> | null>(null);
     const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const navHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const canGoBack = useRef(false);
     const pullStartY = useRef<number | null>(null);
     const pullTriggered = useRef(false);
@@ -251,6 +267,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       protected: false
     });
     const restoreRequestSequence = useRef(0);
+    const lastAutoBackupMs = useRef(0);
     const restoreRequests = useRef(
       new Map<
         string,
@@ -281,19 +298,21 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       if (finishTimer.current) clearTimeout(finishTimer.current);
       if (readyTimer.current) clearTimeout(readyTimer.current);
       if (backupTimer.current) clearTimeout(backupTimer.current);
-      finishTimer.current = readyTimer.current = backupTimer.current = null;
+      if (navHideTimer.current) clearTimeout(navHideTimer.current);
+      finishTimer.current = readyTimer.current = backupTimer.current = navHideTimer.current = null;
     }, []);
 
     useEffect(() => () => {
       gate.cancel();
       clearLoadTimers();
       overlayOpacity.stopAnimation();
+      navProgressOpacity.stopAnimation();
       for (const pending of restoreRequests.current.values()) {
         clearTimeout(pending.timer);
         pending.resolve('error:cancelled');
       }
       restoreRequests.current.clear();
-    }, [clearLoadTimers, gate, overlayOpacity]);
+    }, [clearLoadTimers, gate, navProgressOpacity, overlayOpacity]);
 
     useEffect(() => {
       if (Platform.OS !== 'android') return;
@@ -313,6 +332,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     useEffect(() => {
       if (previousDesktopMode.current === settings.desktopSite) return;
       previousDesktopMode.current = settings.desktopSite;
+      forceOverlayNextNavigation.current = true;
       webRef.current?.reload();
     }, [settings.desktopSite]);
 
@@ -320,6 +340,34 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       () => createBridgeBootstrap(channel, settings.selectedOperator),
       [channel, settings.selectedOperator]
     );
+
+    const revalidateWebLifecycle = useCallback(() => {
+      if (!webRef.current) return;
+      const preferred = settings.selectedOperator.trim();
+      webRef.current.injectJavaScript(
+        `(function(){try{
+          window.__DMZ_RN_PREFERRED_OPERATOR=${JSON.stringify(preferred)};
+          if(window.__dmzRnRefreshOperatorLifecycle){window.__dmzRnRefreshOperatorLifecycle();}
+          if(window.__dmzRnRevalidateAppUi){window.__dmzRnRevalidateAppUi();}
+        }catch(e){}})();true;`
+      );
+    }, [settings.selectedOperator]);
+
+    useEffect(() => {
+      const subscription = AppState.addEventListener('change', nextState => {
+        if (nextState !== 'active') return;
+        installBrowserDialogParity();
+        setTimeout(revalidateWebLifecycle, 120);
+        setTimeout(revalidateWebLifecycle, 900);
+      });
+      return () => subscription.remove();
+    }, [installBrowserDialogParity, revalidateWebLifecycle]);
+
+    useEffect(() => {
+      if (loading) return;
+      const timer = setTimeout(revalidateWebLifecycle, 120);
+      return () => clearTimeout(timer);
+    }, [loading, revalidateWebLifecycle, settings.contentSize]);
 
     const setLoadingState = useCallback(
       (value: boolean) => {
@@ -335,78 +383,33 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       );
     }, []);
 
-    const selectOperator = useCallback(
-      async (operatorName: string): Promise<boolean> => {
+    const applyPreferredOperator = useCallback(
+      (operatorName: string, force = false) => {
         const name = operatorName.trim();
         if (!name || !webRef.current) return false;
-
-        const script = `(function(){
-          var name=${JSON.stringify(name)};
-          function apply(attempt){
-            try{
-              var input=document.getElementById('playerName');
-              var pick=document.getElementById('playerPick');
-              function touched(e){if(e&&e.isTrusted){window.__dmzRnOperatorTouched=true;}}
-              if(input&&!input.__dmzRnOperatorGuard){
-                input.__dmzRnOperatorGuard=true;
-                input.addEventListener('input',touched,true);
-                input.addEventListener('change',touched,true);
-              }
-              if(pick&&!pick.__dmzRnOperatorGuard){
-                pick.__dmzRnOperatorGuard=true;
-                pick.addEventListener('change',touched,true);
-              }
-              if(window.__dmzRnOperatorTouched){return;}
-              if(!input&&!pick){
-                if(attempt<16)setTimeout(function(){apply(attempt+1);},500);
-                return;
-              }
-              var target=name.toLowerCase(),pickMatched=false;
-              if(pick){
-                for(var i=1;i<pick.options.length;i++){
-                  var o=pick.options[i];
-                  var v=String(o.value||o.textContent||'').trim();
-                  if(v.toLowerCase()===target){
-                    pickMatched=true;
-                    if(pick.selectedIndex!==i){
-                      pick.selectedIndex=i;
-                      pick.dispatchEvent(new Event('change',{bubbles:true}));
-                    }
-                    break;
-                  }
-                }
-              }
-              if(input){
-                var cur=String(input.value||'').trim();
-                if(cur.toLowerCase()!==target){
-                  input.value=name;
-                  input.dispatchEvent(new Event('input',{bubbles:true}));
-                  input.dispatchEvent(new Event('change',{bubbles:true}));
-                }
-              }
-              try{localStorage.setItem('dmz_myname',name);}catch(e){}
-              if(window.__dmzRnReadOperator){setTimeout(window.__dmzRnReadOperator,0);}
-              if((!input||!pickMatched)&&attempt<16){
-                setTimeout(function(){apply(attempt+1);},500);
-              }
-            }catch(e){
-              if(attempt<16)setTimeout(function(){apply(attempt+1);},500);
-            }
-          }
-          apply(0);
-        })();true;`;
-
-        webRef.current.injectJavaScript(script);
+        webRef.current.injectJavaScript(
+          `(function(){try{window.__DMZ_RN_PREFERRED_OPERATOR=${JSON.stringify(
+            name
+          )};if(window.__dmzRnApplyPreferredOperator){window.__dmzRnApplyPreferredOperator(${JSON.stringify(
+            name
+          )},0,${force ? 'true' : 'false'});}else if(window.__dmzRnRefreshOperatorLifecycle){window.__dmzRnRefreshOperatorLifecycle();}}catch(e){}})();true;`
+        );
         return true;
       },
       []
     );
 
+    const selectOperator = useCallback(
+      async (operatorName: string): Promise<boolean> =>
+        applyPreferredOperator(operatorName, true),
+      [applyPreferredOperator]
+    );
+
     useEffect(() => {
       const savedOperator = settings.selectedOperator.trim();
       if (!savedOperator || loading || !webRef.current) return;
-      void selectOperator(savedOperator);
-    }, [loading, selectOperator, settings.selectedOperator]);
+      applyPreferredOperator(savedOperator, false);
+    }, [applyPreferredOperator, loading, settings.selectedOperator]);
 
     const captureOperatorBackup = useCallback(() => {
       webRef.current?.injectJavaScript(
@@ -505,7 +508,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        reload: () => webRef.current?.reload(),
+        reload: () => {
+          forceOverlayNextNavigation.current = true;
+          webRef.current?.reload();
+        },
         clearCache: () => {
           const view = webRef.current as (WebView & {
             clearCache?: (includeDiskFiles?: boolean) => void;
@@ -551,6 +557,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (!gate.isCurrent(id)) return;
         setOverlayVisible(false);
         setLoadingState(false);
+        startupComplete.current = true;
         refreshOperator();
         if (settings.operatorAutoSave) {
           backupTimer.current = setTimeout(() => {
@@ -580,6 +587,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       overlayOpacity.stopAnimation();
       setLoadingState(false);
       setOverlayVisible(false);
+      startupComplete.current = true;
       setFailureKind(kind);
 
       // Java deliberately opens the normal website when the optional app-ui
@@ -592,16 +600,86 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       setFailed(true);
     }, [clearLoadTimers, gate, overlayOpacity, setLoadingState]);
 
+    const showNavigationProgress = useCallback(() => {
+      if (navHideTimer.current) {
+        clearTimeout(navHideTimer.current);
+        navHideTimer.current = null;
+      }
+      setNavProgress(0);
+      setNavProgressVisible(true);
+      navProgressOpacity.stopAnimation();
+
+      if (!settings.appAnimations) {
+        navProgressOpacity.setValue(1);
+        return;
+      }
+
+      Animated.timing(navProgressOpacity, {
+        toValue: 1,
+        duration: 90,
+        useNativeDriver: true
+      }).start();
+    }, [navProgressOpacity, settings.appAnimations]);
+
+    const hideNavigationProgress = useCallback(() => {
+      setNavProgress(100);
+      if (navHideTimer.current) clearTimeout(navHideTimer.current);
+      navHideTimer.current = setTimeout(() => {
+        navProgressOpacity.stopAnimation();
+        if (!settings.appAnimations) {
+          navProgressOpacity.setValue(0);
+          setNavProgressVisible(false);
+          return;
+        }
+
+        Animated.timing(navProgressOpacity, {
+          toValue: 0,
+          duration: 160,
+          useNativeDriver: true
+        }).start(({ finished }) => {
+          if (finished) setNavProgressVisible(false);
+        });
+      }, 90);
+    }, [navProgressOpacity, settings.appAnimations]);
+
     const handleLoadStart = useCallback((url: string) => {
       clearLoadTimers();
       const id = gate.begin(settings.appUiOverrides);
-      page.current = { id, url, loaded: false, requiresOverrides: settings.appUiOverrides };
+      page.current = {
+        id,
+        url,
+        loaded: false,
+        uiStarted: false,
+        requiresOverrides: settings.appUiOverrides
+      };
       payload.current = settings.appUiOverrides ? loadRemoteAppUi() : null;
       // Attach a rejection handler immediately while the document is loading.
       void payload.current?.catch(() => undefined);
       setFailed(false);
-      showOverlay('Connecting to dmzranked.com…', 5);
-    }, [clearLoadTimers, gate, settings.appUiOverrides, showOverlay]);
+      showNavigationProgress();
+
+      const useFullOverlay =
+        !startupComplete.current || forceOverlayNextNavigation.current;
+      forceOverlayNextNavigation.current = false;
+      if (useFullOverlay) {
+        showOverlay('Connecting to dmzranked.com…', 5);
+      } else {
+        overlayOpacity.stopAnimation();
+        overlayOpacity.setValue(0);
+        setOverlayVisible(false);
+        setProgress(5);
+        setStatus('Connecting to dmzranked.com…');
+        setLoadingState(true);
+      }
+    }, [
+      clearLoadTimers,
+      gate,
+      overlayOpacity,
+      setLoadingState,
+      settings.appUiOverrides,
+      showNavigationProgress,
+      showOverlay
+    ]);
 
     const applyDesktopViewport = useCallback(() => {
       if (!settings.desktopSite) return;
@@ -609,6 +687,49 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         `(function(){try{var m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}m.setAttribute('content','width=1280, initial-scale=0.75, minimum-scale=0.25, maximum-scale=3, user-scalable=yes');document.documentElement.style.minWidth='1180px';}catch(e){}})();true;`
       );
     }, [settings.desktopSite]);
+
+    const installAppUi = useCallback(
+      async (id: number) => {
+        const current = page.current;
+        if (
+          !gate.isCurrent(id) ||
+          current.id !== id ||
+          !current.requiresOverrides ||
+          current.uiStarted
+        ) {
+          return;
+        }
+
+        current.uiStarted = true;
+        setProgress(value => Math.max(value, 90));
+        setStatus('Verifying the DMZ Ranked app interface…');
+        if (readyTimer.current) clearTimeout(readyTimer.current);
+        readyTimer.current = setTimeout(() => failLoad(id, 'interface'), 20000);
+
+        try {
+          const ui = await (payload.current ?? loadRemoteAppUi());
+          if (!gate.isCurrent(id)) return;
+          setProgress(value => Math.max(value, 94));
+          setStatus(
+            ui.source === 'remote'
+              ? 'Applying the latest app interface…'
+              : ui.source === 'cache'
+                ? 'Applying the last verified app interface…'
+                : 'Applying the bundled app interface…'
+          );
+          webRef.current?.injectJavaScript(
+            bridge +
+              '\n' +
+              buildRemoteUiInjection(ui.css, ui.js, id, ui.revision)
+          );
+          setProgress(value => Math.max(value, 98));
+          setStatus('Checking app styles and the App tab…');
+        } catch {
+          failLoad(id, 'interface');
+        }
+      },
+      [bridge, failLoad, gate]
+    );
 
     const handleLoad = useCallback(async (url: string) => {
       const current = page.current;
@@ -621,21 +742,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         hideOverlay(id);
         return;
       }
-      setProgress(95);
-      setStatus('Installing the DMZ Ranked app interface…');
-      readyTimer.current = setTimeout(() => failLoad(id, 'interface'), 20000);
-      try {
-        const { css, js } = await (payload.current ?? loadRemoteAppUi());
-        if (!gate.isCurrent(id)) return;
-        // BeforeContentLoaded can be skipped on Android. Ensure the original
-        // app info/bridge exists immediately before the app scripts execute.
-        webRef.current?.injectJavaScript(bridge + '\n' + buildRemoteUiInjection(css, js, id));
-        setProgress(98);
-        setStatus('Checking app styles and the App tab…');
-      } catch {
-        failLoad(id, 'interface');
+      if (current.uiStarted) {
+        hideOverlay(id);
+        return;
       }
-    }, [applyDesktopViewport, bridge, failLoad, gate, hideOverlay]);
+      await installAppUi(id);
+    }, [applyDesktopViewport, gate, hideOverlay, installAppUi]);
 
     const handleMessage = useCallback(
       (event: { nativeEvent: { data: string; url?: string } }) => {
@@ -724,21 +836,46 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (message.type === 'operator') {
           const nextName =
             typeof message.name === 'string' ? message.name.trim() : '';
+          const previousName = liveOperator.current.name.trim();
+          const operatorChanged =
+            Boolean(nextName) &&
+            previousName.toLowerCase() !== nextName.toLowerCase();
+          const statusVisible = Boolean(message.statusVisible);
+
           liveOperator.current = {
             name: nextName,
-            verified: Boolean(message.verified),
-            protected: Boolean(message.protected)
+            verified: statusVisible
+              ? Boolean(message.verified)
+              : operatorChanged
+                ? false
+                : liveOperator.current.verified,
+            protected: statusVisible
+              ? Boolean(message.protected)
+              : operatorChanged
+                ? false
+                : liveOperator.current.protected
           };
+
           if (nextName) {
             onUpdateSetting('selectedOperator', nextName);
             onUpdateSetting('operatorSyncMs', Date.now());
           }
-          onUpdateSetting('operatorVerified', Boolean(message.verified));
-          onUpdateSetting('operatorProtected', Boolean(message.protected));
+          if (statusVisible) {
+            onUpdateSetting('operatorVerified', Boolean(message.verified));
+            onUpdateSetting('operatorProtected', Boolean(message.protected));
+          } else if (operatorChanged) {
+            onUpdateSetting('operatorVerified', false);
+            onUpdateSetting('operatorProtected', false);
+          }
           if (typeof message.source === 'string') {
             onUpdateSetting('operatorSource', message.source);
           }
-          if (nextName && settings.operatorAutoSave) {
+          if (
+            nextName &&
+            settings.operatorAutoSave &&
+            Date.now() - lastAutoBackupMs.current >= 8000
+          ) {
+            lastAutoBackupMs.current = Date.now();
             setTimeout(captureOperatorBackup, 180);
           }
           return;
@@ -781,8 +918,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (settings.rememberLastPage && isInternal(nav.url)) {
           onUpdateSetting('lastPageUrl', nav.url);
         }
+        if (isInternal(nav.url) && !loading) {
+          setTimeout(revalidateWebLifecycle, 120);
+        }
       },
-      [onUpdateSetting, settings.rememberLastPage]
+      [
+        loading,
+        onUpdateSetting,
+        revalidateWebLifecycle,
+        settings.rememberLastPage
+      ]
     );
 
     const handleShouldStart = useCallback(
@@ -827,9 +972,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       gate.cancel();
       clearLoadTimers();
       setFailed(false);
+      forceOverlayNextNavigation.current = true;
+      showNavigationProgress();
       showOverlay('Connecting to dmzranked.com…', 5);
       webRef.current?.reload();
-    }, [clearLoadTimers, gate, showOverlay]);
+    }, [
+      clearLoadTimers,
+      gate,
+      showNavigationProgress,
+      showOverlay
+    ]);
 
     const progressStatus = useCallback((value: number) => {
       if (value < 20) return `Connecting… ${value}%`;
@@ -868,12 +1020,31 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             handleLoadStart(event.nativeEvent.url);
           }}
           onLoadProgress={event => {
+            const raw = Math.max(
+              0,
+              Math.min(100, Math.round(event.nativeEvent.progress * 100))
+            );
+            setNavProgress(raw);
+            if (raw >= 100) hideNavigationProgress();
+
             if (page.current.loaded || !gate.isCurrent(page.current.id)) return;
-            const next = Math.min(94, Math.round(event.nativeEvent.progress * 100));
-            setProgress(next);
-            setStatus(progressStatus(next));
+            if (
+              raw >= 68 &&
+              page.current.requiresOverrides &&
+              !page.current.uiStarted
+            ) {
+              void installAppUi(page.current.id);
+            }
+            if (!page.current.uiStarted) {
+              const next = Math.min(89, raw);
+              setProgress(next);
+              setStatus(progressStatus(next));
+            }
           }}
-          onLoad={event => void handleLoad(event.nativeEvent.url)}
+          onLoad={event => {
+            hideNavigationProgress();
+            void handleLoad(event.nativeEvent.url);
+          }}
           onMessage={handleMessage}
           onNavigationStateChange={handleNavigation}
           onScroll={event => {
@@ -909,6 +1080,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
                   ToastAndroid.SHORT
                 );
               }
+              forceOverlayNextNavigation.current = true;
               showOverlay('Refreshing DMZ Ranked…', 0);
               webRef.current?.reload();
             }
@@ -939,10 +1111,18 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           />
         </View>
 
-        {!overlayVisible && loading && progress < 100 ? (
-          <View style={styles.topTrack}>
-            <View style={[styles.topFill, { width: `${progress}%` }]} />
-          </View>
+        {navProgressVisible && !overlayVisible ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.topTrack, { opacity: navProgressOpacity }]}
+          >
+            <View
+              style={[
+                styles.topFill,
+                { width: `${Math.max(2, navProgress)}%` }
+              ]}
+            />
+          </Animated.View>
         ) : null}
 
         {overlayVisible ? (

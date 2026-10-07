@@ -25,6 +25,7 @@ import { DmzActionCard, DmzCard, DmzGoldButton } from './DmzSurface';
 import { verifyDeveloperPin } from '../services/developerGate';
 import {
   exportOperatorBackups,
+  latestOperatorBackup,
   operatorBackupCount,
   operatorNames
 } from '../services/operatorBackup';
@@ -243,12 +244,15 @@ export function SettingsPanel({
   onReset,
   onAction
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.0.67';
-  const build = Application.nativeBuildVersion ?? '171';
+  const version = Application.nativeApplicationVersion ?? '1.0.69';
+  const build = Application.nativeBuildVersion ?? '173';
   const [query, setQuery] = useState('');
   const [creditsExpanded, setCreditsExpanded] = useState(false);
   const [backupNames, setBackupNames] = useState<string[]>([]);
   const [backupCount, setBackupCount] = useState(0);
+  const [latestBackupText, setLatestBackupText] = useState(
+    'No local operator backup yet.'
+  );
   const [notificationStatus, setNotificationStatus] =
     useState('Checking notification permission…');
   const [lastSyncText, setLastSyncText] = useState('Not checked yet');
@@ -267,8 +271,18 @@ export function SettingsPanel({
   const q = query.trim().toLowerCase();
 
   const refreshBackupState = async () => {
-    setBackupNames(await operatorNames());
-    setBackupCount(await operatorBackupCount());
+    const [names, count, latest] = await Promise.all([
+      operatorNames(),
+      operatorBackupCount(),
+      latestOperatorBackup()
+    ]);
+    setBackupNames(names);
+    setBackupCount(count);
+    setLatestBackupText(
+      latest
+        ? `Last backup: ${new Date(latest.savedAt).toLocaleString()} • ${latest.entryCount} entries`
+        : 'No local operator backup yet.'
+    );
   };
 
   useEffect(() => {
@@ -348,7 +362,12 @@ export function SettingsPanel({
     }
   }, [q]);
 
-  const contentSummary = 'Choose how much DMZ Ranked fits on screen.';
+  const contentSummary =
+    settings.contentSize === 'compact'
+      ? 'Compact • smaller cards, controls, text, and website content.'
+      : settings.contentSize === 'large'
+        ? 'Large • larger cards, controls, text, and website content.'
+        : 'Standard • default app and website sizing.';
 
   const toast = (message: string, long = false) => {
     if (Platform.OS === 'android') {
@@ -361,10 +380,14 @@ export function SettingsPanel({
 
   const operatorStatus = settings.selectedOperator
     ? [
-        settings.selectedOperator,
-        settings.operatorVerified ? 'Verified on this device' : 'Detected',
-        settings.operatorProtected ? 'Protected' : 'Not protected'
-      ].join(' • ')
+        settings.operatorVerified
+          ? '✓ Verified on this device'
+          : 'Detected from website selection',
+        settings.operatorProtected ? 'PIN protected' : 'No PIN detected',
+        settings.operatorSource || ''
+      ]
+        .filter(Boolean)
+        .join(' • ')
     : 'Open DMZRanked.com in the app and select an operator.';
 
   const handleDeveloperTap = () => {
@@ -909,7 +932,7 @@ export function SettingsPanel({
                     </View>
                     <Text style={styles.operatorStatus}>{operatorStatus}</Text>
                     <Text style={styles.operatorCount}>
-                      {backupCount} / 2 local operator backups
+                      {backupCount} / 2 imported
                     </Text>
                     {backupNames.length ? (
                       <Pressable
@@ -980,9 +1003,14 @@ export function SettingsPanel({
                     </Pressable>
 
                     <Text style={styles.backupSummary}>
+                      {latestBackupText}
+                      {'\n'}
                       {backupCount
                         ? `${backupCount} backup${backupCount === 1 ? '' : 's'} saved locally • maximum 2 operators`
-                        : 'No operator backup saved yet.'}
+                        : 'Maximum 2 operators'}
+                    </Text>
+                    <Text style={styles.backupSafeNotice}>
+                      Safe data only • PINs, passwords, cookies, sessions, auth tokens, JWTs and API keys are never stored in operator backups.
                     </Text>
 
                     <View style={styles.backupActionRow}>
@@ -1754,6 +1782,12 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     lineHeight: 17
+  },
+  backupSafeNotice: {
+    marginTop: 7,
+    color: colors.goldSoft,
+    fontSize: 10.5,
+    lineHeight: 15
   },
   backupActionRow: { flexDirection: 'row', marginTop: 10 },
   backupActionButton: {

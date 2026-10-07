@@ -3,6 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = 'dmz_operator_backups_v1';
 const MAX_OPERATORS = 2;
 const MAX_SNAPSHOT_CHARS = 1_500_000;
+const MAX_STORAGE_CHARS = 1_000_000;
+const MAX_VALUE_CHARS = 300_000;
+const BLOCKED_KEY =
+  /pin|pass(word|code)?|token|auth|session|secret|cookie|credential|jwt|bearer|csrf|oauth|api[_.-]?key/i;
+const JWT_VALUE =
+  /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/;
+const BLOCKED_VALUE =
+  /["'](?:access_?token|refresh_?token|password|passcode|session|secret|authorization|oauth|jwt|api_?key)["']?\s*[:=]/i;
 
 export type OperatorSnapshot = {
   origin?: string;
@@ -29,6 +37,47 @@ function cleanName(value: string): string {
 
 function normalize(value: string): string {
   return cleanName(value).toLowerCase();
+}
+
+function safeOrigin(value: unknown): string {
+  try {
+    const url = new URL(String(value || 'https://dmzranked.com'));
+    const host = url.hostname.toLowerCase();
+    if (host === 'dmzranked.com' || host.endsWith('.dmzranked.com')) {
+      return url.origin;
+    }
+  } catch {
+    // Default below.
+  }
+  return 'https://dmzranked.com';
+}
+
+function isSafeStorageEntry(key: string, value: string): boolean {
+  if (!key || BLOCKED_KEY.test(key)) return false;
+  if (value.length > MAX_VALUE_CHARS) return false;
+  return !JWT_VALUE.test(value) && !BLOCKED_VALUE.test(value);
+}
+
+function sanitizeStorage(
+  source: Record<string, string>,
+  operatorName: string
+): Record<string, string> {
+  const safe: Record<string, string> = {};
+  let total = 0;
+
+  for (const [rawKey, rawValue] of Object.entries(source || {})) {
+    const key = String(rawKey || '');
+    const value = String(rawValue ?? '');
+    if (!isSafeStorageEntry(key, value)) continue;
+    const next = total + key.length + value.length;
+    if (next > MAX_STORAGE_CHARS) break;
+    safe[key] = value;
+    total = next;
+  }
+
+  const name = cleanName(operatorName);
+  if (name) safe.dmz_myname = name;
+  return safe;
 }
 
 async function loadRoot(): Promise<BackupRoot> {
@@ -62,12 +111,12 @@ export async function saveOperatorBackup(
   const rawSize = JSON.stringify(snapshot).length;
   if (rawSize > MAX_SNAPSHOT_CHARS) return false;
 
-  const storage = { ...snapshot.storage, dmz_myname: name };
+  const storage = sanitizeStorage(snapshot.storage, name);
   const root = await loadRoot();
   root[normalize(name)] = {
     operator: name,
     savedAt: Date.now(),
-    origin: snapshot.origin || 'https://dmzranked.com',
+    origin: safeOrigin(snapshot.origin),
     storage,
     entryCount: Object.keys(storage).length,
     protected: Boolean(snapshot.protected)
@@ -119,9 +168,9 @@ export async function importOperatorBackups(raw: string): Promise<number> {
       root[normalize(name)] = {
         operator: name,
         savedAt: Number(record.savedAt) || Date.now(),
-        origin: record.origin || 'https://dmzranked.com',
-        storage: { ...record.storage, dmz_myname: name },
-        entryCount: Object.keys(record.storage).length,
+        origin: safeOrigin(record.origin),
+        storage: sanitizeStorage(record.storage, name),
+        entryCount: Object.keys(sanitizeStorage(record.storage, name)).length,
         protected: Boolean(record.protected)
       };
       imported += 1;
@@ -139,7 +188,8 @@ export function buildOperatorRestoreScript(
 ): string | null {
   if (!record?.storage || !Object.keys(record.storage).length) return null;
 
-  const statements = Object.entries(record.storage)
+  const safeStorage = sanitizeStorage(record.storage, record.operator);
+  const statements = Object.entries(safeStorage)
     .filter(([key, value]) => key != null && value != null)
     .map(
       ([key, value]) =>
