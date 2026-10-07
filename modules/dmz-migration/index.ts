@@ -7,6 +7,7 @@ export type WebViewPackageInfo = {
 };
 
 type DmzMigrationNative = {
+  launchLegacyExperience(): Promise<boolean>;
   readPeerPayload(): Promise<string | null>;
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
@@ -26,6 +27,10 @@ const nativeModule =
   Platform.OS === 'android'
     ? requireOptionalNativeModule<DmzMigrationNative>('DmzMigration')
     : null;
+
+export async function launchLegacyExperience(): Promise<boolean> {
+  return nativeModule?.launchLegacyExperience() ?? false;
+}
 
 export async function readPeerPayload(): Promise<string | null> {
   return nativeModule?.readPeerPayload() ?? null;
