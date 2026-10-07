@@ -10,7 +10,7 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowSplashScreenBackground">@color/dmz_black</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/dmz_splash_icon</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/dmz_ranked_logo</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
     </style>
 </resources>
