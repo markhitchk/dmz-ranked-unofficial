@@ -54,11 +54,6 @@ import {
 } from '../../modules/dmz-migration';
 
 const HOME_URL = 'https://dmzranked.com/';
-const PAYPAL_SHARE_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
-const KOFI_URL = 'https://ko-fi.com/harleytg_#checkoutModal';
-const APP_SUPPORT_DISCORD_URL = 'https://discord.gg/kdHneTZkyd';
-const MAIN_DISCORD_URL = 'https://discord.gg/jTaTHqw45F';
-const BETA_GROUP_URL = 'https://groups.google.com/g/dmz-ranked';
 
 const IOS_DESKTOP_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
@@ -135,48 +130,12 @@ function isInternal(url: string): boolean {
 }
 
 function isAllowedExternal(url: string): boolean {
-  if (
-    url.startsWith(PAYPAL_SHARE_URL) ||
-    url.startsWith(KOFI_URL) ||
-    url.startsWith(APP_SUPPORT_DISCORD_URL) ||
-    url.startsWith(MAIN_DISCORD_URL) ||
-    url.startsWith(BETA_GROUP_URL)
-  ) {
-    return true;
-  }
-
   try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.toLowerCase();
-    const path = parsed.pathname;
-    if (
-      host === 'discord.gg' ||
-      host === 'www.discord.gg' ||
-      host === 'discord.com'
-    ) {
-      return (
-        path.includes('kdHneTZkyd') || path.includes('jTaTHqw45F')
-      );
-    }
-    if (
-      host === 'groups.google.com' ||
-      host === 'www.groups.google.com'
-    ) {
-      return path === '/g/dmz-ranked' || path.startsWith('/g/dmz-ranked/');
-    }
-    if (host === 'ko-fi.com' || host === 'www.ko-fi.com') return true;
-    if (
-      host === 'paypal.me' ||
-      host === 'www.paypal.me' ||
-      host === 'paypal.com' ||
-      host === 'www.paypal.com'
-    ) {
-      return true;
-    }
+    const protocol = new URL(url).protocol.toLowerCase();
+    return protocol === 'http:' || protocol === 'https:';
   } catch {
     return false;
   }
-  return false;
 }
 
 function contentZoom(size: AppSettings['contentSize']): number {
@@ -953,9 +912,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           if (isAllowedExternal(url)) {
             void openExternalUrl(url);
           } else {
-            showLinkMessage(
-              "External link blocked. Allowed links are the approved PayPal, Harley's Studios Ko-fi, DMZ Ranked Discord invites, and app beta group."
-            );
+            showLinkMessage('Could not open this external website.');
           }
           return false;
         }
