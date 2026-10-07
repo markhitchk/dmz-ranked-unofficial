@@ -73,26 +73,33 @@ export function DmzRankedWidget({
   height,
   stats,
   beta,
+  operator = '',
   loading = false
 }: {
   width: number;
   height: number;
   stats: WidgetStats | null;
   beta: boolean;
+  operator?: string;
   loading?: boolean;
 }) {
+  const operatorName = operator.trim();
+  const stateLabel = loading
+    ? 'SYNCING'
+    : stats
+      ? stats.fromCache
+        ? 'CACHED'
+        : 'LIVE'
+      : operatorName
+        ? 'OFFLINE'
+        : 'NO OPERATOR';
+  const emptyRank = operatorName
+    ? 'Could not reach DMZ Ranked.'
+    : 'Open DMZ Ranked → Operators';
   const compact = width < 245 || height < 125;
   const large = width >= 330 && height >= 165;
 
   if (compact) {
-    const stateLabel = loading
-      ? 'SYNCING'
-      : stats
-        ? stats.fromCache
-          ? 'CACHED'
-          : 'LIVE'
-        : 'NO OPERATOR';
-
     return (
       <FlexWidget
         style={{
@@ -179,7 +186,7 @@ export function DmzRankedWidget({
             </FlexWidget>
 
             <TextWidget
-              text={stats?.name || 'SELECT AN OPERATOR'}
+              text={stats?.name || operatorName || 'SELECT AN OPERATOR'}
               truncate="END"
               maxLines={1}
               style={{
@@ -192,7 +199,7 @@ export function DmzRankedWidget({
               text={
                 loading
                   ? 'Refreshing live standings…'
-                  : stats?.rankLabel || 'Open DMZ Ranked → Operators'
+                  : stats?.rankLabel || emptyRank
               }
               truncate="END"
               maxLines={1}
@@ -371,7 +378,7 @@ export function DmzRankedWidget({
           ) : null}
 
           <TextWidget
-            text={stats?.fromCache ? 'CACHED' : 'LIVE'}
+            text={stateLabel}
             style={{
               color: GOLD,
               backgroundColor: CHIP,
@@ -431,13 +438,13 @@ export function DmzRankedWidget({
             }}
           >
             <TextWidget
-              text={stats?.name || 'DMZ RANKED'}
+              text={stats?.name || operatorName || 'SELECT AN OPERATOR'}
               truncate="END"
               maxLines={1}
               style={{ color: WHITE, fontSize: 22, fontWeight: 'bold' }}
             />
             <TextWidget
-              text={loading ? 'Loading live standings…' : stats?.rankLabel || 'Pick an operator'}
+              text={loading ? 'Loading live standings…' : stats?.rankLabel || emptyRank}
               truncate="END"
               maxLines={1}
               style={{
@@ -512,7 +519,11 @@ export function DmzRankedWidget({
             text={
               stats
                 ? `${stats.fromCache ? 'CACHED • ' : ''}UPDATED ${timeLabel(stats.updatedAt)}`
-                : 'DMZRANKED.COM • LIVE DATA'
+                : loading
+                  ? 'READING LIVE DATA'
+                  : operatorName
+                    ? 'REFRESH WHEN ONLINE'
+                    : 'TAP TO OPEN APP'
             }
             truncate="END"
             maxLines={1}
@@ -578,7 +589,7 @@ export function DmzRankedWidget({
         ) : null}
 
         <TextWidget
-          text={stats?.fromCache ? 'CACHED' : 'LIVE'}
+          text={stateLabel}
           style={{
             color: GOLD,
             backgroundColor: CHIP,
@@ -627,13 +638,13 @@ export function DmzRankedWidget({
         />
         <FlexWidget style={{ flex: 1, marginLeft: 10, flexDirection: 'column' }}>
           <TextWidget
-            text={stats?.name || 'DMZ RANKED'}
+            text={stats?.name || operatorName || 'SELECT AN OPERATOR'}
             truncate="END"
             maxLines={1}
             style={{ color: WHITE, fontSize: 17, fontWeight: 'bold' }}
           />
           <TextWidget
-            text={loading ? 'Loading live standings…' : stats?.rankLabel || 'Pick an operator'}
+            text={loading ? 'Loading live standings…' : stats?.rankLabel || emptyRank}
             truncate="END"
             maxLines={1}
             style={{
