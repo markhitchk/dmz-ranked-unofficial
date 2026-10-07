@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
 import { readPeerPayload, setExportPayload } from '../../modules/dmz-migration';
 import {
@@ -13,6 +14,8 @@ export type PeerImportResult = {
   patch: Partial<AppSettings>;
   importedOperators: number;
 };
+
+const PRODUCTION_MIGRATION_KEY = 'dmz_production_migration_v1';
 
 function toPatch(preferences: LegacyPreferences): Partial<AppSettings> {
   const patch: Partial<AppSettings> = {};
@@ -123,4 +126,16 @@ export async function publishMigrationPayload(
   });
 
   return await setExportPayload(payload);
+}
+
+
+export async function autoImportProductionToBeta(): Promise<PeerImportResult | null> {
+  if (!(Application.applicationId ?? '').endsWith('.beta')) return null;
+  if ((await AsyncStorage.getItem(PRODUCTION_MIGRATION_KEY)) === '1') return null;
+
+  const imported = await importFromPeer();
+  if (!imported) return null;
+
+  await AsyncStorage.setItem(PRODUCTION_MIGRATION_KEY, '1');
+  return imported;
 }

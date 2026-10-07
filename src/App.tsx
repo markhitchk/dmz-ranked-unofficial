@@ -4,6 +4,7 @@ import {
   Linking,
   Platform,
   StyleSheet,
+  ToastAndroid,
   View
 } from 'react-native';
 import Constants from 'expo-constants';
@@ -41,6 +42,7 @@ import {
   listenForAppUpdateStatus
 } from './services/appUpdates';
 import {
+  autoImportProductionToBeta,
   importFromPeer,
   publishMigrationPayload
 } from './services/peerMigration';
@@ -123,6 +125,21 @@ function AppContent() {
       void KeepAwake.deactivateKeepAwake(tag);
     };
   }, [settings.keepAwake]);
+
+  useEffect(() => {
+    if (!ready || channel !== 'beta' || Platform.OS !== 'android') return;
+    void autoImportProductionToBeta().then(imported => {
+      if (!imported) return;
+      replace({ ...settings, ...imported.patch });
+      setBackupRevision(value => value + 1);
+      ToastAndroid.show(
+        imported.importedOperators > 0
+          ? 'Imported app settings and operator backups from DMZ Ranked.'
+          : 'Imported app settings from DMZ Ranked.',
+        ToastAndroid.LONG
+      );
+    });
+  }, [channel, ready]);
 
   useEffect(() => {
     if (!ready || Platform.OS !== 'android') return;
