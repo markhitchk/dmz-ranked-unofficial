@@ -10,6 +10,26 @@
     return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   }
 
+  function openNativeAppSettings(target) {
+    const section = clean(target).toLowerCase().replace(/[\\s_]+/g, "-");
+    try {
+      if (
+        window.HarleysStudiosApp &&
+        typeof window.HarleysStudiosApp.openSettings === "function"
+      ) {
+        window.HarleysStudiosApp.openSettings(section);
+        return true;
+      }
+    } catch (_) {}
+
+    try {
+      window.location.href = "dmzranked://settings/" + encodeURIComponent(section);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function validOperator(value) {
     const name = clean(value);
     return Boolean(
@@ -1086,6 +1106,25 @@
         '<a class="hs-app-action-btn hs-ios-support-app-action" href="' + IOS_SUPPORT_APP_LINK + '">Support the iOS release</a>' +
       '</div>' +
 
+      '<div class="card hs-app-settings-card">' +
+        '<div class="hs-app-heading-row">' +
+          '<div><div class="hs-app-eyebrow">Website → native app</div><h2 class="section-title">Quick App Settings</h2></div>' +
+          '<span class="hs-exclusive-badge">APP EXCLUSIVE</span>' +
+        '</div>' +
+        '<p class="hs-app-settings-copy">Open the native DMZ Ranked settings screen directly at the section you need.</p>' +
+        '<div class="hs-app-settings-grid">' +
+          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="appearance">Appearance</button>' +
+          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="operators">Operators</button>' +
+          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="notifications">Notifications</button>' +
+          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="updates">App Updates</button>' +
+          (String(APP_INFO.channel || "").toLowerCase() === "beta"
+            ? '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="widgets">Widgets</button>'
+            : '') +
+          '<button type="button" class="hs-app-action-btn ghost hs-app-settings-shortcut" data-hs-open-settings="support">Support</button>' +
+          '<button type="button" class="hs-app-action-btn hs-app-settings-shortcut hs-app-settings-all" data-hs-open-settings="all">All App Settings</button>' +
+        '</div>' +
+      '</div>' +
+
       '<div class="card hs-app-features-card">' +
         '<div class="hs-app-heading-row">' +
           '<div><div class="hs-app-eyebrow">Built for mobile</div><h2 class="section-title">App Features</h2></div>' +
@@ -1102,6 +1141,15 @@
         '<summary>About this app page</summary>' +
         '<p>This tab exists only inside Harley\'s Studios DMZ Ranked Android app. It adds app-only information and tools without editing or modifying the dmzranked.com website.</p>' +
       '</details>';
+
+    section.addEventListener("click", (event) => {
+      const target = event.target && event.target.closest
+        ? event.target.closest("[data-hs-open-settings]")
+        : null;
+      if (!target) return;
+      event.preventDefault();
+      openNativeAppSettings(target.getAttribute("data-hs-open-settings") || "all");
+    });
 
     wrap.appendChild(section);
     return section;
