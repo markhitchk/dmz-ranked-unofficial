@@ -238,6 +238,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         );
         onUpdateSetting('selectedOperator', record.operator);
         onUpdateSetting('operatorProtected', record.protected);
+        onUpdateSetting('operatorSyncMs', Date.now());
         return true;
       },
       [onUpdateSetting]
@@ -438,6 +439,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             typeof message.name === 'string' ? message.name.trim() : '';
           if (nextName) {
             onUpdateSetting('selectedOperator', nextName);
+            onUpdateSetting('operatorSyncMs', Date.now());
           }
           onUpdateSetting('operatorVerified', Boolean(message.verified));
           onUpdateSetting('operatorProtected', Boolean(message.protected));
