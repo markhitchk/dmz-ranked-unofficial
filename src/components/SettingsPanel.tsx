@@ -919,7 +919,13 @@ export function SettingsPanel({
                       <View style={styles.backupActionSpacer} />
                       <Pressable
                         style={styles.backupActionButton}
-                        onPress={() => setDialog('operator-picker')}
+                        onPress={() =>
+                          onAction({
+                            type: 'restore-operator',
+                            operatorName:
+                              settings.selectedOperator || backupNames[0] || ''
+                          })
+                        }
                       >
                         <Text style={styles.backupActionText}>RESTORE</Text>
                       </Pressable>
