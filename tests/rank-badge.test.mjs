@@ -123,6 +123,7 @@ test('loading state keeps the last live badge instead of reverting to fallback',
   const lastStats = { rankLabel: 'Bronze I', position: 358 };
   const context = vm.createContext({
     lastStats,
+    lastStatsOperator: 'HarleyTG',
     document: {
       getElementById() { return null; },
       querySelectorAll() { return []; }
