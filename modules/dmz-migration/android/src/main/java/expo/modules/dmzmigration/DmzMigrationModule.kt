@@ -2,6 +2,8 @@ package expo.modules.dmzmigration
 
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import android.webkit.WebSettings
@@ -78,7 +80,7 @@ class DmzMigrationModule : Module() {
       }
 
       try {
-        context.runOnUiThread {
+        Handler(Looper.getMainLooper()).post {
           try {
             val webView = WebView(context)
             webView.clearCache(true)
@@ -114,7 +116,7 @@ class DmzMigrationModule : Module() {
         return@AsyncFunction
       }
 
-      context.runOnUiThread {
+      Handler(Looper.getMainLooper()).post {
         try {
           promise.resolve(
             DmzWebChromeParity.install(
