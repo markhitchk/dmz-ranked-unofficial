@@ -111,7 +111,9 @@ class DmzMigrationModule : Module() {
       contentScale: Double,
       promise: expo.modules.kotlin.Promise ->
       val context = appContext.reactContext
-      if (context == null) {
+      val reactContext =
+        context as? com.facebook.react.bridge.ReactContext
+      if (reactContext == null) {
         promise.resolve(false)
         return@AsyncFunction
       }
@@ -120,7 +122,7 @@ class DmzMigrationModule : Module() {
         try {
           promise.resolve(
             DmzWebChromeParity.install(
-              context,
+              reactContext,
               reactTag,
               animations,
               contentScale
