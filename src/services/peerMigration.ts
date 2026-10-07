@@ -53,6 +53,9 @@ function toPatch(preferences: LegacyPreferences): Partial<AppSettings> {
   if (typeof preferences.website_operator_source === 'string') {
     patch.operatorSource = preferences.website_operator_source;
   }
+  if (typeof preferences.website_operator_sync_ms === 'number') {
+    patch.operatorSyncMs = preferences.website_operator_sync_ms;
+  }
   if (typeof preferences.operator_auto_save === 'boolean') {
     patch.operatorAutoSave = preferences.operator_auto_save;
   }
@@ -113,6 +116,7 @@ export async function publishMigrationPayload(
     website_operator_verified: settings.operatorVerified,
     website_operator_protected: settings.operatorProtected,
     website_operator_source: settings.operatorSource,
+    website_operator_sync_ms: settings.operatorSyncMs,
     operator_auto_save: settings.operatorAutoSave,
     content_size: settings.contentSize,
     app_animations: settings.appAnimations,
