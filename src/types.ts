@@ -70,6 +70,7 @@ export type BridgeMessage =
       name?: string;
       verified?: boolean;
       protected?: boolean;
+      statusVisible?: boolean;
       source?: string;
     }
   | {

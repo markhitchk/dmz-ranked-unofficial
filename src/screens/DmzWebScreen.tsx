@@ -335,78 +335,33 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       );
     }, []);
 
-    const selectOperator = useCallback(
-      async (operatorName: string): Promise<boolean> => {
+    const applyPreferredOperator = useCallback(
+      (operatorName: string, force = false) => {
         const name = operatorName.trim();
         if (!name || !webRef.current) return false;
-
-        const script = `(function(){
-          var name=${JSON.stringify(name)};
-          function apply(attempt){
-            try{
-              var input=document.getElementById('playerName');
-              var pick=document.getElementById('playerPick');
-              function touched(e){if(e&&e.isTrusted){window.__dmzRnOperatorTouched=true;}}
-              if(input&&!input.__dmzRnOperatorGuard){
-                input.__dmzRnOperatorGuard=true;
-                input.addEventListener('input',touched,true);
-                input.addEventListener('change',touched,true);
-              }
-              if(pick&&!pick.__dmzRnOperatorGuard){
-                pick.__dmzRnOperatorGuard=true;
-                pick.addEventListener('change',touched,true);
-              }
-              if(window.__dmzRnOperatorTouched){return;}
-              if(!input&&!pick){
-                if(attempt<16)setTimeout(function(){apply(attempt+1);},500);
-                return;
-              }
-              var target=name.toLowerCase(),pickMatched=false;
-              if(pick){
-                for(var i=1;i<pick.options.length;i++){
-                  var o=pick.options[i];
-                  var v=String(o.value||o.textContent||'').trim();
-                  if(v.toLowerCase()===target){
-                    pickMatched=true;
-                    if(pick.selectedIndex!==i){
-                      pick.selectedIndex=i;
-                      pick.dispatchEvent(new Event('change',{bubbles:true}));
-                    }
-                    break;
-                  }
-                }
-              }
-              if(input){
-                var cur=String(input.value||'').trim();
-                if(cur.toLowerCase()!==target){
-                  input.value=name;
-                  input.dispatchEvent(new Event('input',{bubbles:true}));
-                  input.dispatchEvent(new Event('change',{bubbles:true}));
-                }
-              }
-              try{localStorage.setItem('dmz_myname',name);}catch(e){}
-              if(window.__dmzRnReadOperator){setTimeout(window.__dmzRnReadOperator,0);}
-              if((!input||!pickMatched)&&attempt<16){
-                setTimeout(function(){apply(attempt+1);},500);
-              }
-            }catch(e){
-              if(attempt<16)setTimeout(function(){apply(attempt+1);},500);
-            }
-          }
-          apply(0);
-        })();true;`;
-
-        webRef.current.injectJavaScript(script);
+        webRef.current.injectJavaScript(
+          `(function(){try{window.__DMZ_RN_PREFERRED_OPERATOR=${JSON.stringify(
+            name
+          )};if(window.__dmzRnApplyPreferredOperator){window.__dmzRnApplyPreferredOperator(${JSON.stringify(
+            name
+          )},0,${force ? 'true' : 'false'});}else if(window.__dmzRnRefreshOperatorLifecycle){window.__dmzRnRefreshOperatorLifecycle();}}catch(e){}})();true;`
+        );
         return true;
       },
       []
     );
 
+    const selectOperator = useCallback(
+      async (operatorName: string): Promise<boolean> =>
+        applyPreferredOperator(operatorName, true),
+      [applyPreferredOperator]
+    );
+
     useEffect(() => {
       const savedOperator = settings.selectedOperator.trim();
       if (!savedOperator || loading || !webRef.current) return;
-      void selectOperator(savedOperator);
-    }, [loading, selectOperator, settings.selectedOperator]);
+      applyPreferredOperator(savedOperator, false);
+    }, [applyPreferredOperator, loading, settings.selectedOperator]);
 
     const captureOperatorBackup = useCallback(() => {
       webRef.current?.injectJavaScript(
@@ -724,17 +679,37 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (message.type === 'operator') {
           const nextName =
             typeof message.name === 'string' ? message.name.trim() : '';
+          const previousName = liveOperator.current.name.trim();
+          const operatorChanged =
+            Boolean(nextName) &&
+            previousName.toLowerCase() !== nextName.toLowerCase();
+          const statusVisible = Boolean(message.statusVisible);
+
           liveOperator.current = {
             name: nextName,
-            verified: Boolean(message.verified),
-            protected: Boolean(message.protected)
+            verified: statusVisible
+              ? Boolean(message.verified)
+              : operatorChanged
+                ? false
+                : liveOperator.current.verified,
+            protected: statusVisible
+              ? Boolean(message.protected)
+              : operatorChanged
+                ? false
+                : liveOperator.current.protected
           };
+
           if (nextName) {
             onUpdateSetting('selectedOperator', nextName);
             onUpdateSetting('operatorSyncMs', Date.now());
           }
-          onUpdateSetting('operatorVerified', Boolean(message.verified));
-          onUpdateSetting('operatorProtected', Boolean(message.protected));
+          if (statusVisible) {
+            onUpdateSetting('operatorVerified', Boolean(message.verified));
+            onUpdateSetting('operatorProtected', Boolean(message.protected));
+          } else if (operatorChanged) {
+            onUpdateSetting('operatorVerified', false);
+            onUpdateSetting('operatorProtected', false);
+          }
           if (typeof message.source === 'string') {
             onUpdateSetting('operatorSource', message.source);
           }
