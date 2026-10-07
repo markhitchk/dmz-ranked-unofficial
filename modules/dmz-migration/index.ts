@@ -10,6 +10,11 @@ type DmzMigrationNative = {
   readPeerPayload(): Promise<string | null>;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   clearWebViewData(): Promise<boolean>;
+  installWebChromeParity(
+    reactTag: number,
+    animations: boolean,
+    contentScale: number
+  ): Promise<boolean>;
   setExportPayload(payload: string): Promise<boolean>;
 };
 
@@ -28,6 +33,18 @@ export async function getWebViewPackage(): Promise<WebViewPackageInfo | null> {
 
 export async function clearWebViewData(): Promise<boolean> {
   return nativeModule?.clearWebViewData() ?? false;
+}
+
+export async function installWebChromeParity(
+  reactTag: number,
+  animations: boolean,
+  contentScale: number
+): Promise<boolean> {
+  return nativeModule?.installWebChromeParity(
+    reactTag,
+    animations,
+    contentScale
+  ) ?? false;
 }
 
 export async function setExportPayload(payload: string): Promise<boolean> {
