@@ -53,6 +53,7 @@ import { colors, contentScaleFactor } from './theme';
 import type { AppChannel } from './types';
 import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { clearWebViewData } from '../modules/dmz-migration';
 
 const PLAY_PACKAGE_STABLE = 'com.harleytg.dmzranked';
 const PLAY_PACKAGE_BETA = 'com.harleytg.dmzranked.beta';
@@ -296,10 +297,30 @@ function AppContent() {
         });
         return;
 
-      case 'clear-data':
+      case 'clear-data': {
         webRef.current?.clearCache();
+        const nativeCleared =
+          Platform.OS === 'android' ? await clearWebViewData() : true;
         webRef.current?.clearWebsiteData();
+        replace({
+          ...settings,
+          lastPageUrl: 'https://dmzranked.com/',
+          selectedOperator: '',
+          operatorVerified: false,
+          operatorProtected: false,
+          operatorSource: ''
+        });
+        setBackupRevision(value => value + 1);
+        setAppDialog({
+          title: nativeCleared
+            ? 'WEBSITE DATA CLEARED'
+            : 'WEBSITE DATA CLEARED WITH WARNING',
+          message: nativeCleared
+            ? 'WebView cache, cookies, website storage, and the selected website operator were cleared. App operator backups were kept.'
+            : 'Page storage was cleared, but Android could not confirm that every WebView cookie was removed. App operator backups were kept.'
+        });
         return;
+      }
 
       case 'save-operator':
       case 'refresh-operator':
