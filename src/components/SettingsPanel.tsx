@@ -1029,7 +1029,7 @@ export function SettingsPanel({
 
           {showHelp ? (
             <>
-              <SectionLabel>APP SUPPORT</SectionLabel>
+              <SectionLabel>APP SUPPORT ZONE</SectionLabel>
               <ActionCard
                 title="Report an app problem"
                 summary={`Report ${Platform.OS === 'android' ? 'Android' : 'iOS'} client bugs, app loading, appearance, notifications, widgets, or request app features.`}
@@ -1038,7 +1038,7 @@ export function SettingsPanel({
               />
               <ActionCard
                 title="App Support Discord"
-                summary="Harley's Studios support for the unofficial DMZ Ranked app only."
+                summary="Use App Support for this unofficial client: app bugs, WebView/loading, appearance, notifications, widgets, compatibility, and app-only features."
                 label="OPEN ↗"
                 onPress={() => open(APP_SUPPORT_DISCORD)}
               />
@@ -1049,10 +1049,10 @@ export function SettingsPanel({
                 onPress={() => open(BETA_GROUP)}
               />
 
-              <SectionLabel>WEBSITE SUPPORT</SectionLabel>
+              <SectionLabel>WEBSITE SUPPORT ZONE</SectionLabel>
               <ActionCard
                 title="DMZ Ranked website support"
-                summary="Use this for dmzranked.com rankings, rules, raid/operator data, moderation, website behavior, or server-side issues."
+                summary="For dmzranked.com itself: website data, rankings, rules, raid/operator data, moderation, accounts, website behavior, or server-side issues."
                 label="OPEN ↗"
                 onPress={() => open(MAIN_DISCORD)}
               />
