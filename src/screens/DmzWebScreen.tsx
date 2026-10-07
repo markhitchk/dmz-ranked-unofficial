@@ -628,7 +628,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     }, [applyDesktopViewport, bridge, failLoad, gate, hideOverlay]);
 
     const handleMessage = useCallback(
-      (event: { nativeEvent: { data: string } }) => {
+      (event: { nativeEvent: { data: string; url?: string } }) => {
+        const sourceUrl = event.nativeEvent.url ?? '';
+        if (
+          sourceUrl &&
+          sourceUrl !== 'about:blank' &&
+          !isInternal(sourceUrl)
+        ) {
+          return;
+        }
+
         const message = parseBridgeMessage(event.nativeEvent.data);
         if (!message) return;
 
