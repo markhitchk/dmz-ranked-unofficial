@@ -47,7 +47,7 @@ const YOLANDO_AVATAR =
 const DCHINZ_AVATAR =
   'https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072';
 
-const DEV_UNLOCK_TAPS = 5;
+const DEV_UNLOCK_TAPS = 7;
 const DEV_TAP_WINDOW_MS = 4500;
 const DEV_MAX_PIN_ATTEMPTS = 5;
 const DEV_PIN_LOCKOUT_MS = 30000;
@@ -124,7 +124,13 @@ const SETTINGS_TARGET_QUERIES: Record<string, string> = {
   support: 'feedback',
   help: 'feedback',
   transfer: 'app data transfer',
-  danger: 'danger zone'
+  danger: 'danger zone',
+  general: 'general',
+  browsing: 'general',
+  storage: 'storage',
+  reset: 'storage',
+  developer: 'developer',
+  'developer-options': 'developer'
 };
 
 function settingsQueryForTarget(target?: string): string {
@@ -300,7 +306,7 @@ export function SettingsPanel({
   const [dialog, setDialog] = useState<DialogMode>(null);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
-  const [developerUnlocked, setDeveloperUnlocked] = useState(false);
+  const developerUnlocked = settings.developerMode;
   const developerTapCount = useRef(0);
   const developerTapStarted = useRef(0);
   const developerFailures = useRef(0);
@@ -483,7 +489,7 @@ export function SettingsPanel({
     if (await verifyDeveloperPin(pin)) {
       developerFailures.current = 0;
       developerLockoutUntil.current = 0;
-      setDeveloperUnlocked(true);
+      onUpdate('developerMode', true);
       setDialog(null);
       setPin('');
       setPinError('');
@@ -544,6 +550,8 @@ export function SettingsPanel({
       `Remember last page: ${settings.rememberLastPage ? 'On' : 'Off'}`,
       `Detailed loading: ${settings.verboseLoading ? 'On' : 'Off'}`,
       `WebView debugging: ${settings.webviewDebug ? 'On' : 'Off'}`,
+      `Developer mode: ${settings.developerMode ? 'On' : 'Off'}`,
+      `App experience: ${settings.experienceVersion === 'v1' ? 'V1 Legacy' : 'V2 Current'}`,
       `Content size: ${settings.contentSize}`,
       `Operator: ${settings.selectedOperator || 'none'}`,
       `Operator backups: ${backupCount}`,
@@ -562,63 +570,71 @@ export function SettingsPanel({
     await Clipboard.setStringAsync(raw);
   };
 
-  const showAbout = matches(
+  const homeMode = !q;
+
+  const showAbout = !homeMode && matches(
     q,
     'dmz ranked about version build credits creator creators yolando dchinz harley studios harleytg harley-the-gamer gamer paypal ko-fi kofi support donate donation unofficial'
   );
-  const showAppearance = matches(
+  const showAppearance = !homeMode && matches(
     q,
     'appearance display size compact standard large zoom text content density animation motion fade transition smooth'
   );
   const showWidgets =
+    !homeMode &&
     channel === 'beta' &&
     Platform.OS === 'android' &&
     matches(q, 'widget home screen pin add refresh update rank sr standing operator beta');
-  const showExperience = matches(
+  const showExperience = !homeMode && matches(
     q,
-    'app experience desktop website layout keep screen awake pull refresh remember last page detailed verbose loading'
+    'general browsing app experience desktop website layout keep screen awake pull refresh remember last page detailed verbose loading'
   );
-  const showOperators = matches(
+  const showOperators = !homeMode && matches(
     q,
     'operators operator profile selected sync website backup restore autosave protected verified'
   );
-  const showNotifications = matches(
+  const showNotifications = !homeMode && matches(
     q,
     'notifications report review approval website alerts permission sound vibration test'
   );
   const showUpdates =
+    !homeMode &&
     Platform.OS === 'android' &&
     matches(
       q,
       'app updates google play live update installed version check store'
     );
-  const showPageActions = matches(q, 'page actions reload clear web cache');
+  const showPageActions = !homeMode && matches(q, 'general browsing storage page actions reload clear web cache');
   const showBeta =
+    !homeMode &&
     channel === 'beta' &&
     matches(q, 'beta program discord testing experimental google group join');
-  const showWebsiteTools = matches(
+  const showWebsiteTools = !homeMode && matches(
     q,
     'website tools dmz ranked site ticker builder obs themed overlay stream'
   );
-  const showHelp = matches(
+  const showHelp = !homeMode && matches(
     q,
     'help community feedback report support app website discord main group rankings rules server'
   );
   const showTransfer =
+    !homeMode &&
     Platform.OS === 'android' &&
     matches(
       q,
-      'app data transfer import other stable beta supported settings operator backups'
+      'storage data reset app data transfer import other stable beta supported settings operator backups'
     );
-  const showDanger = matches(
+  const showDanger = !homeMode && matches(
     q,
-    'danger zone clear website data cookies storage reset settings defaults'
+    'storage data reset danger zone clear website data cookies storage reset settings defaults'
   );
   const showDeveloper =
     developerUnlocked &&
-    matches(q, 'developer diagnostics runtime webview debugging copy lock');
+    !homeMode &&
+    matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current');
 
   const any =
+    homeMode ||
     showAbout ||
     showAppearance ||
     showWidgets ||
@@ -645,9 +661,9 @@ export function SettingsPanel({
       <AppSafeArea contentScale={contentScaleFactor(settings.contentSize)}>
         <View style={styles.toolbar}>
           <Pressable
-            accessibilityLabel="Back"
+            accessibilityLabel={q ? "Settings home" : "Back"}
             style={styles.backButton}
-            onPress={onClose}
+            onPress={q ? () => setQuery("") : onClose}
           >
             <DmzIcon name="back" size={24} />
           </Pressable>
@@ -691,7 +707,7 @@ export function SettingsPanel({
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search app settings…"
+              placeholder="Search settings…"
               placeholderTextColor={colors.muted}
               style={styles.search}
               autoCapitalize="none"
@@ -725,6 +741,116 @@ export function SettingsPanel({
             </Text>
           ) : null}
 
+          {homeMode ? (
+            <>
+              <DmzCard>
+                <View style={styles.settingsHomeHero}>
+                  <View style={styles.settingsHomeHeroTop}>
+                    <DmzIcon name="settings" size={30} />
+                    <View style={styles.settingsHomeHeroCopy}>
+                      <Text style={styles.settingsHomeTitle}>DMZ RANKED SETTINGS</Text>
+                      <Text style={styles.cardSummary}>
+                        App controls are grouped by purpose so common settings are easier to find.
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.settingsHomeMeta}>
+                    {channel === 'beta' ? 'BETA • ' : ''}Version {version} • Build {build} • {settings.experienceVersion === 'v1' ? 'V1 Legacy target' : 'V2 Current'}
+                  </Text>
+                </View>
+              </DmzCard>
+
+              <SectionLabel>SETTINGS</SectionLabel>
+              <ActionCard
+                title="General & browsing"
+                summary="Website behavior, desktop mode, loading, refresh, page memory, and cache controls."
+                label="OPEN ›"
+                icon={<DmzIcon name="globe" size={28} />}
+                onPress={() => setQuery('general')}
+              />
+              <ActionCard
+                title="Appearance & display"
+                summary="Content size, compact presentation, and app animations."
+                label="OPEN ›"
+                icon={<DmzIcon name="settings" size={28} />}
+                onPress={() => setQuery('appearance')}
+              />
+              <ActionCard
+                title="Operator & Protected Autofill"
+                summary="Selected operator, verification status, local backups, restore, and sync."
+                label="OPEN ›"
+                icon={<DmzIcon name="lock" size={28} />}
+                onPress={() => setQuery('operators')}
+              />
+              <ActionCard
+                title="Notifications"
+                summary="Live website alerts, Android notification settings, sync status, and testing."
+                label="OPEN ›"
+                icon={<DmzIcon name="notification" size={28} />}
+                onPress={() => setQuery('notifications')}
+              />
+              {Platform.OS === 'android' ? (
+                <ActionCard
+                  title="App updates"
+                  summary="Google Play update status, manual checks, and the app listing."
+                  label="OPEN ›"
+                  onPress={() => setQuery('app updates')}
+                />
+              ) : null}
+              {channel === 'beta' && Platform.OS === 'android' ? (
+                <ActionCard
+                  title="Beta widgets"
+                  summary="Add and refresh the DMZ Ranked Android home-screen widget."
+                  label="OPEN ›"
+                  onPress={() => setQuery('widget')}
+                />
+              ) : null}
+              <ActionCard
+                title="Website tools"
+                summary="DMZ Ticker Builder and themed OBS tools provided for the website."
+                label="OPEN ›"
+                icon={<DmzIcon name="globe" size={28} />}
+                onPress={() => setQuery('website tools')}
+              />
+              <ActionCard
+                title="Support & feedback"
+                summary="Separate app-support and website-support zones so reports reach the right place."
+                label="OPEN ›"
+                onPress={() => setQuery('support')}
+              />
+              {channel === 'beta' ? (
+                <ActionCard
+                  title="Beta program"
+                  summary="App beta Discord and Google Group testing access."
+                  label="OPEN ›"
+                  onPress={() => setQuery('beta')}
+                />
+              ) : null}
+              <ActionCard
+                title="Storage, transfer & reset"
+                summary="Import between Stable/Beta, clear website data, and reset app settings."
+                label="OPEN ›"
+                icon={<DmzIcon name="database" size={28} />}
+                onPress={() => setQuery('storage')}
+              />
+              <ActionCard
+                title="About DMZ Ranked"
+                summary="Version, build details, credits, creators, and support links."
+                label="OPEN ›"
+                onPress={() => setQuery('about')}
+              />
+              {developerUnlocked ? (
+                <ActionCard
+                  title="Developer options"
+                  summary={`Developer Mode is enabled • ${settings.experienceVersion === 'v1' ? 'V1 Legacy target' : 'V2 Current'}`}
+                  label="OPEN ›"
+                  icon={<DmzIcon name="settings" size={28} color={colors.gold} />}
+                  onPress={() => setQuery('developer')}
+                />
+              ) : null}
+            </>
+          ) : null}
+
           {showAbout ? (
             <DmzCard>
               <View style={styles.aboutCard}>
@@ -744,9 +870,11 @@ export function SettingsPanel({
                     <Text style={styles.aboutVersion}>Version {version}</Text>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Build ${build}. Show build details.`}
-                      accessibilityHint="Shows the technology used to build this app."
-                      onPress={() => setDialog('build-info')}
+                      accessibilityLabel={`Build ${build}. Developer options unlock.`}
+                      accessibilityHint="Tap seven times to unlock developer options. Long press for build details."
+                      onPress={handleDeveloperTap}
+                      onLongPress={() => setDialog('build-info')}
+                      delayLongPress={450}
                       hitSlop={8}
                     >
                       <Text style={styles.aboutBuild}>Build {build}</Text>
@@ -1277,7 +1405,72 @@ export function SettingsPanel({
 
           {showDeveloper ? (
             <>
-              <SectionLabel>DEVELOPER &amp; DIAGNOSTICS</SectionLabel>
+              <SectionLabel badge="DEV">DEVELOPER OPTIONS</SectionLabel>
+              <ToggleCard
+                title="Developer Mode"
+                summary="Enables advanced diagnostics, WebView inspection, and app-experience controls."
+                value={settings.developerMode}
+                onChange={value => {
+                  onUpdate('developerMode', value);
+                  if (!value) {
+                    setQuery('');
+                    toast('Developer Mode disabled.');
+                  }
+                }}
+              />
+
+              <View style={styles.cardGap}>
+                <DmzCard>
+                  <View style={styles.experienceCard}>
+                    <Text style={styles.cardTitleCondensed}>App experience version</Text>
+                    <Text style={styles.cardSummary}>
+                      V2 is the current React Native app. V1 identifies the legacy Java/non-React experience for compatibility work.
+                    </Text>
+                    <View style={styles.experienceRow}>
+                      <Pressable
+                        onPress={() => onUpdate('experienceVersion', 'v1')}
+                        style={[
+                          styles.experienceOption,
+                          settings.experienceVersion === 'v1' && styles.experienceOptionActive
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.experienceOptionTitle,
+                            settings.experienceVersion === 'v1' && styles.experienceOptionTitleActive
+                          ]}
+                        >
+                          V1 LEGACY
+                        </Text>
+                        <Text style={styles.experienceOptionMeta}>JAVA</Text>
+                      </Pressable>
+                      <View style={styles.experienceSpacer} />
+                      <Pressable
+                        onPress={() => onUpdate('experienceVersion', 'v2')}
+                        style={[
+                          styles.experienceOption,
+                          settings.experienceVersion === 'v2' && styles.experienceOptionActive
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.experienceOptionTitle,
+                            settings.experienceVersion === 'v2' && styles.experienceOptionTitleActive
+                          ]}
+                        >
+                          V2 CURRENT
+                        </Text>
+                        <Text style={styles.experienceOptionMeta}>REACT NATIVE</Text>
+                      </Pressable>
+                    </View>
+                    <Text style={styles.experienceNotice}>
+                      Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java target' : 'V2 Current React Native'}. The V1 selector is persisted for the native legacy handoff; V2 remains the active runtime until that host is bundled.
+                    </Text>
+                  </View>
+                </DmzCard>
+              </View>
+
+              <SectionLabel>DIAGNOSTICS</SectionLabel>
               <DmzCard>
                 <View style={styles.diagnosticsCard}>
                   <Text style={styles.actionTitle}>Runtime information</Text>
@@ -1306,8 +1499,9 @@ export function SettingsPanel({
                 summary="Hide developer controls again until the five-tap PIN unlock is completed."
                 label="LOCK"
                 onPress={() => {
-                  setDeveloperUnlocked(false);
-                  toast('Developer tools locked.');
+                  onUpdate('developerMode', false);
+                  setQuery('');
+                  toast('Developer Mode disabled.');
                 }}
               />
             </>
@@ -1883,6 +2077,74 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontSize: 10,
     fontWeight: '900'
+  },
+  settingsHomeHero: { padding: 16 },
+  settingsHomeHeroTop: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  settingsHomeHeroCopy: {
+    flex: 1,
+    marginLeft: 12
+  },
+  settingsHomeTitle: {
+    color: colors.white,
+    fontFamily: condensedFont,
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 0.8
+  },
+  settingsHomeMeta: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+    color: colors.goldSoft,
+    fontSize: 11,
+    fontWeight: '800'
+  },
+  experienceCard: { padding: 16 },
+  experienceRow: {
+    flexDirection: 'row',
+    marginTop: 14
+  },
+  experienceSpacer: { width: 10 },
+  experienceOption: {
+    flex: 1,
+    minHeight: 64,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: 10,
+    backgroundColor: colors.panelDeep,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 10
+  },
+  experienceOptionActive: {
+    borderColor: colors.gold,
+    backgroundColor: '#161A18'
+  },
+  experienceOptionTitle: {
+    color: colors.muted,
+    fontFamily: condensedFont,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6
+  },
+  experienceOptionTitleActive: { color: colors.white },
+  experienceOptionMeta: {
+    marginTop: 3,
+    color: colors.goldSoft,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6
+  },
+  experienceNotice: {
+    marginTop: 11,
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 16
   },
   diagnosticsCard: { padding: 16 },
   footerNotice: {
