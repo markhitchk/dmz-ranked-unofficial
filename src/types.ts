@@ -82,4 +82,9 @@ export type BridgeMessage =
         verified?: boolean;
       };
     }
+  | {
+      type: 'operator-restore-result';
+      requestId?: string;
+      result?: string;
+    }
   | { type: 'log'; message?: string };
