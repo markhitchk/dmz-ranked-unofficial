@@ -308,7 +308,8 @@ function AppContent() {
           selectedOperator: '',
           operatorVerified: false,
           operatorProtected: false,
-          operatorSource: ''
+          operatorSource: '',
+          operatorSyncMs: 0
         });
         setBackupRevision(value => value + 1);
         setAppDialog({
