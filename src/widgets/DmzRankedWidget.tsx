@@ -106,7 +106,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={require('../../assets/dmz_ranked_logo_display.png')}
+            image={stats?.badgeData || require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={26}
             imageHeight={26}
           />
@@ -272,7 +272,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={require('../../assets/dmz_ranked_logo_display.png')}
+            image={stats?.badgeData || require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={34}
             imageHeight={34}
           />
@@ -352,7 +352,7 @@ export function DmzRankedWidget({
           }}
         >
           <ImageWidget
-            image={require('../../assets/dmz_ranked_logo_display.png')}
+            image={stats?.badgeData || require('../../assets/dmz_ranked_logo_display.png')}
             imageWidth={76}
             imageHeight={84}
           />

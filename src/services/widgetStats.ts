@@ -2,7 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PUBLIC_STATE_URL = 'https://dmzranked.com/api/v1/data/public-state';
 const SNAPSHOT_DATA_URL = 'https://dmzranked.com/leaderboard.json';
+const BADGE_SOURCE_URL = 'https://dmz-ticker.netlify.app/';
 const CACHE_PREFIX = 'dmz_widget_cache_v1:';
+const BADGE_CACHE_PREFIX = 'dmz_widget_badge_v1:';
 
 type Tier = { name: string; min: number; fee: number };
 const TIERS: Tier[] = [
@@ -61,6 +63,7 @@ export type WidgetStats = {
   seasonName: string;
   updatedAt: number;
   fromCache: boolean;
+  badgeData?: string;
 };
 
 function clean(value: unknown): string {
@@ -342,6 +345,86 @@ function resolveStats(root: any, operatorName: string): WidgetStats | null {
   };
 }
 
+
+function isBadgeData(value: string): boolean {
+  return (
+    value.startsWith('data:image/') &&
+    value.includes(';base64,') &&
+    value.length > 200
+  );
+}
+
+function badgeKey(rankLabel: string, standing: number): string {
+  const label = clean(rankLabel).toUpperCase();
+  if (label.startsWith('IRIDESCENT')) {
+    return standing >= 1 && standing <= 3 ? 'Top' : 'Iridescent';
+  }
+
+  const parts = label.split(/\s+/);
+  if (parts.length < 2) return '';
+  const rawTier = parts[0]!;
+  const tier =
+    rawTier.slice(0, 1) + rawTier.slice(1).toLowerCase();
+  const division =
+    parts[1] === 'I'
+      ? '1'
+      : parts[1] === 'II'
+        ? '2'
+        : parts[1] === 'III'
+          ? '3'
+          : '';
+  return division ? tier + division : '';
+}
+
+async function fetchText(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch(url, {
+      cache: 'force-cache',
+      signal: controller.signal,
+      headers: { Accept: 'text/html,*/*' }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    if (text.length > 8_000_000) throw new Error('Badge source too large');
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function loadRankBadgeData(
+  rankLabel: string,
+  standing: number
+): Promise<string> {
+  const key = badgeKey(rankLabel, standing);
+  if (!key) return '';
+
+  const cacheKey = BADGE_CACHE_PREFIX + key;
+  const cached = (await AsyncStorage.getItem(cacheKey)) ?? '';
+  if (isBadgeData(cached)) return cached;
+
+  try {
+    const html = await fetchText(BADGE_SOURCE_URL);
+    const marker = html.indexOf('const BADGE');
+    const objectStart = marker < 0 ? -1 : html.indexOf('{', marker);
+    const objectEnd =
+      objectStart < 0 ? -1 : html.indexOf('};', objectStart);
+    if (objectStart < 0 || objectEnd <= objectStart) return '';
+
+    const badges = JSON.parse(
+      html.slice(objectStart, objectEnd + 1)
+    ) as Record<string, string>;
+    const badge = String(badges[key] ?? '');
+    if (!isBadgeData(badge)) return '';
+    await AsyncStorage.setItem(cacheKey, badge);
+    return badge;
+  } catch {
+    return '';
+  }
+}
+
 function cacheKey(operator: string): string {
   return CACHE_PREFIX + clean(operator).toLowerCase();
 }
@@ -351,8 +434,12 @@ export async function getWidgetStats(operator: string): Promise<WidgetStats | nu
     const root = await fetchWidgetState();
     const stats = resolveStats(root, operator);
     if (stats) {
-      await AsyncStorage.setItem(cacheKey(operator), JSON.stringify(stats));
-      return stats;
+      const complete: WidgetStats = {
+        ...stats,
+        badgeData: await loadRankBadgeData(stats.rankLabel, stats.position)
+      };
+      await AsyncStorage.setItem(cacheKey(operator), JSON.stringify(complete));
+      return complete;
     }
   } catch {
     // Use cache below.
@@ -362,7 +449,11 @@ export async function getWidgetStats(operator: string): Promise<WidgetStats | nu
     const raw = await AsyncStorage.getItem(cacheKey(operator));
     if (!raw) return null;
     const stats = JSON.parse(raw) as WidgetStats;
-    return { ...stats, fromCache: true };
+    const badgeData =
+      stats.badgeData && isBadgeData(stats.badgeData)
+        ? stats.badgeData
+        : await loadRankBadgeData(stats.rankLabel, stats.position);
+    return { ...stats, badgeData, fromCache: true };
   } catch {
     return null;
   }
