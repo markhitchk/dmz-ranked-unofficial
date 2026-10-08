@@ -500,24 +500,123 @@ export function SettingsPanel({
     setPerformanceInfoText('Measuring for 5 seconds… scroll now.');
     toast('Performance test started — scroll for 5 seconds.', true);
 
+    const sampleJsFrames = (
+      durationMs: number,
+      targetRefreshRate: number
+    ): Promise<{
+      refreshRate: number;
+      estimatedFps: number;
+      averageFrameTimeMs: number;
+      p95FrameTimeMs: number;
+      jankPercent: number;
+      missedFrames: number;
+      quality: 'Excellent' | 'Good' | 'Fair' | 'Poor';
+    }> =>
+      new Promise(resolve => {
+        const intervals: number[] = [];
+        const startedAt = Date.now();
+        let lastFrame = 0;
+
+        const step = (timestamp: number) => {
+          if (lastFrame > 0 && timestamp > lastFrame) {
+            intervals.push(timestamp - lastFrame);
+          }
+          lastFrame = timestamp;
+
+          if (Date.now() - startedAt < durationMs) {
+            requestAnimationFrame(step);
+            return;
+          }
+
+          const hz = Math.max(1, targetRefreshRate || 60);
+          const targetMs = 1000 / hz;
+          const avg =
+            intervals.length
+              ? intervals.reduce((sum, value) => sum + value, 0) /
+                intervals.length
+              : 0;
+          const sorted = [...intervals].sort((a, b) => a - b);
+          const p95 =
+            sorted.length
+              ? sorted[
+                  Math.min(
+                    sorted.length - 1,
+                    Math.ceil((sorted.length - 1) * 0.95)
+                  )
+                ]
+              : 0;
+          const totalMs =
+            intervals.reduce((sum, value) => sum + value, 0);
+          const fps =
+            totalMs > 0
+              ? (intervals.length * 1000) / totalMs
+              : 0;
+          const janky =
+            intervals.filter(value => value > targetMs * 1.5).length;
+          const jankPercent =
+            intervals.length ? (janky / intervals.length) * 100 : 0;
+          const missedFrames = intervals.reduce((sum, value) => {
+            const expected = Math.max(1, Math.round(value / targetMs));
+            return sum + Math.max(0, expected - 1);
+          }, 0);
+          const fpsRatio = fps / hz;
+          const quality =
+            fpsRatio >= 0.92 && jankPercent < 5
+              ? 'Excellent'
+              : fpsRatio >= 0.82 && jankPercent < 10
+                ? 'Good'
+                : fpsRatio >= 0.68 && jankPercent < 20
+                  ? 'Fair'
+                  : 'Poor';
+
+          resolve({
+            refreshRate: hz,
+            estimatedFps: fps,
+            averageFrameTimeMs: avg,
+            p95FrameTimeMs: p95,
+            jankPercent,
+            missedFrames,
+            quality
+          });
+        };
+
+        requestAnimationFrame(step);
+      });
+
     try {
-      const sample = await sampleUiPerformance(5000);
-      if (!sample) {
-        setPerformanceInfoText('Performance sample unavailable.');
-        toast('Performance sample unavailable.', true);
-        return;
-      }
+      const display = await getDisplayInfo().catch(() => null);
+      const nativeSample = await sampleUiPerformance(5000).catch(() => null);
+      const targetHz =
+        nativeSample?.refreshRate ||
+        display?.currentRefreshRate ||
+        60;
+
+      const sample =
+        nativeSample &&
+        nativeSample.quality !== 'Unavailable' &&
+        nativeSample.estimatedFps > 0
+          ? nativeSample
+          : await sampleJsFrames(5000, targetHz);
 
       const fps = sample.estimatedFps.toFixed(1);
       const avg = sample.averageFrameTimeMs.toFixed(1);
       const p95 = sample.p95FrameTimeMs.toFixed(1);
       const jank = sample.jankPercent.toFixed(1);
       const hz = Math.round(sample.refreshRate);
+      const fallbackLabel =
+        nativeSample &&
+        nativeSample.quality !== 'Unavailable' &&
+        nativeSample.estimatedFps > 0
+          ? ''
+          : ' • JS fallback';
 
       setPerformanceInfoText(
-        `${sample.quality} • ${fps} FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}`
+        `${sample.quality} • ${fps} FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}${fallbackLabel}`
       );
-      toast(`Performance: ${sample.quality} • ${fps} FPS • ${jank}% jank`, true);
+      toast(
+        `Performance: ${sample.quality} • ${fps} FPS • ${jank}% jank`,
+        true
+      );
     } catch {
       setPerformanceInfoText('Performance sample failed.');
       toast('Performance sample failed.', true);
