@@ -167,6 +167,58 @@ class DmzMigrationModule : Module() {
       }
     }
 
+    AsyncFunction("getDisplayInfo") {
+      val context = appContext.reactContext ?: return@AsyncFunction null
+      try {
+        val windowManager = context.getSystemService(
+          android.content.Context.WINDOW_SERVICE
+        ) as? android.view.WindowManager
+
+        @Suppress("DEPRECATION")
+        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+          context.display ?: windowManager?.defaultDisplay
+        } else {
+          windowManager?.defaultDisplay
+        } ?: return@AsyncFunction null
+
+        val currentRefreshRate = display.refreshRate.toDouble()
+
+        val supportedRefreshRates =
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            display.supportedModes
+              .map { it.refreshRate.toDouble() }
+              .distinctBy { kotlin.math.round(it * 100.0) / 100.0 }
+              .sorted()
+          } else {
+            listOf(currentRefreshRate)
+          }
+
+        val width: Int
+        val height: Int
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          val mode = display.mode
+          width = mode.physicalWidth
+          height = mode.physicalHeight
+        } else {
+          @Suppress("DEPRECATION")
+          val metrics = android.util.DisplayMetrics().also {
+            display.getRealMetrics(it)
+          }
+          width = metrics.widthPixels
+          height = metrics.heightPixels
+        }
+
+        mapOf(
+          "currentRefreshRate" to currentRefreshRate,
+          "supportedRefreshRates" to supportedRefreshRates,
+          "width" to width,
+          "height" to height
+        )
+      } catch (_: Throwable) {
+        null
+      }
+    }
+
     AsyncFunction("clearWebViewData") { promise: expo.modules.kotlin.Promise ->
       val context = appContext.reactContext
       if (context == null) {
