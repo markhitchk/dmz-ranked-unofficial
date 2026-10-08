@@ -104,7 +104,10 @@ const SETTINGS_TARGET_QUERIES: Record<string, string> = {
   build: 'about',
   credits: 'credits',
   appearance: 'appearance',
-  display: 'appearance',
+  display: 'performance',
+  performance: 'performance',
+  refresh: 'performance',
+  fps: 'performance',
   compact: 'appearance compact',
   widgets: 'widget',
   widget: 'widget',
@@ -363,6 +366,18 @@ export function SettingsPanel({
   const needsNotificationMetadata =
     visible && (q.includes('notification') || q.includes('developer'));
   const needsWebViewMetadata = visible && q.includes('developer');
+  const needsDisplayMetadata =
+    visible &&
+    (
+      !q ||
+      q.includes('performance') ||
+      q.includes('display') ||
+      q.includes('refresh') ||
+      q.includes('fps') ||
+      q.includes('frame') ||
+      q.includes('jank') ||
+      q.includes('developer')
+    );
 
   useEffect(() => {
     if (!needsOperatorMetadata) return;
@@ -398,6 +413,10 @@ export function SettingsPanel({
           : 'Unknown'
       );
     });
+  }, [needsWebViewMetadata]);
+
+  useEffect(() => {
+    if (!needsDisplayMetadata) return;
 
     void getDisplayInfo().then(info => {
       if (!info) {
@@ -420,7 +439,7 @@ export function SettingsPanel({
         `${info.width}×${info.height} • ${formatHz(info.currentRefreshRate)} Hz${supported ? ` • Supported: ${supported} Hz` : ''}`
       );
     });
-  }, [needsWebViewMetadata]);
+  }, [needsDisplayMetadata]);
 
   useEffect(() => {
     if (!visible) return;
@@ -653,8 +672,14 @@ export function SettingsPanel({
   );
   const showAppearance = matches(
     q,
-    'appearance display size compact standard large zoom text content density animation motion fade transition smooth'
+    'appearance size compact standard large zoom text content density animation motion fade transition smooth'
   );
+  const showPerformance =
+    Platform.OS === 'android' &&
+    matches(
+      q,
+      'performance display refresh rate hz fps frame time jank stutter smooth scrolling scroll missed frames resolution'
+    );
   const showWidgets =
     channel === 'beta' &&
     Platform.OS === 'android' &&
@@ -706,6 +731,7 @@ export function SettingsPanel({
   const any =
     showAbout ||
     showAppearance ||
+    showPerformance ||
     showWidgets ||
     showExperience ||
     showOperators ||
@@ -912,6 +938,43 @@ export function SettingsPanel({
                 onChange={value => onUpdate('appAnimations', value)}
               />
             </>
+            </>
+          )
+        }]
+      : []),
+    ...(showPerformance
+      ? [{
+          key: 'performance',
+          node: (
+            <>
+              <SectionLabel>PERFORMANCE</SectionLabel>
+
+              <SettingsCard>
+                <View style={styles.diagnosticsCard}>
+                  <Text style={styles.actionTitle}>Display & refresh rate</Text>
+                  <Text style={styles.cardSummary}>
+                    {displayInfoText}
+                  </Text>
+                </View>
+              </SettingsCard>
+
+              <SettingsCard>
+                <View style={styles.diagnosticsCard}>
+                  <Text style={styles.actionTitle}>Measured performance</Text>
+                  <Text style={styles.cardSummary}>
+                    {performanceInfoText}
+                  </Text>
+                </View>
+              </SettingsCard>
+
+              <ActionCard
+                title="Scroll performance test"
+                summary={performanceTesting
+                  ? 'Measuring frame pacing now — keep scrolling for the full 5 seconds.'
+                  : 'Tap TEST, then keep scrolling for 5 seconds. The app will measure FPS, frame time, jank, missed frames, and compare them with your display refresh rate.'}
+                label={performanceTesting ? 'RUNNING…' : 'TEST'}
+                onPress={() => void runPerformanceTest()}
+              />
             </>
           )
         }]
