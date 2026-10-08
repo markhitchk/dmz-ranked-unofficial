@@ -107,6 +107,9 @@ public class MainActivity extends Activity {
     private static final String PREF_REMOTE_APP_UI_CSS = "remote_app_ui_css";
     private static final String PREF_REMOTE_APP_UI_JS = "remote_app_ui_js";
     private static final String PREF_REMOTE_APP_UI_UPDATED_MS = "remote_app_ui_updated_ms";
+    private static final String RUNTIME_PREFS = "dmz_runtime";
+    private static final String PREF_RUNTIME_EXPERIENCE = "experience_version";
+    private static final String PREF_RUNTIME_RETURN = "experience_return";
 
     private static final String INSTALL_SECTION_NAV_SCRIPT =
             "(function(){if(window.__dmzSectionNavInstalled){return 'already';}" +
@@ -372,6 +375,10 @@ public class MainActivity extends Activity {
             updateTitleBarIdentity();
 
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
+            View v2Button = findViewById(R.id.v2Button);
+            if (v2Button != null) {
+                v2Button.setOnClickListener(v -> returnToV2());
+            }
 
             configureWebView();
             applyAppearancePreferences();
@@ -383,21 +390,18 @@ public class MainActivity extends Activity {
             applyKeepAwakePreference();
             showLoadingScreen("Starting DMZ Ranked…", 0);
 
+            boolean restored = false;
             if (savedInstanceState != null) {
-                webView.restoreState(savedInstanceState);
-            } else {
-                String initialUrl = HOME_URL;
-                if (preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true)) {
-                    String remembered = preferences.getString(PREF_LAST_PAGE_URL, HOME_URL);
-                    try {
-                        if (remembered != null && isDmzUrl(Uri.parse(remembered))) {
-                            initialUrl = remembered;
-                        }
-                    } catch (Throwable ignored) {
-                    }
+                try {
+                    restored = webView.restoreState(savedInstanceState) != null;
+                } catch (Throwable restoreError) {
+                    Log.d(TAG, "Could not restore V1 WebView state", restoreError);
                 }
-                webView.loadUrl(initialUrl);
             }
+            if (!restored) {
+                webView.loadUrl(resolveInitialUrl());
+            }
+            armStartupWatchdog();
 
             if (importedProductionData
                     && !"standard".equals(preferences.getString(PREF_CONTENT_SIZE, "standard"))) {
@@ -1960,6 +1964,96 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String resolveInitialUrl() {
+        String initialUrl = HOME_URL;
+        if (preferences != null && preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true)) {
+            String remembered = preferences.getString(PREF_LAST_PAGE_URL, HOME_URL);
+            try {
+                if (remembered != null && isDmzUrl(Uri.parse(remembered))) {
+                    initialUrl = remembered;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return initialUrl;
+    }
+
+    private void armStartupWatchdog() {
+        if (webView == null) return;
+
+        webView.postDelayed(() -> {
+            if (isFinishing() || webView == null || loadingOverlay == null
+                    || loadingOverlay.getVisibility() != View.VISIBLE) {
+                return;
+            }
+
+            String currentUrl = null;
+            try {
+                currentUrl = webView.getUrl();
+            } catch (Throwable ignored) {
+            }
+
+            if (currentUrl == null || currentUrl.trim().isEmpty()
+                    || "about:blank".equalsIgnoreCase(currentUrl.trim())) {
+                updateLoadingVerbose("Startup stalled • retrying DMZ Ranked…");
+                try {
+                    webView.loadUrl(resolveInitialUrl());
+                } catch (Throwable retryError) {
+                    Log.d(TAG, "V1 startup retry failed", retryError);
+                }
+            } else {
+                updateLoadingVerbose("Website responding • finishing startup…");
+            }
+        }, 8000L);
+
+        webView.postDelayed(() -> {
+            if (isFinishing() || webView == null || loadingOverlay == null
+                    || loadingOverlay.getVisibility() != View.VISIBLE) {
+                return;
+            }
+
+            String currentUrl = null;
+            try {
+                currentUrl = webView.getUrl();
+            } catch (Throwable ignored) {
+            }
+
+            if (currentUrl == null || currentUrl.trim().isEmpty()
+                    || "about:blank".equalsIgnoreCase(currentUrl.trim())) {
+                try {
+                    webView.loadUrl(HOME_URL);
+                } catch (Throwable ignored) {
+                }
+            }
+
+            updateLoadingVerbose("Opening DMZ Ranked…");
+            hideLoadingScreen();
+        }, 18000L);
+    }
+
+    private void returnToV2() {
+        try {
+            getSharedPreferences(RUNTIME_PREFS, MODE_PRIVATE)
+                    .edit()
+                    .putString(PREF_RUNTIME_EXPERIENCE, "v2")
+                    .putString(PREF_RUNTIME_RETURN, "v2")
+                    .apply();
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not persist V2 return request", error);
+        }
+
+        try {
+            setResult(RESULT_OK, new Intent().putExtra("dmz_return_v2", true));
+        } catch (Throwable ignored) {
+        }
+
+        finish();
+        try {
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        } catch (Throwable ignored) {
+        }
+    }
+
     private void showSettings() {
         try {
             desktopModeBeforeSettings = preferences.getBoolean(PREF_DESKTOP, false);
@@ -2385,7 +2479,7 @@ public class MainActivity extends Activity {
 
     private void handleBack() {
         if (webView == null) {
-            finish();
+            returnToV2();
             return;
         }
         if (handlingBack) return;
@@ -2414,10 +2508,10 @@ public class MainActivity extends Activity {
                 webView.goBack();
                 handlingBack = false;
             } else {
-                finish();
+                returnToV2();
             }
         } catch (Throwable ignored) {
-            finish();
+            returnToV2();
         }
     }
 
@@ -2448,9 +2542,16 @@ public class MainActivity extends Activity {
             retry.setBackgroundColor(Color.rgb(242, 182, 50));
             retry.setOnClickListener(v -> recreate());
 
+            Button returnV2 = new Button(this);
+            returnV2.setText("RETURN TO V2");
+            returnV2.setTextColor(Color.rgb(8, 10, 9));
+            returnV2.setBackgroundColor(Color.rgb(246, 196, 83));
+            returnV2.setOnClickListener(v -> returnToV2());
+
             root.addView(title);
             root.addView(message);
             root.addView(retry);
+            root.addView(returnV2);
             setContentView(root);
         } catch (Throwable ignored) {
             finish();
