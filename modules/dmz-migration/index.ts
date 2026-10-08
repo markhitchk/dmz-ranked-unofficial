@@ -25,9 +25,6 @@ export type UiPerformanceSample = {
 };
 
 type DmzMigrationNative = {
-  launchLegacyExperience(): Promise<boolean>;
-  deactivateLegacyExperience(): Promise<boolean>;
-  consumeLegacyExperienceReturn(): Promise<'v2' | null>;
   readPeerPayload(): Promise<string | null>;
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
@@ -49,18 +46,6 @@ const nativeModule =
   Platform.OS === 'android'
     ? requireOptionalNativeModule<DmzMigrationNative>('DmzMigration')
     : null;
-
-export async function launchLegacyExperience(): Promise<boolean> {
-  return nativeModule?.launchLegacyExperience() ?? false;
-}
-
-export async function deactivateLegacyExperience(): Promise<boolean> {
-  return nativeModule?.deactivateLegacyExperience() ?? false;
-}
-
-export async function consumeLegacyExperienceReturn(): Promise<'v2' | null> {
-  return nativeModule?.consumeLegacyExperienceReturn() ?? null;
-}
 
 export async function readPeerPayload(): Promise<string | null> {
   return nativeModule?.readPeerPayload() ?? null;
