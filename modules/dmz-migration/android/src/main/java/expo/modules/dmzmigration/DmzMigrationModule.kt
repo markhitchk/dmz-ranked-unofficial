@@ -80,7 +80,6 @@ class DmzMigrationModule : Module() {
           .getSharedPreferences("dmz_runtime", 0)
           .edit()
           .putString("experience_version", "v2")
-          .remove("experience_return")
           .apply()
         true
       } catch (_: Throwable) {
