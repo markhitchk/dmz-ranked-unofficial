@@ -6,7 +6,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -18,7 +17,6 @@ import * as Application from 'expo-application';
 import * as Clipboard from 'expo-clipboard';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import { LinearGradient } from 'expo-linear-gradient';
 import { DmzDialog } from './DmzDialog';
 import { DmzIcon } from './DmzIcon';
 import { DmzActionCard, DmzCard, DmzGoldButton } from './DmzSurface';
@@ -725,8 +723,6 @@ export function SettingsPanel({
               placeholder="Search settings…"
               placeholderTextColor={colors.muted}
               style={styles.search}
-              autoCapitalize="none"
-              autoCorrect={false}
               returnKeyType="done"
             />
           </View>
