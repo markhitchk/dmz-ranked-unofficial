@@ -2,8 +2,6 @@ package expo.modules.dmzmigration
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -45,99 +43,8 @@ class DmzMigrationModule : Module() {
       .coerceAtLeast(1.0)
   }
 
-  private fun setLegacyComponentsEnabled(
-    context: android.content.Context,
-    enabled: Boolean
-  ) {
-    val state = if (enabled) {
-      PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-    } else {
-      PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-    }
-
-    val components = arrayOf(
-      ComponentName(context, com.harleytg.dmzranked.legacy.MainActivity::class.java),
-      ComponentName(context, com.harleytg.dmzranked.legacy.SettingsActivity::class.java),
-      ComponentName(context, com.harleytg.dmzranked.legacy.FeedbackActivity::class.java)
-    )
-
-    components.forEach { component ->
-      context.packageManager.setComponentEnabledSetting(
-        component,
-        state,
-        PackageManager.DONT_KILL_APP
-      )
-    }
-  }
-
   override fun definition() = ModuleDefinition {
     Name("DmzMigration")
-
-    AsyncFunction("launchLegacyExperience") {
-      val context = appContext.reactContext ?: return@AsyncFunction false
-      try {
-        setLegacyComponentsEnabled(context, true)
-
-        context
-          .getSharedPreferences("dmz_runtime", 0)
-          .edit()
-          .putString("experience_version", "v1")
-          .remove("experience_return")
-          .apply()
-
-        val intent = Intent(
-          context,
-          com.harleytg.dmzranked.legacy.MainActivity::class.java
-        )
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-        true
-      } catch (_: Throwable) {
-        try {
-          setLegacyComponentsEnabled(context, false)
-        } catch (_: Throwable) {
-        }
-        false
-      }
-    }
-
-    AsyncFunction("deactivateLegacyExperience") {
-      val context = appContext.reactContext ?: return@AsyncFunction false
-      try {
-        setLegacyComponentsEnabled(context, false)
-        context
-          .getSharedPreferences("dmz_runtime", 0)
-          .edit()
-          .putString("experience_version", "v2")
-          .apply()
-        true
-      } catch (_: Throwable) {
-        false
-      }
-    }
-
-    AsyncFunction("consumeLegacyExperienceReturn") {
-      val context = appContext.reactContext ?: return@AsyncFunction null
-      try {
-        val prefs = context.getSharedPreferences("dmz_runtime", 0)
-        val requested = prefs.getString("experience_return", null)
-        if (requested == "v2") {
-          try {
-            setLegacyComponentsEnabled(context, false)
-          } catch (_: Throwable) {
-          }
-          prefs.edit()
-            .putString("experience_version", "v2")
-            .remove("experience_return")
-            .apply()
-          "v2"
-        } else {
-          null
-        }
-      } catch (_: Throwable) {
-        null
-      }
-    }
 
     AsyncFunction("readPeerPayload") {
       val context = appContext.reactContext ?: return@AsyncFunction null
