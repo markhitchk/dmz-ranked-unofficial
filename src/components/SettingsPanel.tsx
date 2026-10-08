@@ -32,7 +32,7 @@ import { getLastNotificationSync } from '../services/backgroundNotificationSync'
 import type { AppSettings, ContentSize } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
-import { getWebViewPackage } from '../../modules/dmz-migration';
+import { getDisplayInfo, getWebViewPackage } from '../../modules/dmz-migration';
 
 const PAYPAL_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
 const KOFI_URL = 'https://ko-fi.com/harleytg_#checkoutModal';
@@ -319,6 +319,7 @@ export function SettingsPanel({
     useState('Checking notification permission…');
   const [lastSyncText, setLastSyncText] = useState('Not checked yet');
   const [webViewPackageText, setWebViewPackageText] = useState('Unknown');
+  const [displayInfoText, setDisplayInfoText] = useState('Detecting display…');
   const [dialog, setDialog] = useState<DialogMode>(null);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
@@ -387,11 +388,34 @@ export function SettingsPanel({
 
   useEffect(() => {
     if (!needsWebViewMetadata) return;
+
     void getWebViewPackage().then(info => {
       setWebViewPackageText(
         info
           ? `${info.packageName} ${info.versionName}`.trim()
           : 'Unknown'
+      );
+    });
+
+    void getDisplayInfo().then(info => {
+      if (!info) {
+        setDisplayInfoText('Unavailable');
+        return;
+      }
+
+      const formatHz = (value: number) => {
+        const rounded = Math.round(value);
+        return Math.abs(value - rounded) < 0.05
+          ? String(rounded)
+          : value.toFixed(2);
+      };
+
+      const supported = info.supportedRefreshRates
+        .map(formatHz)
+        .join(' / ');
+
+      setDisplayInfoText(
+        `${info.width}×${info.height} • ${formatHz(info.currentRefreshRate)} Hz${supported ? ` • Supported: ${supported} Hz` : ''}`
       );
     });
   }, [needsWebViewMetadata]);
@@ -558,6 +582,7 @@ export function SettingsPanel({
       `${platformName}: ${Device.osVersion ?? String(Platform.Version)}${Platform.OS === 'android' ? ` (API ${Device.platformApiLevel ?? String(Platform.Version)})` : ''}`,
       `Device: ${[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown'}`,
       `WebView: ${webViewPackageText}`,
+      `Display: ${displayInfoText}`,
       `Notification permission: ${notificationStatus}`,
       `Website notifications: ${settings.siteNotifications ? 'On' : 'Off'}`,
       `Desktop website: ${settings.desktopSite ? 'On' : 'Off'}`,
@@ -640,7 +665,7 @@ export function SettingsPanel({
   );
   const showDeveloper =
     developerUnlocked &&
-    matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current');
+    matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current display refresh rate hz screen resolution');
 
   const any =
     showAbout ||
@@ -1372,6 +1397,7 @@ export function SettingsPanel({
                   <Text style={styles.cardSummary}>
                     {Platform.OS === 'ios' ? 'iOS' : 'Android'} {Device.osVersion ?? String(Platform.Version)} • {[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown device'}
                     {'\n'}WebView: {webViewPackageText}
+                    {'\n'}Display: {displayInfoText}
                     {'\n'}Notifications: {notificationStatus} • Desktop: {settings.desktopSite ? 'On' : 'Off'} • Pull refresh: {settings.pullToRefresh ? 'On' : 'Off'}
                     {'\n'}Remember page: {settings.rememberLastPage ? 'On' : 'Off'} • WebView debug: {settings.webviewDebug ? 'On' : 'Off'}
                   </Text>
