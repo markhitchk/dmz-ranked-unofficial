@@ -16,6 +16,35 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class DmzMigrationModule : Module() {
+  @Suppress("DEPRECATION")
+  private fun resolveDisplay(
+    context: android.content.Context?
+  ): android.view.Display? {
+    val activity = appContext.currentActivity
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      activity?.display?.let { return it }
+      context?.display?.let { return it }
+    }
+
+    activity?.windowManager?.defaultDisplay?.let { return it }
+
+    val displayManager = context?.getSystemService(
+      android.content.Context.DISPLAY_SERVICE
+    ) as? android.hardware.display.DisplayManager
+    displayManager?.getDisplay(android.view.Display.DEFAULT_DISPLAY)?.let {
+      return it
+    }
+    return displayManager?.displays?.firstOrNull()
+  }
+
+  private fun currentRefreshRate(
+    context: android.content.Context?
+  ): Double {
+    return (resolveDisplay(context)?.refreshRate ?: 60f)
+      .toDouble()
+      .coerceAtLeast(1.0)
+  }
+
   private fun setLegacyComponentsEnabled(
     context: android.content.Context,
     enabled: Boolean
@@ -168,79 +197,87 @@ class DmzMigrationModule : Module() {
     }
 
     AsyncFunction("getDisplayInfo") {
-      val context = appContext.reactContext ?: return@AsyncFunction null
+      val context = appContext.reactContext ?: appContext.currentActivity
       try {
-        val windowManager = context.getSystemService(
-          android.content.Context.WINDOW_SERVICE
-        ) as? android.view.WindowManager
-
-        @Suppress("DEPRECATION")
-        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-          context.display ?: windowManager?.defaultDisplay
-        } else {
-          windowManager?.defaultDisplay
-        } ?: return@AsyncFunction null
-
-        val currentRefreshRate = display.refreshRate.toDouble()
+        val display = resolveDisplay(context)
+        val activity = appContext.currentActivity
+        val refreshRate = currentRefreshRate(context)
 
         val supportedRefreshRates =
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display != null) {
             display.supportedModes
               .map { it.refreshRate.toDouble() }
+              .filter { it > 0.0 }
               .distinctBy { kotlin.math.round(it * 100.0) / 100.0 }
               .sorted()
+              .ifEmpty { listOf(refreshRate) }
           } else {
-            listOf(currentRefreshRate)
+            listOf(refreshRate)
           }
 
-        val width: Int
-        val height: Int
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-          val mode = display.mode
-          width = mode.physicalWidth
-          height = mode.physicalHeight
-        } else {
-          @Suppress("DEPRECATION")
-          val metrics = android.util.DisplayMetrics().also {
-            display.getRealMetrics(it)
+        var width = 0
+        var height = 0
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display != null) {
+          try {
+            val mode = display.mode
+            width = mode.physicalWidth
+            height = mode.physicalHeight
+          } catch (_: Throwable) {
           }
-          width = metrics.widthPixels
-          height = metrics.heightPixels
+        }
+
+        if ((width <= 0 || height <= 0) && activity != null) {
+          try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+              val bounds = activity.windowManager.currentWindowMetrics.bounds
+              width = bounds.width()
+              height = bounds.height()
+            } else {
+              @Suppress("DEPRECATION")
+              val metrics = android.util.DisplayMetrics().also {
+                activity.windowManager.defaultDisplay.getRealMetrics(it)
+              }
+              width = metrics.widthPixels
+              height = metrics.heightPixels
+            }
+          } catch (_: Throwable) {
+          }
+        }
+
+        if (width <= 0 || height <= 0) {
+          val metrics = (context ?: appContext.reactContext)
+            ?.resources
+            ?.displayMetrics
+          width = metrics?.widthPixels ?: 0
+          height = metrics?.heightPixels ?: 0
         }
 
         mapOf(
-          "currentRefreshRate" to currentRefreshRate,
+          "currentRefreshRate" to refreshRate,
           "supportedRefreshRates" to supportedRefreshRates,
           "width" to width,
           "height" to height
         )
       } catch (_: Throwable) {
-        null
+        val metrics = (context ?: appContext.reactContext)
+          ?.resources
+          ?.displayMetrics
+        mapOf(
+          "currentRefreshRate" to 60.0,
+          "supportedRefreshRates" to listOf(60.0),
+          "width" to (metrics?.widthPixels ?: 0),
+          "height" to (metrics?.heightPixels ?: 0)
+        )
       }
     }
 
     AsyncFunction("sampleUiPerformance") { durationMs: Int, promise: expo.modules.kotlin.Promise ->
-      val context = appContext.reactContext
-      if (context == null) {
-        promise.resolve(null)
-        return@AsyncFunction
-      }
-
+      val context = appContext.reactContext ?: appContext.currentActivity
       val sampleDurationMs = durationMs.coerceIn(500, 10000)
       Handler(Looper.getMainLooper()).post {
         try {
-          val windowManager = context.getSystemService(
-            android.content.Context.WINDOW_SERVICE
-          ) as? android.view.WindowManager
-
-          @Suppress("DEPRECATION")
-          val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            context.display ?: windowManager?.defaultDisplay
-          } else {
-            windowManager?.defaultDisplay
-          }
-
-          val refreshRate = (display?.refreshRate ?: 60f).toDouble().coerceAtLeast(1.0)
+          val refreshRate = currentRefreshRate(context)
           val targetFrameNs = 1_000_000_000.0 / refreshRate
           val frameIntervals = mutableListOf<Long>()
           val startedAtNs = System.nanoTime()
@@ -325,7 +362,18 @@ class DmzMigrationModule : Module() {
 
           choreographer.postFrameCallback(callback)
         } catch (_: Throwable) {
-          promise.resolve(null)
+          promise.resolve(
+            mapOf(
+              "refreshRate" to currentRefreshRate(context),
+              "estimatedFps" to 0.0,
+              "averageFrameTimeMs" to 0.0,
+              "p95FrameTimeMs" to 0.0,
+              "jankPercent" to 0.0,
+              "missedFrames" to 0,
+              "sampleDurationMs" to sampleDurationMs,
+              "quality" to "Unavailable"
+            )
+          )
         }
       }
     }
