@@ -184,7 +184,7 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [ready]);
+  }, [ready, settings.experienceVersion, update]);
 
   useEffect(() => {
     if (!ready || !legacyRuntimeChecked || Platform.OS !== 'android') return;
@@ -227,7 +227,7 @@ function AppContent() {
     if (settings.siteNotifications) {
       void primeNotificationBaseline();
     }
-  }, [ready, settings.experienceVersion, settings.siteNotifications, update]);
+  }, [ready, settings.siteNotifications]);
 
   useEffect(() => {
     if (!ready) return;
@@ -260,7 +260,7 @@ function AppContent() {
       }
     });
     return () => subscription.remove();
-  }, [ready, settings.siteNotifications]);
+  }, [ready, settings.experienceVersion, settings.siteNotifications, update]);
 
   useEffect(() => {
     const tag = 'dmz-ranked-app';
