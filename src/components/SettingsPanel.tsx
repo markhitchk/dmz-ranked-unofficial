@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useDeferredValue, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -191,7 +191,7 @@ function ToggleCard({
 }) {
   return (
     <View style={styles.cardGap}>
-      <DmzCard>
+      <DmzCard optimized>
         <Pressable style={styles.toggleCard} onPress={() => onChange(!value)}>
           <View style={styles.flexCopy}>
             <Text style={styles.cardTitleCondensed}>{title}</Text>
@@ -227,7 +227,7 @@ function ActionCard({
   return (
     <View style={styles.cardGap}>
       <Pressable onPress={onPress}>
-        <DmzActionCard>
+        <DmzActionCard optimized>
           <View style={styles.actionCard}>
             {icon ? <View style={styles.leadingIcon}>{icon}</View> : null}
             <View style={styles.flexCopy}>
@@ -261,7 +261,7 @@ function CreditSupportCard({
 }) {
   return (
     <Pressable onPress={onPress} style={styles.creditSupportGap}>
-      <DmzActionCard>
+      <DmzActionCard optimized>
         <View style={styles.creditSupportCard}>
           <View style={styles.flexCopy}>
             <Text style={styles.creditSupportTitle}>{title}</Text>
@@ -314,7 +314,8 @@ export function SettingsPanel({
   const searchEntry = useRef(new Animated.Value(1)).current;
   const contentEntry = useRef(new Animated.Value(1)).current;
 
-  const q = query.trim().toLowerCase();
+  const deferredQuery = useDeferredValue(query);
+  const q = deferredQuery.trim().toLowerCase();
 
   useEffect(() => {
     if (!visible) {
@@ -339,9 +340,19 @@ export function SettingsPanel({
     );
   };
 
+  const needsOperatorMetadata =
+    visible && (q.includes('operator') || q.includes('developer'));
+  const needsNotificationMetadata =
+    visible && (q.includes('notification') || q.includes('developer'));
+  const needsWebViewMetadata = visible && q.includes('developer');
+
   useEffect(() => {
-    if (!visible) return;
+    if (!needsOperatorMetadata) return;
     void refreshBackupState();
+  }, [backupRevision, needsOperatorMetadata]);
+
+  useEffect(() => {
+    if (!needsNotificationMetadata) return;
     void Notifications.getPermissionsAsync().then(permission => {
       setNotificationStatus(
         permission.status === 'granted'
@@ -357,6 +368,10 @@ export function SettingsPanel({
       const stamp = new Date(sync.at).toLocaleString();
       setLastSyncText(`${sync.result} • ${stamp}`);
     });
+  }, [needsNotificationMetadata]);
+
+  useEffect(() => {
+    if (!needsWebViewMetadata) return;
     void getWebViewPackage().then(info => {
       setWebViewPackageText(
         info
@@ -364,7 +379,7 @@ export function SettingsPanel({
           : 'Unknown'
       );
     });
-  }, [backupRevision, visible]);
+  }, [needsWebViewMetadata]);
 
   useEffect(() => {
     if (!visible) return;
@@ -372,7 +387,7 @@ export function SettingsPanel({
     searchEntry.stopAnimation();
     contentEntry.stopAnimation();
 
-    if (!settings.appAnimations) {
+    if (!settings.appAnimations || Platform.OS === 'android') {
       searchEntry.setValue(1);
       contentEntry.setValue(1);
       return;
@@ -657,8 +672,9 @@ export function SettingsPanel({
       onRequestClose={onClose}
       statusBarTranslucent
       navigationBarTranslucent
+      hardwareAccelerated
     >
-      <AppSafeArea contentScale={contentScaleFactor(settings.contentSize)}>
+      <AppSafeArea contentScale={1}>
         <View style={styles.toolbar}>
           <Pressable
             accessibilityLabel={q ? "Settings home" : "Back"}
@@ -684,29 +700,28 @@ export function SettingsPanel({
         <Animated.View
           style={[
             styles.searchOuter,
-            {
-              opacity: searchEntry,
-              transform: [
-                {
-                  translateY: searchEntry.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-10, 0]
-                  })
+            Platform.OS === 'android'
+              ? null
+              : {
+                  opacity: searchEntry,
+                  transform: [
+                    {
+                      translateY: searchEntry.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-10, 0]
+                      })
+                    }
+                  ]
                 }
-              ]
-            }
           ]}
         >
-          <LinearGradient
-            colors={[colors.panel, colors.panelDeep]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={styles.searchShell}
-          >
+          <View style={[styles.searchShell, styles.searchShellOptimized]}>
             <DmzIcon name="search" size={21} color={colors.muted} />
             <TextInput
               value={query}
               onChangeText={setQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
               placeholder="Search settings…"
               placeholderTextColor={colors.muted}
               style={styles.search}
@@ -714,26 +729,30 @@ export function SettingsPanel({
               autoCorrect={false}
               returnKeyType="done"
             />
-          </LinearGradient>
+          </View>
         </Animated.View>
 
         <Animated.ScrollView
           style={[
             styles.scroll,
-            {
-              opacity: contentEntry,
-              transform: [
-                {
-                  translateY: contentEntry.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [18, 0]
-                  })
+            Platform.OS === 'android'
+              ? null
+              : {
+                  opacity: contentEntry,
+                  transform: [
+                    {
+                      translateY: contentEntry.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [18, 0]
+                      })
+                    }
+                  ]
                 }
-              ]
-            }
           ]}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          removeClippedSubviews={Platform.OS === 'android'}
         >
           {!any && q ? (
             <Text style={styles.empty}>
@@ -743,7 +762,7 @@ export function SettingsPanel({
 
           {homeMode ? (
             <>
-              <DmzCard>
+              <DmzCard optimized>
                 <View style={styles.settingsHomeHero}>
                   <View style={styles.settingsHomeHeroTop}>
                     <DmzIcon name="settings" size={30} />
@@ -852,7 +871,7 @@ export function SettingsPanel({
           ) : null}
 
           {showAbout ? (
-            <DmzCard>
+            <DmzCard optimized>
               <View style={styles.aboutCard}>
                 <View style={styles.aboutTop}>
                   <Image
@@ -1004,7 +1023,7 @@ export function SettingsPanel({
             <>
               <SectionLabel>APPEARANCE</SectionLabel>
 
-              <DmzCard>
+              <DmzCard optimized>
                 <View style={styles.contentSizeCard}>
                   <Text style={styles.cardTitleCondensed}>Content size</Text>
                   <Text style={styles.cardSummary}>{contentSummary}</Text>
@@ -1085,7 +1104,7 @@ export function SettingsPanel({
             <>
               <SectionLabel>OPERATORS</SectionLabel>
 
-              <DmzCard>
+              <DmzCard optimized>
                 <View style={styles.operatorStatusCard}>
                   <View style={styles.operatorHeader}>
                     <DmzIcon name="globe" size={38} />
@@ -1159,7 +1178,7 @@ export function SettingsPanel({
               </DmzCard>
 
               <View style={styles.cardGap}>
-                <DmzCard>
+                <DmzCard optimized>
                   <View style={styles.backupCard}>
                     <Pressable
                       style={styles.backupHeader}
@@ -1417,7 +1436,7 @@ export function SettingsPanel({
               />
 
               <View style={styles.cardGap}>
-                <DmzCard>
+                <DmzCard optimized>
                   <View style={styles.experienceCard}>
                     <Text style={styles.cardTitleCondensed}>App experience version</Text>
                     <Text style={styles.cardSummary}>
@@ -1468,7 +1487,7 @@ export function SettingsPanel({
               </View>
 
               <SectionLabel>DIAGNOSTICS</SectionLabel>
-              <DmzCard>
+              <DmzCard optimized>
                 <View style={styles.diagnosticsCard}>
                   <Text style={styles.actionTitle}>Runtime information</Text>
                   <Text style={styles.cardSummary}>
@@ -1668,6 +1687,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center'
+  },
+  searchShellOptimized: {
+    backgroundColor: colors.card
   },
   search: {
     flex: 1,
