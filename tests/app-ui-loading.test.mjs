@@ -55,6 +55,7 @@ function pageHarness() {
     elements.set('dmz-hs-active-user-stats', {});
   };
   return { context, document, elements, messages, tick, state, makeReady,
+    runWatchdog: () => { for (const fn of intervals.values()) fn(); },
     inject: (id = 1, script = js, styles = css) => vm.runInContext(buildRemoteUiInjection(styles, script, id), context) };
 }
 
@@ -169,4 +170,30 @@ test('bundled fallback is a complete, valid original app UI and parses as JavaSc
   assert.equal(isValidAppUiPayload('<html>GitHub unavailable</html>'), false);
   assert.equal(isValidAppUiPayload(css + ' '.repeat(512 * 1024)), false);
   new vm.Script(bundle.js);
+});
+
+test('healthy watchdog does not refresh DOM hooks and repairs removed stylesheet', () => {
+  const page = pageHarness();
+  const countingJs = js.replace(
+    'window.__dmzHsBetaTabsRefresh = function() {};',
+    'window.__dmzHsBetaTabsRefresh = function() { window.domRefreshes = (window.domRefreshes || 0) + 1; };'
+  );
+  page.makeReady();
+  page.inject(1, countingJs);
+  page.tick(); // stable readiness installs the recovery watchdog
+  const baseline = page.context.domRefreshes;
+  assert.ok(baseline > 0);
+
+  page.runWatchdog();
+  assert.equal(page.context.domRefreshes, baseline, 'healthy page should not be rescanned');
+
+  page.elements.delete('hs-remote-app-ui-style');
+  page.context.__dmzAppScrolling = true;
+  page.runWatchdog();
+  assert.equal(page.elements.has('hs-remote-app-ui-style'), false, 'do not repair during scroll');
+
+  page.context.__dmzAppScrolling = false;
+  page.runWatchdog();
+  assert.ok(page.context.domRefreshes > baseline, 'missing stylesheet should trigger a repair');
+  assert.equal(page.elements.get('hs-remote-app-ui-style').textContent, css);
 });
