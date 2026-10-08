@@ -53,9 +53,6 @@ import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import {
   clearWebViewData,
-  consumeLegacyExperienceReturn,
-  deactivateLegacyExperience,
-  launchLegacyExperience,
   refreshDmzWidgets,
   requestPinDmzWidget,
   syncWidgetSettings
@@ -85,9 +82,6 @@ function AppContent() {
   const webRef = useRef<DmzWebHandle>(null);
   const appState = useRef(AppState.currentState);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [legacyRuntimeChecked, setLegacyRuntimeChecked] = useState(
-    Platform.OS !== 'android'
-  );
   const [settingsTarget, setSettingsTarget] = useState<string | undefined>();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [online, setOnline] = useState(true);
@@ -103,7 +97,6 @@ function AppContent() {
     installedVersionLabel() + ' • Live monitoring'
   );
   const lastAnnouncedStoreVersion = useRef('');
-  const legacyLaunchAttempted = useRef(false);
   const foregroundAnnouncedStoreVersion = useRef('');
 
   const showNotice = (
@@ -161,67 +154,6 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
-    if (Platform.OS !== 'android') {
-      setLegacyRuntimeChecked(true);
-      return;
-    }
-
-    let cancelled = false;
-    void consumeLegacyExperienceReturn()
-      .then(requested => {
-        if (cancelled) return;
-        if (requested === 'v2') {
-          legacyLaunchAttempted.current = false;
-          if (settings.experienceVersion !== 'v2') {
-            update('experienceVersion', 'v2');
-          }
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLegacyRuntimeChecked(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, settings.experienceVersion, update]);
-
-  useEffect(() => {
-    if (!ready || !legacyRuntimeChecked || Platform.OS !== 'android') return;
-
-    if (!settings.developerMode || settings.experienceVersion !== 'v1') {
-      legacyLaunchAttempted.current = false;
-      void deactivateLegacyExperience();
-
-      if (!settings.developerMode && settings.experienceVersion === 'v1') {
-        update('experienceVersion', 'v2');
-      }
-      return;
-    }
-
-    if (legacyLaunchAttempted.current) return;
-    legacyLaunchAttempted.current = true;
-
-    void launchLegacyExperience().then(opened => {
-      if (!opened) {
-        legacyLaunchAttempted.current = false;
-        showNotice(
-          'The V1 Java experience could not be opened on this build.',
-          true,
-          'V1 LEGACY'
-        );
-      }
-    });
-  }, [
-    legacyRuntimeChecked,
-    ready,
-    settings.developerMode,
-    settings.experienceVersion,
-    update
-  ]);
-
-  useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setOnline(Boolean(state.isConnected));
     });
@@ -249,20 +181,6 @@ function AppContent() {
       appState.current = nextState;
       void setNotificationAppForeground(isActive);
 
-      if (isActive && Platform.OS === 'android') {
-        void consumeLegacyExperienceReturn().then(requested => {
-          if (requested !== 'v2') return;
-          legacyLaunchAttempted.current = false;
-          if (settings.experienceVersion !== 'v2') {
-            update('experienceVersion', 'v2');
-          }
-          ToastAndroid.show(
-            'Returned to V2 • React Native',
-            ToastAndroid.SHORT
-          );
-        });
-      }
-
       if (!settings.siteNotifications) return;
       if (isActive) {
         void configureBackgroundNotifications(true);
@@ -272,7 +190,7 @@ function AppContent() {
       }
     });
     return () => subscription.remove();
-  }, [ready, settings.experienceVersion, settings.siteNotifications, update]);
+  }, [ready, settings.siteNotifications]);
 
   useEffect(() => {
     const tag = 'dmz-ranked-app';
