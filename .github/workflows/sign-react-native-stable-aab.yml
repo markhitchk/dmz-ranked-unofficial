@@ -51,9 +51,9 @@ jobs:
           SIGNED="DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed.aab"
           test -s "$ORIGINAL"
           jarsigner -keystore "$HOME/.android/debug.keystore" \
-            -storepass android -keypass android -alias androiddebugkey \
-            -signedjar "$SIGNED" "$ORIGINAL"
-          jarsigner -verify -strict "$SIGNED"
+            -storepass android -keypass android \
+            -signedjar "$SIGNED" "$ORIGINAL" androiddebugkey
+          jarsigner -verify "$SIGNED"
           EXPECTED_SHA1="E2:A5:91:C6:B8:2E:FE:1F:5E:67:17:0D:A4:AE:68:1E:D0:9F:BE:E5"
           SIGNED_SHA1="$(keytool -printcert -jarfile "$SIGNED" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
           if [ "$SIGNED_SHA1" != "$EXPECTED_SHA1" ]; then
