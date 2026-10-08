@@ -2031,6 +2031,28 @@ public class MainActivity extends Activity {
         }, 18000L);
     }
 
+    private void setLegacyRuntimeEnabled(boolean enabled) {
+        try {
+            int state = enabled
+                    ? android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                    : android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+            android.content.pm.PackageManager pm = getPackageManager();
+            Class<?>[] components = new Class<?>[]{
+                    MainActivity.class,
+                    SettingsActivity.class,
+                    FeedbackActivity.class
+            };
+            for (Class<?> component : components) {
+                pm.setComponentEnabledSetting(
+                        new android.content.ComponentName(this, component),
+                        state,
+                        android.content.pm.PackageManager.DONT_KILL_APP);
+            }
+        } catch (Throwable error) {
+            Log.d(TAG, "Could not update legacy runtime state", error);
+        }
+    }
+
     private void returnToV2() {
         try {
             getSharedPreferences(RUNTIME_PREFS, MODE_PRIVATE)
@@ -2047,6 +2069,7 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
         }
 
+        setLegacyRuntimeEnabled(false);
         finish();
         try {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
