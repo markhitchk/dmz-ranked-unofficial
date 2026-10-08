@@ -83,6 +83,42 @@ const ANDROID_PERFORMANCE_SCRIPT =
       window.addEventListener('touchend',markScrolling,{passive:true});
       window.addEventListener('touchcancel',markScrolling,{passive:true});
     }
+    if(!window.__dmzNativePullRefreshInstalled){
+      window.__dmzNativePullRefreshInstalled=true;
+      var dmzPullStartY=null;
+      var dmzPullTriggered=false;
+      document.addEventListener('touchstart',function(ev){
+        if(!window.__dmzPullToRefreshEnabled||!ev.touches||ev.touches.length!==1){
+          dmzPullStartY=null;
+          return;
+        }
+        if((window.scrollY||document.documentElement.scrollTop||0)<=1){
+          dmzPullStartY=ev.touches[0].clientY;
+          dmzPullTriggered=false;
+        }else{
+          dmzPullStartY=null;
+        }
+      },{passive:true,capture:true});
+      document.addEventListener('touchmove',function(ev){
+        if(!window.__dmzPullToRefreshEnabled||dmzPullStartY===null||dmzPullTriggered||!ev.touches||!ev.touches.length)return;
+        if((window.scrollY||document.documentElement.scrollTop||0)>1){
+          dmzPullStartY=null;
+          return;
+        }
+        if(ev.touches[0].clientY-dmzPullStartY>=72){
+          dmzPullTriggered=true;
+          try{
+            window.ReactNativeWebView.postMessage(JSON.stringify({type:'native-pull-refresh'}));
+          }catch(_){}
+        }
+      },{passive:true,capture:true});
+      var resetPull=function(){
+        dmzPullStartY=null;
+        dmzPullTriggered=false;
+      };
+      document.addEventListener('touchend',resetPull,{passive:true,capture:true});
+      document.addEventListener('touchcancel',resetPull,{passive:true,capture:true});
+    }
   }catch(e){}
   return true;
 })();true;
@@ -294,10 +330,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const navHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const canGoBack = useRef(false);
     const canGoForward = useRef(false);
-    const pullStartY = useRef<number | null>(null);
-    const pullTriggered = useRef(false);
-    const webScrollY = useRef(0);
-    const lastScrollSampleMs = useRef(0);
     const previousDesktopMode = useRef(settings.desktopSite);
     const liveOperator = useRef({
       name: '',
@@ -315,6 +347,13 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
       >()
     );
+
+    useEffect(() => {
+      if (Platform.OS !== 'android') return;
+      webRef.current?.injectJavaScript(
+        `window.__dmzPullToRefreshEnabled=${settings.pullToRefresh ? 'true' : 'false'};true;`
+      );
+    }, [settings.pullToRefresh]);
 
     const installBrowserDialogParity = useCallback(() => {
       if (Platform.OS !== 'android' || !webHostRef.current) return;
@@ -827,6 +866,19 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             type?: string;
             url?: string;
           };
+          if (nativeMessage?.type === 'native-pull-refresh') {
+            if (Platform.OS === 'android' && settings.pullToRefresh) {
+              ToastAndroid.show(
+                'Refreshing DMZ Ranked…',
+                ToastAndroid.SHORT
+              );
+              forceOverlayNextNavigation.current = true;
+              showOverlay('Refreshing DMZ Ranked…', 0);
+              webRef.current?.reload();
+            }
+            return;
+          }
+
           if (
             nativeMessage?.type === 'native-url' &&
             typeof nativeMessage.url === 'string'
@@ -1000,7 +1052,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         onOperatorBackupSaved,
         onUpdateSetting,
         settings.operatorAutoSave,
-        settings.siteNotifications
+        settings.pullToRefresh,
+        settings.siteNotifications,
+        showOverlay
       ]
     );
 
@@ -1138,7 +1192,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           }
           textZoom={contentZoom(settings.contentSize)}
           injectedJavaScriptBeforeContentLoaded={
-            bridge + '\n' + ANDROID_PERFORMANCE_SCRIPT + '\n' + URL_OBSERVER_SCRIPT
+            (Platform.OS === 'android'
+              ? `window.__dmzPullToRefreshEnabled=${settings.pullToRefresh ? 'true' : 'false'};true;\n`
+              : '') +
+            bridge +
+            '\n' +
+            ANDROID_PERFORMANCE_SCRIPT +
+            '\n' +
+            URL_OBSERVER_SCRIPT
           }
           onLoadStart={event => {
             installBrowserDialogParity();
@@ -1172,55 +1233,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           }}
           onMessage={handleMessage}
           onNavigationStateChange={handleNavigation}
-          onScroll={
-            Platform.OS === 'android' && settings.pullToRefresh
-              ? event => {
-                  const now = Date.now();
-                  if (now - lastScrollSampleMs.current < 100) return;
-                  lastScrollSampleMs.current = now;
-                  webScrollY.current = event.nativeEvent.contentOffset.y;
-                }
-              : undefined
-          }
-          onTouchStart={event => {
-            if (
-              Platform.OS === 'android' &&
-              settings.pullToRefresh &&
-              webScrollY.current <= 1
-            ) {
-              pullStartY.current = event.nativeEvent.pageY;
-              pullTriggered.current = false;
-            } else {
-              pullStartY.current = null;
-            }
-          }}
-          onTouchMove={event => {
-            if (
-              Platform.OS !== 'android' ||
-              !settings.pullToRefresh ||
-              pullStartY.current == null ||
-              pullTriggered.current ||
-              webScrollY.current > 1
-            ) {
-              return;
-            }
-            if (event.nativeEvent.pageY - pullStartY.current >= 72) {
-              pullTriggered.current = true;
-              if (Platform.OS === 'android') {
-                ToastAndroid.show(
-                  'Refreshing DMZ Ranked…',
-                  ToastAndroid.SHORT
-                );
-              }
-              forceOverlayNextNavigation.current = true;
-              showOverlay('Refreshing DMZ Ranked…', 0);
-              webRef.current?.reload();
-            }
-          }}
-          onTouchEnd={() => {
-            pullStartY.current = null;
-            pullTriggered.current = false;
-          }}
           onShouldStartLoadWithRequest={handleShouldStart}
           onError={event => {
             if (event.nativeEvent.url === page.current.url) failLoad(page.current.id, 'network');
