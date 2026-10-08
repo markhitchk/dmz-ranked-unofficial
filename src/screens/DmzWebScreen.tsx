@@ -66,6 +66,23 @@ const ANDROID_PERFORMANCE_SCRIPT =
       root.classList.add('hs-native-app','hs-android-webview');
       root.style.scrollBehavior='auto';
     }
+    if(!window.__dmzScrollPerfInstalled){
+      window.__dmzScrollPerfInstalled=true;
+      window.__dmzAppScrolling=false;
+      var dmzScrollIdleTimer=0;
+      var markScrolling=function(){
+        window.__dmzAppScrolling=true;
+        clearTimeout(dmzScrollIdleTimer);
+        dmzScrollIdleTimer=setTimeout(function(){
+          window.__dmzAppScrolling=false;
+        },180);
+      };
+      window.addEventListener('scroll',markScrolling,{passive:true});
+      window.addEventListener('touchstart',markScrolling,{passive:true});
+      window.addEventListener('touchmove',markScrolling,{passive:true});
+      window.addEventListener('touchend',markScrolling,{passive:true});
+      window.addEventListener('touchcancel',markScrolling,{passive:true});
+    }
   }catch(e){}
   return true;
 })();true;
@@ -1102,7 +1119,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           source={{ uri: initialUrl.current }}
           originWhitelist={['http://*', 'https://*', 'dmzranked-support://*']}
           style={styles.webview}
-          androidLayerType="hardware"
           overScrollMode="never"
           javaScriptEnabled
           javaScriptCanOpenWindowsAutomatically={false}
