@@ -1664,7 +1664,7 @@ export function SettingsPanel({
           contentContainerStyle={styles.content}
           data={settingsRows}
           keyExtractor={item => item.key}
-          renderItem={({ item }) => item.node}
+          renderItem={({ item }) => <React.Fragment>{item.node}</React.Fragment>}
           initialNumToRender={3}
           maxToRenderPerBatch={4}
           windowSize={5}
