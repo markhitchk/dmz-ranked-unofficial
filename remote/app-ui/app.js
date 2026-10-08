@@ -1262,6 +1262,7 @@
   ensureTab();
 
   const observer = new MutationObserver(() => {
+    if (window.__dmzAppScrolling) return;
     if (!document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`) || !document.getElementById(TAB) || !document.getElementById("dmz-hs-active-user-stats")) {
       ensureTab();
     } else {
@@ -1281,6 +1282,7 @@
   });
 
   window.setInterval(() => {
+    if (window.__dmzAppScrolling) return;
     // The native top message can be injected/rebuilt independently of the App
     // page, so always repair its dynamic Welcome line first.
     enhanceWelcomeMessage();
@@ -1295,7 +1297,7 @@
     updateWelcome();
     syncCompactSeasonHeader();
     renderTabNotification(appTab);
-  }, 1500);
+  }, 5000);
   window.__dmzHsBetaTabsRefresh = ensureTab;
 })();
 
@@ -1349,7 +1351,10 @@
       if(t)setTimeout(centerActiveTab,80);
     },true);
 
-    var observer=new MutationObserver(function(){centerActiveTab();});
+    var observer=new MutationObserver(function(){
+      if(window.__dmzAppScrolling)return;
+      centerActiveTab();
+    });
     var tabs=q('.tabs');
     if(tabs)observer.observe(tabs,{subtree:true,attributes:true,attributeFilter:['class','aria-selected']});
     centerActiveTab();
@@ -2118,7 +2123,7 @@
 
     var refreshQueued=false;
     function queueRefresh(){
-      if(refreshQueued)return;
+      if(window.__dmzAppScrolling||refreshQueued)return;
       refreshQueued=true;
       setTimeout(function(){
         refreshQueued=false;
@@ -2141,7 +2146,10 @@
       }
     });
     observer.observe(document.documentElement,{childList:true,subtree:true});
-    setInterval(refresh,4000);
+    setInterval(function(){
+      if(window.__dmzAppScrolling)return;
+      refresh();
+    },6000);
     refresh();
   }catch(e){}
 })();
@@ -2174,13 +2182,16 @@
       document.documentElement.setAttribute("data-dmz-app-css","active");
     }
     function schedule(){
-      if(scheduled)return;
+      if(window.__dmzAppScrolling||scheduled)return;
       scheduled=true;
       setTimeout(ensureCss,40);
     }
     var cssObserver=new MutationObserver(schedule);
     cssObserver.observe(document.head||document.documentElement,{childList:true,subtree:false});
-    setInterval(ensureCss,12000);
+    setInterval(function(){
+      if(window.__dmzAppScrolling)return;
+      ensureCss();
+    },15000);
     ensureCss();
   }catch(e){}
 })();
