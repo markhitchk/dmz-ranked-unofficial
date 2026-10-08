@@ -2938,5 +2938,6 @@ html.hs-android-webview .wrap,
 html.hs-android-webview main,
 html.hs-android-webview .tab-content,
 html.hs-android-webview #unofficial-app{
-  transform:translateZ(0);
+  transform:none!important;
+  will-change:auto!important;
 }
