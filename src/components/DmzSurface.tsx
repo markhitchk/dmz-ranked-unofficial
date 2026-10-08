@@ -4,34 +4,50 @@ import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme';
 
-export function DmzCard({ children }: PropsWithChildren) {
+type SurfaceProps = PropsWithChildren<{ optimized?: boolean }>;
+
+export function DmzCard({ children, optimized = false }: SurfaceProps) {
   return (
     <View style={styles.cardShell}>
-      <LinearGradient
-        colors={[colors.panel, colors.panelDeep]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={styles.card}
-      >
-        <View style={styles.cardAccent} />
-        {children}
-      </LinearGradient>
+      {optimized ? (
+        <View style={[styles.card, styles.optimizedSurface]}>
+          <View style={styles.cardAccent} />
+          {children}
+        </View>
+      ) : (
+        <LinearGradient
+          colors={[colors.panel, colors.panelDeep]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.card}
+        >
+          <View style={styles.cardAccent} />
+          {children}
+        </LinearGradient>
+      )}
     </View>
   );
 }
 
-export function DmzActionCard({ children }: PropsWithChildren) {
+export function DmzActionCard({ children, optimized = false }: SurfaceProps) {
   return (
     <View style={styles.actionShell}>
-      <LinearGradient
-        colors={[colors.panel, colors.panelDeep]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={styles.action}
-      >
-        {children}
-        <View style={styles.actionAccent} />
-      </LinearGradient>
+      {optimized ? (
+        <View style={[styles.action, styles.optimizedSurface]}>
+          {children}
+          <View style={styles.actionAccent} />
+        </View>
+      ) : (
+        <LinearGradient
+          colors={[colors.panel, colors.panelDeep]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.action}
+        >
+          {children}
+          <View style={styles.actionAccent} />
+        </LinearGradient>
+      )}
     </View>
   );
 }
@@ -85,6 +101,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: 2,
     backgroundColor: colors.goldDark
+  },
+  optimizedSurface: {
+    backgroundColor: colors.card
   },
   gold: {
     borderRadius: 10,
