@@ -1,0 +1,142 @@
+name: Build React Native Stable AAB
+
+on:
+  push:
+    branches: [react-native-migration]
+    paths:
+      - '.github/workflows/build-react-native-stable-aab.yml'
+      - 'app.config.ts'
+      - 'src/**'
+      - 'assets/**'
+      - 'modules/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+concurrency:
+  group: dmz-ranked-react-native-stable-aab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-stable-aab:
+    runs-on: ubuntu-latest
+    env:
+      APP_VARIANT: stable
+      CI: '1'
+    steps:
+      - name: Checkout React Native migration
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Verify TypeScript and tests
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Verify stable application identity
+        run: |
+          npx expo config --json --type public | node -e '
+            let input = "";
+            process.stdin.on("data", d => input += d);
+            process.stdin.on("end", () => {
+              const cfg = JSON.parse(input);
+              if (cfg.android?.package !== "com.harleytg.dmzranked") {
+                throw Error("Stable Android package ID is incorrect");
+              }
+              if (cfg.extra?.appChannel !== "stable" || cfg.name !== "DMZ Ranked") {
+                throw Error("Stable channel/name configuration is incorrect");
+              }
+              if (cfg.android?.versionCode !== 177) {
+                throw Error("Unexpected Android versionCode");
+              }
+              console.log("Verified stable: " + cfg.android.package + ", versionCode " + cfg.android.versionCode);
+            });'
+
+      - name: Generate native Android project
+        run: npx expo prebuild --clean --platform android --non-interactive
+
+      # Expo's default React Native release template sometimes uses the debug
+      # keystore. Never distribute a misleading debug-signed Play upload bundle.
+      # Instead produce an unsigned AAB, then sign with the genuine upload key
+      # only when all four repository secrets have been configured.
+      - name: Disable debug signing in release AAB
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          source = p.read_text()
+          types = source.find('buildTypes {')
+          release = source.find('release {', types)
+          if types < 0 or release < 0:
+              raise SystemExit('Could not find Android release build type')
+          next_type = source.find('\n        debug {', release + 1)
+          target = 'signingConfig signingConfigs.debug'
+          index = source.find(target, release)
+          if index >= 0 and (next_type < 0 or index < next_type):
+              source = source[:index] + '// Upload-key signing is handled by GitHub Actions' + source[index + len(target):]
+              p.write_text(source)
+          print('Release AAB debug signing disabled')
+          PY
+
+      - name: Build stable release AAB
+        working-directory: android
+        run: ./gradlew :app:bundleRelease --stacktrace --no-daemon
+
+      - name: Verify stable bundle exists
+        run: |
+          test -s android/app/build/outputs/bundle/release/app-release.aab
+          unzip -t android/app/build/outputs/bundle/release/app-release.aab | tail -1
+
+      - name: Sign only with configured Play upload key
+        env:
+          DMZ_UPLOAD_KEYSTORE_B64: ${{ secrets.DMZ_UPLOAD_KEYSTORE_B64 }}
+          DMZ_UPLOAD_STORE_PASSWORD: ${{ secrets.DMZ_UPLOAD_STORE_PASSWORD }}
+          DMZ_UPLOAD_KEY_ALIAS: ${{ secrets.DMZ_UPLOAD_KEY_ALIAS }}
+          DMZ_UPLOAD_KEY_PASSWORD: ${{ secrets.DMZ_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          if [ -n "$DMZ_UPLOAD_KEYSTORE_B64" ] && [ -n "$DMZ_UPLOAD_STORE_PASSWORD" ] && [ -n "$DMZ_UPLOAD_KEY_ALIAS" ] && [ -n "$DMZ_UPLOAD_KEY_PASSWORD" ]; then
+            printf '%s' "$DMZ_UPLOAD_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/dmz-upload.jks"
+            jarsigner -keystore "$RUNNER_TEMP/dmz-upload.jks" \
+              -storepass:env DMZ_UPLOAD_STORE_PASSWORD \
+              -keypass:env DMZ_UPLOAD_KEY_PASSWORD \
+              -signedjar "$RUNNER_TEMP/dmz-stable-signed.aab" \
+              "$AAB" "$DMZ_UPLOAD_KEY_ALIAS"
+            mv "$RUNNER_TEMP/dmz-stable-signed.aab" "$AAB"
+            jarsigner -verify "$AAB"
+            rm -f "$RUNNER_TEMP/dmz-upload.jks"
+            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed-AAB' >> "$GITHUB_ENV"
+            echo 'Stable AAB signed with configured upload key (Play certificate compatibility must still be checked).'
+          else
+            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-177-Unsigned-AAB' >> "$GITHUB_ENV"
+            echo 'WARNING: No full Play upload-key secret set. Publishing an unsigned AAB artifact; it is NOT Play-upload-ready.'
+          fi
+
+      - name: Rename stable AAB
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab DMZ-Ranked-React-Native-Stable-1.1.0-177.aab
+
+      - name: Upload non-beta AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: DMZ-Ranked-React-Native-Stable-1.1.0-177.aab
+          if-no-files-found: error
+          retention-days: 30
