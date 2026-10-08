@@ -8,8 +8,11 @@ export async function loadSettings(): Promise<AppSettings> {
   if (!value) return DEFAULT_SETTINGS;
 
   try {
-    const parsed = JSON.parse(value) as Partial<AppSettings>;
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    const parsed = JSON.parse(value) as Partial<AppSettings> & {
+      experienceVersion?: unknown;
+    };
+    const { experienceVersion: _removedLegacyExperience, ...current } = parsed;
+    return { ...DEFAULT_SETTINGS, ...current };
   } catch {
     return DEFAULT_SETTINGS;
   }
