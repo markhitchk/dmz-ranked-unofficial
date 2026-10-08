@@ -21,6 +21,13 @@ class DmzMigrationModule : Module() {
     AsyncFunction("launchLegacyExperience") {
       val context = appContext.reactContext ?: return@AsyncFunction false
       try {
+        context
+          .getSharedPreferences("dmz_runtime", 0)
+          .edit()
+          .putString("experience_version", "v1")
+          .remove("experience_return")
+          .apply()
+
         val intent = Intent(
           context,
           com.harleytg.dmzranked.legacy.MainActivity::class.java
@@ -30,6 +37,22 @@ class DmzMigrationModule : Module() {
         true
       } catch (_: Throwable) {
         false
+      }
+    }
+
+    AsyncFunction("consumeLegacyExperienceReturn") {
+      val context = appContext.reactContext ?: return@AsyncFunction null
+      try {
+        val prefs = context.getSharedPreferences("dmz_runtime", 0)
+        val requested = prefs.getString("experience_return", null)
+        if (requested == "v2") {
+          prefs.edit().remove("experience_return").apply()
+          "v2"
+        } else {
+          null
+        }
+      } catch (_: Throwable) {
+        null
       }
     }
 
