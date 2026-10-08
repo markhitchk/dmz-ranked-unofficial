@@ -123,10 +123,10 @@ const SETTINGS_TARGET_QUERIES: Record<string, string> = {
   help: 'feedback',
   transfer: 'app data transfer',
   danger: 'danger zone',
-  general: 'general',
-  browsing: 'general',
-  storage: 'storage',
-  reset: 'storage',
+  general: 'app experience',
+  browsing: 'app experience',
+  storage: 'app data transfer',
+  reset: 'danger zone',
   developer: 'developer',
   'developer-options': 'developer'
 };
@@ -583,71 +583,63 @@ export function SettingsPanel({
     await Clipboard.setStringAsync(raw);
   };
 
-  const homeMode = !q;
-
-  const showAbout = !homeMode && matches(
+  const showAbout = matches(
     q,
     'dmz ranked about version build credits creator creators yolando dchinz harley studios harleytg harley-the-gamer gamer paypal ko-fi kofi support donate donation unofficial'
   );
-  const showAppearance = !homeMode && matches(
+  const showAppearance = matches(
     q,
     'appearance display size compact standard large zoom text content density animation motion fade transition smooth'
   );
   const showWidgets =
-    !homeMode &&
     channel === 'beta' &&
     Platform.OS === 'android' &&
     matches(q, 'widget home screen pin add refresh update rank sr standing operator beta');
-  const showExperience = !homeMode && matches(
+  const showExperience = matches(
     q,
-    'general browsing app experience desktop website layout keep screen awake pull refresh remember last page detailed verbose loading'
+    'app experience desktop website layout keep screen awake pull refresh remember last page detailed verbose loading'
   );
-  const showOperators = !homeMode && matches(
+  const showOperators = matches(
     q,
     'operators operator profile selected sync website backup restore autosave protected verified'
   );
-  const showNotifications = !homeMode && matches(
+  const showNotifications = matches(
     q,
     'notifications report review approval website alerts permission sound vibration test'
   );
   const showUpdates =
-    !homeMode &&
     Platform.OS === 'android' &&
     matches(
       q,
       'app updates google play live update installed version check store'
     );
-  const showPageActions = !homeMode && matches(q, 'general browsing storage page actions reload clear web cache');
+  const showPageActions = matches(q, 'page actions reload clear web cache');
   const showBeta =
-    !homeMode &&
     channel === 'beta' &&
     matches(q, 'beta program discord testing experimental google group join');
-  const showWebsiteTools = !homeMode && matches(
+  const showWebsiteTools = matches(
     q,
     'website tools dmz ranked site ticker builder obs themed overlay stream'
   );
-  const showHelp = !homeMode && matches(
+  const showHelp = matches(
     q,
     'help community feedback report support app website discord main group rankings rules server'
   );
   const showTransfer =
-    !homeMode &&
     Platform.OS === 'android' &&
     matches(
       q,
-      'storage data reset app data transfer import other stable beta supported settings operator backups'
+      'app data transfer import other stable beta supported settings operator backups'
     );
-  const showDanger = !homeMode && matches(
+  const showDanger = matches(
     q,
-    'storage data reset danger zone clear website data cookies storage reset settings defaults'
+    'danger zone clear website data cookies storage reset settings defaults'
   );
   const showDeveloper =
     developerUnlocked &&
-    !homeMode &&
     matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current');
 
   const any =
-    homeMode ||
     showAbout ||
     showAppearance ||
     showWidgets ||
@@ -675,9 +667,9 @@ export function SettingsPanel({
       <AppSafeArea contentScale={1}>
         <View style={styles.toolbar}>
           <Pressable
-            accessibilityLabel={q ? "Settings home" : "Back"}
+            accessibilityLabel="Back"
             style={styles.backButton}
-            onPress={q ? () => setQuery("") : onClose}
+            onPress={onClose}
           >
             <DmzIcon name="back" size={24} />
           </Pressable>
@@ -687,10 +679,8 @@ export function SettingsPanel({
             resizeMode="contain"
           />
           <View style={styles.toolbarCopy}>
-            <Text style={styles.toolbarTitle}>APP SETTINGS</Text>
-            <Text style={styles.toolbarSubtitle}>
-              Version {version} • Build {build}
-            </Text>
+            <Text style={styles.toolbarTitle}>SETTINGS</Text>
+            <Text style={styles.toolbarSubtitle}>DMZ RANKED • ANDROID</Text>
           </View>
           <View style={styles.toolbarGoldLine} />
         </View>
@@ -756,116 +746,6 @@ export function SettingsPanel({
             </Text>
           ) : null}
 
-          {homeMode ? (
-            <>
-              <DmzCard optimized>
-                <View style={styles.settingsHomeHero}>
-                  <View style={styles.settingsHomeHeroTop}>
-                    <DmzIcon name="settings" size={30} />
-                    <View style={styles.settingsHomeHeroCopy}>
-                      <Text style={styles.settingsHomeTitle}>DMZ RANKED SETTINGS</Text>
-                      <Text style={styles.cardSummary}>
-                        App controls are grouped by purpose so common settings are easier to find.
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.settingsHomeMeta}>
-                    {channel === 'beta' ? 'BETA • ' : ''}Version {version} • Build {build} • {settings.experienceVersion === 'v1' ? 'V1 Legacy' : 'V2 Current'}
-                  </Text>
-                </View>
-              </DmzCard>
-
-              <SectionLabel>SETTINGS</SectionLabel>
-              <ActionCard
-                title="General & browsing"
-                summary="Website behavior, desktop mode, loading, refresh, page memory, and cache controls."
-                label="OPEN ›"
-                icon={<DmzIcon name="globe" size={28} />}
-                onPress={() => setQuery('general')}
-              />
-              <ActionCard
-                title="Appearance & display"
-                summary="Content size, compact presentation, and app animations."
-                label="OPEN ›"
-                icon={<DmzIcon name="settings" size={28} />}
-                onPress={() => setQuery('appearance')}
-              />
-              <ActionCard
-                title="Operator & Protected Autofill"
-                summary="Selected operator, verification status, local backups, restore, and sync."
-                label="OPEN ›"
-                icon={<DmzIcon name="lock" size={28} />}
-                onPress={() => setQuery('operators')}
-              />
-              <ActionCard
-                title="Notifications"
-                summary="Live website alerts, Android notification settings, sync status, and testing."
-                label="OPEN ›"
-                icon={<DmzIcon name="notification" size={28} />}
-                onPress={() => setQuery('notifications')}
-              />
-              {Platform.OS === 'android' ? (
-                <ActionCard
-                  title="App updates"
-                  summary="Google Play update status, manual checks, and the app listing."
-                  label="OPEN ›"
-                  onPress={() => setQuery('app updates')}
-                />
-              ) : null}
-              {channel === 'beta' && Platform.OS === 'android' ? (
-                <ActionCard
-                  title="Beta widgets"
-                  summary="Add and refresh the DMZ Ranked Android home-screen widget."
-                  label="OPEN ›"
-                  onPress={() => setQuery('widget')}
-                />
-              ) : null}
-              <ActionCard
-                title="Website tools"
-                summary="DMZ Ticker Builder and themed OBS tools provided for the website."
-                label="OPEN ›"
-                icon={<DmzIcon name="globe" size={28} />}
-                onPress={() => setQuery('website tools')}
-              />
-              <ActionCard
-                title="Support & feedback"
-                summary="Separate app-support and website-support zones so reports reach the right place."
-                label="OPEN ›"
-                onPress={() => setQuery('support')}
-              />
-              {channel === 'beta' ? (
-                <ActionCard
-                  title="Beta program"
-                  summary="App beta Discord and Google Group testing access."
-                  label="OPEN ›"
-                  onPress={() => setQuery('beta')}
-                />
-              ) : null}
-              <ActionCard
-                title="Storage, transfer & reset"
-                summary="Import between Stable/Beta, clear website data, and reset app settings."
-                label="OPEN ›"
-                icon={<DmzIcon name="database" size={28} />}
-                onPress={() => setQuery('storage')}
-              />
-              <ActionCard
-                title="About DMZ Ranked"
-                summary="Version, build details, credits, creators, and support links."
-                label="OPEN ›"
-                onPress={() => setQuery('about')}
-              />
-              {developerUnlocked ? (
-                <ActionCard
-                  title="Developer options"
-                  summary={`Developer Mode is enabled • ${settings.experienceVersion === 'v1' ? 'V1 Legacy' : 'V2 Current'}`}
-                  label="OPEN ›"
-                  icon={<DmzIcon name="settings" size={28} color={colors.gold} />}
-                  onPress={() => setQuery('developer')}
-                />
-              ) : null}
-            </>
-          ) : null}
-
           {showAbout ? (
             <DmzCard optimized>
               <View style={styles.aboutCard}>
@@ -878,9 +758,7 @@ export function SettingsPanel({
                   <View style={styles.aboutCopy}>
                     <View style={styles.aboutTitleRow}>
                       <Text style={styles.aboutTitle}>DMZ RANKED</Text>
-                      {channel === 'beta' ? (
-                        <Text style={styles.betaBadge}>BETA</Text>
-                      ) : null}
+
                     </View>
                     <Text style={styles.aboutVersion}>Version {version}</Text>
                     <Pressable
@@ -1629,7 +1507,7 @@ export function SettingsPanel({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.black },
   toolbar: {
-    height: 74,
+    height: 64,
     backgroundColor: colors.toolbar,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1645,31 +1523,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gold
   },
   backButton: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center'
   },
-  toolbarLogo: { width: 46, height: 46 },
+  toolbarLogo: { width: 42, height: 42 },
   toolbarCopy: {
     flex: 1,
     height: '100%',
     justifyContent: 'center',
-    marginLeft: 8,
-    marginRight: 6
+    marginLeft: 10
   },
   toolbarTitle: {
     color: colors.white,
     fontFamily: condensedFont,
     fontWeight: '900',
-    fontSize: 21,
-    letterSpacing: 0.4
+    fontSize: 24,
+    letterSpacing: 1.2
   },
   toolbarSubtitle: {
-    color: colors.muted,
+    color: colors.goldSoft,
     fontFamily: condensedFont,
-    fontSize: 10.5,
-    marginTop: 2
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1
   },
   searchOuter: {
     marginLeft: 16,
@@ -2093,31 +1971,6 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontSize: 10,
     fontWeight: '900'
-  },
-  settingsHomeHero: { padding: 16 },
-  settingsHomeHeroTop: {
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  settingsHomeHeroCopy: {
-    flex: 1,
-    marginLeft: 12
-  },
-  settingsHomeTitle: {
-    color: colors.white,
-    fontFamily: condensedFont,
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 0.8
-  },
-  settingsHomeMeta: {
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.cardBorder,
-    color: colors.goldSoft,
-    fontSize: 11,
-    fontWeight: '800'
   },
   experienceCard: { padding: 16 },
   experienceRow: {
