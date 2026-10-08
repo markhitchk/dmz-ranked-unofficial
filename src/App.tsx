@@ -54,6 +54,7 @@ import { AppErrorBoundary } from './components/AppErrorBoundary';
 import {
   clearWebViewData,
   consumeLegacyExperienceReturn,
+  deactivateLegacyExperience,
   launchLegacyExperience,
   refreshDmzWidgets,
   requestPinDmzWidget,
@@ -189,8 +190,13 @@ function AppContent() {
   useEffect(() => {
     if (!ready || !legacyRuntimeChecked || Platform.OS !== 'android') return;
 
-    if (settings.experienceVersion !== 'v1') {
+    if (!settings.developerMode || settings.experienceVersion !== 'v1') {
       legacyLaunchAttempted.current = false;
+      void deactivateLegacyExperience();
+
+      if (!settings.developerMode && settings.experienceVersion === 'v1') {
+        update('experienceVersion', 'v2');
+      }
       return;
     }
 
@@ -207,7 +213,13 @@ function AppContent() {
         );
       }
     });
-  }, [legacyRuntimeChecked, ready, settings.experienceVersion]);
+  }, [
+    legacyRuntimeChecked,
+    ready,
+    settings.developerMode,
+    settings.experienceVersion,
+    update
+  ]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
