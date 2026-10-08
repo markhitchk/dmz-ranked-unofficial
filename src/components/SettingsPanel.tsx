@@ -1,7 +1,7 @@
 import React, { useDeferredValue, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  ScrollView,
+  FlatList,
   Image,
   Linking,
   Modal,
@@ -1659,18 +1659,20 @@ export function SettingsPanel({
           </View>
         </Animated.View>
 
-        <ScrollView
+        <FlatList
           style={styles.scroll}
           contentContainerStyle={styles.content}
+          data={settingsRows}
+          keyExtractor={item => item.key}
+          renderItem={({ item }) => item.node}
+          initialNumToRender={3}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          removeClippedSubviews={false}
           nestedScrollEnabled
-        >
-          {settingsRows.map(item => (
-            <React.Fragment key={item.key}>{item.node}</React.Fragment>
-          ))}
-        </ScrollView>
+        />
 
         <DmzDialog
           visible={dialog === 'build-info'}
