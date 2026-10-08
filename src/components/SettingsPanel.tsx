@@ -1436,7 +1436,7 @@ export function SettingsPanel({
                   <View style={styles.experienceCard}>
                     <Text style={styles.cardTitleCondensed}>App experience version</Text>
                     <Text style={styles.cardSummary}>
-                      V2 is the current React Native app. V1 launches the embedded legacy Java/non-React app sourced from the main branch.
+                      V2 is the current React Native app. V1 stays dormant until you explicitly activate it here, then launches the embedded legacy Java/non-React app sourced from the main branch.
                     </Text>
                     <View style={styles.experienceRow}>
                       <Pressable
@@ -1476,7 +1476,7 @@ export function SettingsPanel({
                       </Pressable>
                     </View>
                     <Text style={styles.experienceNotice}>
-                      Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java' : 'V2 Current React Native'}. Changing to V1 opens the native Java experience; Android Back returns to V2 so you can switch versions again.
+                      Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java • Active' : 'V2 Current React Native • V1 Dormant'}. V1 is disabled at the Android component level until activation. Returning to V2 disables V1 again.
                     </Text>
                   </View>
                 </DmzCard>
@@ -1508,12 +1508,13 @@ export function SettingsPanel({
               />
               <ActionCard
                 title="Lock developer tools"
-                summary="Hide developer controls again until the five-tap PIN unlock is completed."
+                summary="Hide developer controls, return to V2, and put V1 back into dormant mode until the seven-tap PIN unlock is completed."
                 label="LOCK"
                 onPress={() => {
+                  onUpdate('experienceVersion', 'v2');
                   onUpdate('developerMode', false);
                   setQuery('');
-                  toast('Developer Mode disabled.');
+                  toast('Developer Mode disabled • V1 dormant.');
                 }}
               />
             </>
