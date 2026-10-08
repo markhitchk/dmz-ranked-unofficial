@@ -2897,3 +2897,46 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
   #unofficial-app .hs-app-settings-grid{grid-template-columns:1fr}
   #unofficial-app .hs-app-settings-all{grid-column:auto}
 }
+
+
+/* Android WebView performance path.
+   Preserve the DMZ visual language while removing effects that are expensive
+   to recomposite continuously during touch scrolling. */
+html.hs-android-webview{
+  scroll-behavior:auto!important;
+}
+html.hs-android-webview *,
+html.hs-android-webview *::before,
+html.hs-android-webview *::after{
+  -webkit-tap-highlight-color:transparent;
+}
+html.hs-android-webview #hs-app-back-top,
+html.hs-android-webview .hs-app-modal-card,
+html.hs-android-webview #hs-ios-support-overlay .hs-ios-support-card,
+html.hs-android-webview #unofficial-app .hs-app-card,
+html.hs-android-webview #unofficial-app .hs-app-settings-shortcut{
+  box-shadow:none!important;
+}
+html.hs-android-webview .hs-app-modal-backdrop,
+html.hs-android-webview .hs-app-modal-head,
+html.hs-android-webview #hs-ios-support-overlay .hs-ios-support-backdrop{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html.hs-android-webview .rank-icon,
+html.hs-android-webview .operator-badge,
+html.hs-android-webview #unofficial-app img{
+  filter:none!important;
+}
+html.hs-android-webview #hs-app-back-top,
+html.hs-android-webview .hs-unofficial-tab-notice-dot,
+html.hs-android-webview .hs-live-dot{
+  animation:none!important;
+  transition:none!important;
+}
+html.hs-android-webview .wrap,
+html.hs-android-webview main,
+html.hs-android-webview .tab-content,
+html.hs-android-webview #unofficial-app{
+  transform:translateZ(0);
+}
