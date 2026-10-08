@@ -219,6 +219,117 @@ class DmzMigrationModule : Module() {
       }
     }
 
+    AsyncFunction("sampleUiPerformance") { durationMs: Int, promise: expo.modules.kotlin.Promise ->
+      val context = appContext.reactContext
+      if (context == null) {
+        promise.resolve(null)
+        return@AsyncFunction
+      }
+
+      val sampleDurationMs = durationMs.coerceIn(500, 10000)
+      Handler(Looper.getMainLooper()).post {
+        try {
+          val windowManager = context.getSystemService(
+            android.content.Context.WINDOW_SERVICE
+          ) as? android.view.WindowManager
+
+          @Suppress("DEPRECATION")
+          val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            context.display ?: windowManager?.defaultDisplay
+          } else {
+            windowManager?.defaultDisplay
+          }
+
+          val refreshRate = (display?.refreshRate ?: 60f).toDouble().coerceAtLeast(1.0)
+          val targetFrameNs = 1_000_000_000.0 / refreshRate
+          val frameIntervals = mutableListOf<Long>()
+          val startedAtNs = System.nanoTime()
+          var firstFrameNs = 0L
+          var lastFrameNs = 0L
+
+          val choreographer = android.view.Choreographer.getInstance()
+          val callback = object : android.view.Choreographer.FrameCallback {
+            override fun doFrame(frameTimeNanos: Long) {
+              if (firstFrameNs == 0L) {
+                firstFrameNs = frameTimeNanos
+              }
+              if (lastFrameNs != 0L && frameTimeNanos > lastFrameNs) {
+                frameIntervals.add(frameTimeNanos - lastFrameNs)
+              }
+              lastFrameNs = frameTimeNanos
+
+              val elapsedMs = (System.nanoTime() - startedAtNs) / 1_000_000L
+              if (elapsedMs < sampleDurationMs) {
+                choreographer.postFrameCallback(this)
+                return
+              }
+
+              if (frameIntervals.isEmpty() || lastFrameNs <= firstFrameNs) {
+                promise.resolve(
+                  mapOf(
+                    "refreshRate" to refreshRate,
+                    "estimatedFps" to 0.0,
+                    "averageFrameTimeMs" to 0.0,
+                    "p95FrameTimeMs" to 0.0,
+                    "jankPercent" to 0.0,
+                    "missedFrames" to 0,
+                    "sampleDurationMs" to sampleDurationMs,
+                    "quality" to "Unavailable"
+                  )
+                )
+                return
+              }
+
+              val durationSeconds =
+                (lastFrameNs - firstFrameNs).toDouble() / 1_000_000_000.0
+              val estimatedFps =
+                if (durationSeconds > 0.0) frameIntervals.size / durationSeconds else 0.0
+              val averageFrameTimeMs =
+                frameIntervals.average() / 1_000_000.0
+              val sorted = frameIntervals.sorted()
+              val p95Index =
+                kotlin.math.ceil((sorted.size - 1) * 0.95).toInt().coerceIn(0, sorted.size - 1)
+              val p95FrameTimeMs = sorted[p95Index] / 1_000_000.0
+              val jankThresholdNs = targetFrameNs * 1.5
+              val jankyFrames =
+                frameIntervals.count { it.toDouble() > jankThresholdNs }
+              val jankPercent =
+                (jankyFrames.toDouble() / frameIntervals.size.toDouble()) * 100.0
+              val missedFrames = frameIntervals.sumOf { interval ->
+                val expected =
+                  kotlin.math.round(interval.toDouble() / targetFrameNs).toInt().coerceAtLeast(1)
+                (expected - 1).coerceAtLeast(0)
+              }
+              val fpsRatio = estimatedFps / refreshRate
+              val quality = when {
+                fpsRatio >= 0.92 && jankPercent < 5.0 -> "Excellent"
+                fpsRatio >= 0.82 && jankPercent < 10.0 -> "Good"
+                fpsRatio >= 0.68 && jankPercent < 20.0 -> "Fair"
+                else -> "Poor"
+              }
+
+              promise.resolve(
+                mapOf(
+                  "refreshRate" to refreshRate,
+                  "estimatedFps" to estimatedFps,
+                  "averageFrameTimeMs" to averageFrameTimeMs,
+                  "p95FrameTimeMs" to p95FrameTimeMs,
+                  "jankPercent" to jankPercent,
+                  "missedFrames" to missedFrames,
+                  "sampleDurationMs" to sampleDurationMs,
+                  "quality" to quality
+                )
+              )
+            }
+          }
+
+          choreographer.postFrameCallback(callback)
+        } catch (_: Throwable) {
+          promise.resolve(null)
+        }
+      }
+    }
+
     AsyncFunction("clearWebViewData") { promise: expo.modules.kotlin.Promise ->
       val context = appContext.reactContext
       if (context == null) {
