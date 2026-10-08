@@ -1317,11 +1317,17 @@
     top.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
     (document.body||document.documentElement).appendChild(top);
 
+    var topRaf=0;
     function updateTop(){
+      topRaf=0;
       var y=window.scrollY||document.documentElement.scrollTop||0;
       if(y>700)top.classList.add('hs-show'); else top.classList.remove('hs-show');
     }
-    window.addEventListener('scroll',updateTop,{passive:true});
+    function scheduleTopUpdate(){
+      if(topRaf)return;
+      topRaf=requestAnimationFrame(updateTop);
+    }
+    window.addEventListener('scroll',scheduleTopUpdate,{passive:true});
     updateTop();
 
     function centerActiveTab(){
@@ -2135,7 +2141,7 @@
       }
     });
     observer.observe(document.documentElement,{childList:true,subtree:true});
-    setInterval(refresh,1800);
+    setInterval(refresh,4000);
     refresh();
   }catch(e){}
 })();
@@ -2173,8 +2179,8 @@
       setTimeout(ensureCss,40);
     }
     var cssObserver=new MutationObserver(schedule);
-    cssObserver.observe(document.documentElement,{childList:true,subtree:true});
-    setInterval(ensureCss,2500);
+    cssObserver.observe(document.head||document.documentElement,{childList:true,subtree:false});
+    setInterval(ensureCss,12000);
     ensureCss();
   }catch(e){}
 })();
