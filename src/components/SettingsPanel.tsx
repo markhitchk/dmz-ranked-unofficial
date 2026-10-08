@@ -1484,7 +1484,7 @@ export function SettingsPanel({
           contentContainerStyle={styles.content}
           data={settingsRows}
           keyExtractor={item => item.key}
-          renderItem={({ item }) => item.node}
+          renderItem={({ item }) => <>{item.node}</>}
           initialNumToRender={3}
           maxToRenderPerBatch={2}
           updateCellsBatchingPeriod={48}
