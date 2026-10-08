@@ -56,6 +56,22 @@ import {
 
 const HOME_URL = 'https://dmzranked.com/';
 
+const ANDROID_PERFORMANCE_SCRIPT =
+  Platform.OS === 'android'
+    ? `
+(function(){
+  try{
+    var root=document.documentElement;
+    if(root){
+      root.classList.add('hs-native-app','hs-android-webview');
+      root.style.scrollBehavior='auto';
+    }
+  }catch(e){}
+  return true;
+})();true;
+`
+    : '';
+
 const URL_OBSERVER_SCRIPT = `
 (function(){
   if(window.__dmzRnUrlObserverInstalled){return true;}
@@ -1085,6 +1101,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           source={{ uri: initialUrl.current }}
           originWhitelist={['http://*', 'https://*', 'dmzranked-support://*']}
           style={styles.webview}
+          androidLayerType="hardware"
+          overScrollMode="never"
           javaScriptEnabled
           javaScriptCanOpenWindowsAutomatically={false}
           domStorageEnabled
@@ -1102,7 +1120,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               : applicationNameForUserAgent
           }
           textZoom={contentZoom(settings.contentSize)}
-          injectedJavaScriptBeforeContentLoaded={bridge + '\n' + URL_OBSERVER_SCRIPT}
+          injectedJavaScriptBeforeContentLoaded={
+            bridge + '\n' + ANDROID_PERFORMANCE_SCRIPT + '\n' + URL_OBSERVER_SCRIPT
+          }
           onLoadStart={event => {
             installBrowserDialogParity();
             handleLoadStart(event.nativeEvent.url);
@@ -1135,9 +1155,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           }}
           onMessage={handleMessage}
           onNavigationStateChange={handleNavigation}
-          onScroll={event => {
-            webScrollY.current = event.nativeEvent.contentOffset.y;
-          }}
+          scrollEventThrottle={100}
+          onScroll={
+            Platform.OS === 'android' && settings.pullToRefresh
+              ? event => {
+                  webScrollY.current = event.nativeEvent.contentOffset.y;
+                }
+              : undefined
+          }
           onTouchStart={event => {
             if (
               Platform.OS === 'android' &&
