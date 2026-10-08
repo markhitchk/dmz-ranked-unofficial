@@ -8,6 +8,7 @@ export type WebViewPackageInfo = {
 
 type DmzMigrationNative = {
   launchLegacyExperience(): Promise<boolean>;
+  consumeLegacyExperienceReturn(): Promise<'v2' | null>;
   readPeerPayload(): Promise<string | null>;
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
@@ -30,6 +31,10 @@ const nativeModule =
 
 export async function launchLegacyExperience(): Promise<boolean> {
   return nativeModule?.launchLegacyExperience() ?? false;
+}
+
+export async function consumeLegacyExperienceReturn(): Promise<'v2' | null> {
+  return nativeModule?.consumeLegacyExperienceReturn() ?? null;
 }
 
 export async function readPeerPayload(): Promise<string | null> {
