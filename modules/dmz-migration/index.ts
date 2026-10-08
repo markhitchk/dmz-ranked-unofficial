@@ -13,6 +13,17 @@ export type DisplayInfo = {
   height: number;
 };
 
+export type UiPerformanceSample = {
+  refreshRate: number;
+  estimatedFps: number;
+  averageFrameTimeMs: number;
+  p95FrameTimeMs: number;
+  jankPercent: number;
+  missedFrames: number;
+  sampleDurationMs: number;
+  quality: 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Unavailable';
+};
+
 type DmzMigrationNative = {
   launchLegacyExperience(): Promise<boolean>;
   deactivateLegacyExperience(): Promise<boolean>;
@@ -21,6 +32,7 @@ type DmzMigrationNative = {
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   getDisplayInfo(): Promise<DisplayInfo | null>;
+  sampleUiPerformance(durationMs: number): Promise<UiPerformanceSample | null>;
   clearWebViewData(): Promise<boolean>;
   syncWidgetSettings(selectedOperator: string): Promise<boolean>;
   requestPinDmzWidget(): Promise<boolean>;
@@ -64,6 +76,12 @@ export async function getWebViewPackage(): Promise<WebViewPackageInfo | null> {
 
 export async function getDisplayInfo(): Promise<DisplayInfo | null> {
   return nativeModule?.getDisplayInfo() ?? null;
+}
+
+export async function sampleUiPerformance(
+  durationMs = 5000
+): Promise<UiPerformanceSample | null> {
+  return nativeModule?.sampleUiPerformance(durationMs) ?? null;
 }
 
 export async function clearWebViewData(): Promise<boolean> {
