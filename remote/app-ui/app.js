@@ -1261,16 +1261,19 @@
 
   ensureTab();
 
+  // Live leaderboard updates can produce dozens of mutations per second.
+  // Only repair missing App UI after changes settle, never rebuild on every mutation.
+  let appTabRepairQueued = false;
   const observer = new MutationObserver(() => {
-    if (window.__dmzAppScrolling) return;
-    if (!document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`) || !document.getElementById(TAB) || !document.getElementById("dmz-hs-active-user-stats")) {
-      ensureTab();
-    } else {
-      ensureGlobalStats();
-      syncCompactSeasonHeader();
-      const appTab = document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`);
-      renderTabNotification(appTab);
-    }
+    if (window.__dmzAppScrolling || window.__dmzAppPaused || appTabRepairQueued) return;
+    appTabRepairQueued = true;
+    window.setTimeout(() => {
+      appTabRepairQueued = false;
+      if (window.__dmzAppScrolling || window.__dmzAppPaused) return;
+      if (!document.querySelector(`nav.tabs.hs-site-tabs [${TAB_ATTR}]`) || !document.getElementById(TAB) || !document.getElementById("dmz-hs-active-user-stats")) {
+        ensureTab();
+      }
+    }, 350);
   });
   // Child-list changes are enough to recover the injected App tab/page.
   // Do NOT observe style/class attributes here: syncCompactSeasonHeader() updates
@@ -1282,7 +1285,7 @@
   });
 
   window.setInterval(() => {
-    if (window.__dmzAppScrolling) return;
+    if (window.__dmzAppScrolling||window.__dmzAppPaused) return;
     // The native top message can be injected/rebuilt independently of the App
     // page, so always repair its dynamic Welcome line first.
     enhanceWelcomeMessage();
@@ -1352,7 +1355,7 @@
     },true);
 
     var observer=new MutationObserver(function(){
-      if(window.__dmzAppScrolling)return;
+      if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
       centerActiveTab();
     });
     var tabs=q('.tabs');
@@ -2123,12 +2126,13 @@
 
     var refreshQueued=false;
     function queueRefresh(){
-      if(window.__dmzAppScrolling||refreshQueued)return;
+      if(window.__dmzAppScrolling||window.__dmzAppPaused||refreshQueued)return;
       refreshQueued=true;
       setTimeout(function(){
         refreshQueued=false;
+        if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
         refresh();
-      },90);
+      },250);
     }
     var observer=new MutationObserver(function(mutations){
       for(var i=0;i<mutations.length;i++){
@@ -2147,7 +2151,7 @@
     });
     observer.observe(document.documentElement,{childList:true,subtree:true});
     setInterval(function(){
-      if(window.__dmzAppScrolling)return;
+      if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
       refresh();
     },6000);
     refresh();
@@ -2182,14 +2186,14 @@
       document.documentElement.setAttribute("data-dmz-app-css","active");
     }
     function schedule(){
-      if(window.__dmzAppScrolling||scheduled)return;
+      if(window.__dmzAppScrolling||window.__dmzAppPaused||scheduled)return;
       scheduled=true;
       setTimeout(ensureCss,40);
     }
     var cssObserver=new MutationObserver(schedule);
     cssObserver.observe(document.head||document.documentElement,{childList:true,subtree:false});
     setInterval(function(){
-      if(window.__dmzAppScrolling)return;
+      if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
       ensureCss();
     },15000);
     ensureCss();

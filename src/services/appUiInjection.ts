@@ -153,7 +153,7 @@ export function buildRemoteUiInjection(
       clearTimeout(watchdogTimer);
       watchdogTimer = setTimeout(function () {
         scheduled = false;
-        if (window.__dmzAppScrolling) {
+        if (window.__dmzAppScrolling || window.__dmzAppPaused) {
           schedule();
           return;
         }
@@ -173,7 +173,7 @@ export function buildRemoteUiInjection(
 
     // Recovery watchdog is intentionally slow and only repairs broken UI.
     window.__dmzRnUiWatchdogTimer = setInterval(function () {
-      if (window.__dmzAppScrolling) return;
+      if (window.__dmzAppScrolling || window.__dmzAppPaused) return;
       try {
         if (needsRepair()) ensureActive(true);
         else ensureCss();

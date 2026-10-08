@@ -221,6 +221,7 @@ export type DmzWebHandle = {
 
 type Props = {
   settings: AppSettings;
+  suspendBackgroundWork: boolean;
   channel: 'stable' | 'beta';
   onOpenSettings: (target?: string) => void;
   onLoadingChange: (loading: boolean) => void;
@@ -276,6 +277,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
   function DmzWebScreen(
     {
       settings,
+      suspendBackgroundWork,
       channel,
       onOpenSettings,
       onLoadingChange,
@@ -347,6 +349,18 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
       >()
     );
+
+    useEffect(() => {
+      if (Platform.OS !== 'android') return;
+      // Keep the WebView mounted; only pause expensive DOM checks behind modals.
+      webRef.current?.injectJavaScript(
+        `window.__dmzAppPaused=${suspendBackgroundWork ? 'true' : 'false'};` +
+        (suspendBackgroundWork
+          ? ''
+          : 'if(window.__dmzRnRevalidateAppUi){window.__dmzRnRevalidateAppUi();}') +
+        'true;'
+      );
+    }, [suspendBackgroundWork]);
 
     useEffect(() => {
       if (Platform.OS !== 'android') return;
@@ -1193,7 +1207,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           textZoom={contentZoom(settings.contentSize)}
           injectedJavaScriptBeforeContentLoaded={
             (Platform.OS === 'android'
-              ? `window.__dmzPullToRefreshEnabled=${settings.pullToRefresh ? 'true' : 'false'};true;\n`
+              ? `window.__dmzAppPaused=${suspendBackgroundWork ? 'true' : 'false'};window.__dmzPullToRefreshEnabled=${settings.pullToRefresh ? 'true' : 'false'};true;\n`
               : '') +
             bridge +
             '\n' +

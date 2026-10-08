@@ -637,6 +637,7 @@ function AppContent() {
 
       <DmzWebScreen
         ref={webRef}
+        suspendBackgroundWork={settingsOpen || feedbackOpen}
         settings={settings}
         channel={channel}
         onOpenSettings={openSettings}

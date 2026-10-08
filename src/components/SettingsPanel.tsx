@@ -297,6 +297,24 @@ function CreditSupportCard({
   );
 }
 
+// Virtualize individual cards, rather than mounting an entire long settings
+// section whenever any part of that section enters the viewport.
+function flattenSettingsRows(rows: Array<{ key: string; node: React.ReactNode }>) {
+  const flat: Array<{ key: string; node: React.ReactNode }> = [];
+  const add = (node: React.ReactNode, key: string) => {
+    if (React.isValidElement(node) && node.type === React.Fragment) {
+      React.Children.forEach(
+        (node.props as { children?: React.ReactNode }).children,
+        (child, index) => add(child, `${key}:${index}`)
+      );
+    } else if (node !== null && node !== undefined && node !== false) {
+      flat.push({ key, node });
+    }
+  };
+  for (const section of rows) add(section.node, section.key);
+  return flat;
+}
+
 export function SettingsPanel({
   visible,
   target,
@@ -420,7 +438,7 @@ export function SettingsPanel({
 
     void getDisplayInfo().then(info => {
       if (!info) {
-        setDisplayInfoText('Unavailable');
+        setDisplayInfoText('Native display metrics unavailable in this build.');
         return;
       }
 
@@ -500,6 +518,7 @@ export function SettingsPanel({
     setPerformanceInfoText('Measuring for 5 seconds… scroll now.');
     toast('Performance test started — scroll for 5 seconds.', true);
 
+    // JS fallback measures React scheduling, not WebView paint FPS.
     const sampleJsFrames = (
       durationMs: number,
       targetRefreshRate: number
@@ -608,7 +627,7 @@ export function SettingsPanel({
         nativeSample.quality !== 'Unavailable' &&
         nativeSample.estimatedFps > 0
           ? ''
-          : ' • JS fallback';
+          : ' • JS-thread estimate (not WebView FPS)';
 
       setPerformanceInfoText(
         `${sample.quality} • ${fps} FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}${fallbackLabel}`
@@ -1069,7 +1088,7 @@ export function SettingsPanel({
                 title="Scroll performance test"
                 summary={performanceTesting
                   ? 'Measuring frame pacing now — keep scrolling for the full 5 seconds.'
-                  : 'Tap TEST, then keep scrolling for 5 seconds. The app will measure FPS, frame time, jank, missed frames, and compare them with your display refresh rate.'}
+                  : 'Tap TEST, then scroll for 5 seconds. This measures native UI frame pacing (not WebView paint FPS): FPS, frame time, jank and missed frames.'}
                 label={performanceTesting ? 'RUNNING…' : 'TEST'}
                 onPress={() => void runPerformanceTest()}
               />
@@ -1662,11 +1681,11 @@ export function SettingsPanel({
         <FlatList
           style={styles.scroll}
           contentContainerStyle={styles.content}
-          data={settingsRows}
+          data={flattenSettingsRows(settingsRows)}
           keyExtractor={item => item.key}
           renderItem={({ item }) => <React.Fragment>{item.node}</React.Fragment>}
-          initialNumToRender={3}
-          maxToRenderPerBatch={4}
+          initialNumToRender={7}
+          maxToRenderPerBatch={5}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           keyboardShouldPersistTaps="handled"
