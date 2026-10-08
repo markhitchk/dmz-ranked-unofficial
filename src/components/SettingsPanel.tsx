@@ -19,7 +19,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { DmzDialog } from './DmzDialog';
 import { DmzIcon } from './DmzIcon';
-import { DmzActionCard, DmzCard, DmzGoldButton } from './DmzSurface';
+import { DmzGoldButton } from './DmzSurface';
 import { verifyDeveloperPin } from '../services/developerGate';
 import {
   exportOperatorBackups,
@@ -158,6 +158,25 @@ function SectionLabel({
   );
 }
 
+function SettingsCard({
+  children,
+  action = false
+}: {
+  children: React.ReactNode;
+  action?: boolean;
+}) {
+  return (
+    <View
+      style={[
+        styles.settingsCardSurface,
+        action && styles.settingsActionSurface
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
 function GoldAction({
   label,
   onPress
@@ -166,13 +185,9 @@ function GoldAction({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress}>
-      <DmzGoldButton>
-        <View style={styles.goldButtonInner}>
-          <Text style={styles.goldButtonText}>{label}</Text>
-        </View>
-      </DmzGoldButton>
-    </Pressable>
+    <View style={styles.goldButtonFlat}>
+      <Text style={styles.goldButtonText}>{label}</Text>
+    </View>
   );
 }
 
@@ -189,7 +204,7 @@ function ToggleCard({
 }) {
   return (
     <View style={styles.cardGap}>
-      <DmzCard optimized>
+      <SettingsCard>
         <Pressable style={styles.toggleCard} onPress={() => onChange(!value)}>
           <View style={styles.flexCopy}>
             <Text style={styles.cardTitleCondensed}>{title}</Text>
@@ -202,7 +217,7 @@ function ToggleCard({
             thumbColor={value ? colors.gold : '#C8CDCA'}
           />
         </Pressable>
-      </DmzCard>
+      </SettingsCard>
     </View>
   );
 }
@@ -223,26 +238,25 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <View style={styles.cardGap}>
-      <Pressable onPress={onPress}>
-        <DmzActionCard optimized>
-          <View style={styles.actionCard}>
-            {icon ? <View style={styles.leadingIcon}>{icon}</View> : null}
-            <View style={styles.flexCopy}>
-              <Text style={styles.actionTitle}>{title}</Text>
-              <Text style={styles.cardSummary}>{summary}</Text>
-            </View>
-            {danger ? (
-              <View style={styles.dangerButton}>
-                <Text style={styles.dangerButtonText}>{label}</Text>
-              </View>
-            ) : (
-              <GoldAction label={label} onPress={onPress} />
-            )}
+    <Pressable
+      onPress={onPress}
+      style={[styles.cardGap, styles.settingsCardSurface, styles.settingsActionSurface]}
+    >
+      <View style={styles.actionCard}>
+        {icon ? <View style={styles.leadingIcon}>{icon}</View> : null}
+        <View style={styles.flexCopy}>
+          <Text style={styles.actionTitle}>{title}</Text>
+          <Text style={styles.cardSummary}>{summary}</Text>
+        </View>
+        {danger ? (
+          <View style={styles.dangerButton}>
+            <Text style={styles.dangerButtonText}>{label}</Text>
           </View>
-        </DmzActionCard>
-      </Pressable>
-    </View>
+        ) : (
+          <GoldAction label={label} onPress={onPress} />
+        )}
+      </View>
+    </Pressable>
   );
 }
 
@@ -258,20 +272,23 @@ function CreditSupportCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.creditSupportGap}>
-      <DmzActionCard optimized>
-        <View style={styles.creditSupportCard}>
-          <View style={styles.flexCopy}>
-            <Text style={styles.creditSupportTitle}>{title}</Text>
-            <Text style={styles.creditSupportSummary}>{summary}</Text>
-          </View>
-          <DmzGoldButton>
-            <View style={styles.creditSupportButton}>
-              <Text style={styles.creditSupportButtonText}>{label}</Text>
-            </View>
-          </DmzGoldButton>
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.creditSupportGap,
+        styles.settingsCardSurface,
+        styles.settingsActionSurface
+      ]}
+    >
+      <View style={styles.creditSupportCard}>
+        <View style={styles.flexCopy}>
+          <Text style={styles.creditSupportTitle}>{title}</Text>
+          <Text style={styles.creditSupportSummary}>{summary}</Text>
         </View>
-      </DmzActionCard>
+        <View style={styles.goldButtonFlat}>
+          <Text style={styles.creditSupportButtonText}>{label}</Text>
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -747,7 +764,7 @@ export function SettingsPanel({
           ) : null}
 
           {showAbout ? (
-            <DmzCard optimized>
+            <SettingsCard>
               <View style={styles.aboutCard}>
                 <View style={styles.aboutTop}>
                   <Image
@@ -890,14 +907,14 @@ export function SettingsPanel({
                   </View>
                 ) : null}
               </View>
-            </DmzCard>
+            </SettingsCard>
           ) : null}
 
           {showAppearance ? (
             <>
               <SectionLabel>APPEARANCE</SectionLabel>
 
-              <DmzCard optimized>
+              <SettingsCard>
                 <View style={styles.contentSizeCard}>
                   <Text style={styles.cardTitleCondensed}>Content size</Text>
                   <Text style={styles.cardSummary}>{contentSummary}</Text>
@@ -909,7 +926,7 @@ export function SettingsPanel({
                     {sizeButton('large', 'LARGE')}
                   </View>
                 </View>
-              </DmzCard>
+              </SettingsCard>
 
               <ToggleCard
                 title="App animations"
@@ -978,7 +995,7 @@ export function SettingsPanel({
             <>
               <SectionLabel>OPERATORS</SectionLabel>
 
-              <DmzCard optimized>
+              <SettingsCard>
                 <View style={styles.operatorStatusCard}>
                   <View style={styles.operatorHeader}>
                     <DmzIcon name="globe" size={38} />
@@ -1049,10 +1066,10 @@ export function SettingsPanel({
                     </Pressable>
                   </View>
                 </View>
-              </DmzCard>
+              </SettingsCard>
 
               <View style={styles.cardGap}>
-                <DmzCard optimized>
+                <SettingsCard>
                   <View style={styles.backupCard}>
                     <Pressable
                       style={styles.backupHeader}
@@ -1121,7 +1138,7 @@ export function SettingsPanel({
                       </Pressable>
                     </View>
                   </View>
-                </DmzCard>
+                </SettingsCard>
               </View>
             </>
           ) : null}
@@ -1310,7 +1327,7 @@ export function SettingsPanel({
               />
 
               <View style={styles.cardGap}>
-                <DmzCard optimized>
+                <SettingsCard>
                   <View style={styles.experienceCard}>
                     <Text style={styles.cardTitleCondensed}>App experience version</Text>
                     <Text style={styles.cardSummary}>
@@ -1357,11 +1374,11 @@ export function SettingsPanel({
                       Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java • Active' : 'V2 Current React Native • V1 Dormant'}. V1 is disabled at the Android component level until activation. Returning to V2 disables V1 again.
                     </Text>
                   </View>
-                </DmzCard>
+                </SettingsCard>
               </View>
 
               <SectionLabel>DIAGNOSTICS</SectionLabel>
-              <DmzCard optimized>
+              <SettingsCard>
                 <View style={styles.diagnosticsCard}>
                   <Text style={styles.actionTitle}>Runtime information</Text>
                   <Text style={styles.cardSummary}>
@@ -1371,7 +1388,7 @@ export function SettingsPanel({
                     {'\n'}Remember page: {settings.rememberLastPage ? 'On' : 'Off'} • WebView debug: {settings.webviewDebug ? 'On' : 'Off'}
                   </Text>
                 </View>
-              </DmzCard>
+              </SettingsCard>
               <ToggleCard
                 title="WebView debugging"
                 summary="Developer option. Allow inspection when supported by the native WebView build."
@@ -1616,6 +1633,31 @@ const styles = StyleSheet.create({
   },
   sectionDanger: { color: colors.red },
   cardGap: { marginTop: 10 },
+  settingsCardSurface: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.gold,
+    borderRadius: 10,
+    overflow: 'hidden'
+  },
+  settingsActionSurface: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.cardBorder,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.goldDark,
+    borderRadius: 8
+  },
+  goldButtonFlat: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 9,
+    backgroundColor: colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   flexCopy: { flex: 1 },
   aboutCard: { padding: 16 },
   aboutTop: {
