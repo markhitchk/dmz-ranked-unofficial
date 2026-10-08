@@ -68,19 +68,23 @@ function SafeAreaFrame({
       ]}
     >
       <View style={styles.viewport}>
-        <View
-          style={[
-            styles.scaledFrame,
-            {
-              width: `${inverse}%`,
-              height: `${inverse}%`,
-              transform: [{ scale }],
-              transformOrigin: [0, 0, 0]
-            }
-          ]}
-        >
-          {children}
-        </View>
+        {scale === 1 ? (
+          <View style={styles.unscaledFrame}>{children}</View>
+        ) : (
+          <View
+            style={[
+              styles.scaledFrame,
+              {
+                width: `${inverse}%`,
+                height: `${inverse}%`,
+                transform: [{ scale }],
+                transformOrigin: [0, 0, 0]
+              }
+            ]}
+          >
+            {children}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -119,6 +123,10 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: colors.black
+  },
+  unscaledFrame: {
+    flex: 1,
     backgroundColor: colors.black
   },
   scaledFrame: {
