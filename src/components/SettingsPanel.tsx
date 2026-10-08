@@ -538,12 +538,12 @@ export function SettingsPanel({
           const sorted = [...intervals].sort((a, b) => a - b);
           const p95 =
             sorted.length
-              ? sorted[
+              ? (sorted[
                   Math.min(
                     sorted.length - 1,
                     Math.ceil((sorted.length - 1) * 0.95)
                   )
-                ]
+                ] ?? 0)
               : 0;
           const totalMs =
             intervals.reduce((sum, value) => sum + value, 0);
