@@ -87,6 +87,20 @@
                 android:textSize="10.5sp" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/v2Button"
+            android:layout_width="44dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="2dp"
+            android:background="@drawable/toolbar_beta_badge"
+            android:fontFamily="sans-serif-condensed"
+            android:gravity="center"
+            android:letterSpacing="0.06"
+            android:text="V2"
+            android:textColor="@color/dmz_black"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
         <ImageButton
             android:id="@+id/settingsButton"
             android:layout_width="44dp"
