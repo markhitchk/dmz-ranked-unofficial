@@ -53,6 +53,7 @@ import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import {
   clearWebViewData,
+  consumeLegacyExperienceReturn,
   launchLegacyExperience,
   refreshDmzWidgets,
   requestPinDmzWidget,
@@ -83,6 +84,9 @@ function AppContent() {
   const webRef = useRef<DmzWebHandle>(null);
   const appState = useRef(AppState.currentState);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [legacyRuntimeChecked, setLegacyRuntimeChecked] = useState(
+    Platform.OS !== 'android'
+  );
   const [settingsTarget, setSettingsTarget] = useState<string | undefined>();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [online, setOnline] = useState(true);
@@ -156,7 +160,34 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (!ready || Platform.OS !== 'android') return;
+    if (!ready) return;
+    if (Platform.OS !== 'android') {
+      setLegacyRuntimeChecked(true);
+      return;
+    }
+
+    let cancelled = false;
+    void consumeLegacyExperienceReturn()
+      .then(requested => {
+        if (cancelled) return;
+        if (requested === 'v2') {
+          legacyLaunchAttempted.current = false;
+          if (settings.experienceVersion !== 'v2') {
+            update('experienceVersion', 'v2');
+          }
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLegacyRuntimeChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready || !legacyRuntimeChecked || Platform.OS !== 'android') return;
 
     if (settings.experienceVersion !== 'v1') {
       legacyLaunchAttempted.current = false;
@@ -176,7 +207,7 @@ function AppContent() {
         );
       }
     });
-  }, [ready, settings.experienceVersion]);
+  }, [legacyRuntimeChecked, ready, settings.experienceVersion]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -196,7 +227,7 @@ function AppContent() {
     if (settings.siteNotifications) {
       void primeNotificationBaseline();
     }
-  }, [ready, settings.siteNotifications]);
+  }, [ready, settings.experienceVersion, settings.siteNotifications, update]);
 
   useEffect(() => {
     if (!ready) return;
@@ -205,6 +236,20 @@ function AppContent() {
       const isActive = nextState === 'active';
       appState.current = nextState;
       void setNotificationAppForeground(isActive);
+
+      if (isActive && Platform.OS === 'android') {
+        void consumeLegacyExperienceReturn().then(requested => {
+          if (requested !== 'v2') return;
+          legacyLaunchAttempted.current = false;
+          if (settings.experienceVersion !== 'v2') {
+            update('experienceVersion', 'v2');
+          }
+          ToastAndroid.show(
+            'Returned to V2 • React Native',
+            ToastAndroid.SHORT
+          );
+        });
+      }
 
       if (!settings.siteNotifications) return;
       if (isActive) {
