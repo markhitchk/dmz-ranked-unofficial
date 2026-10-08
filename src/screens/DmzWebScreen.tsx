@@ -280,6 +280,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const pullStartY = useRef<number | null>(null);
     const pullTriggered = useRef(false);
     const webScrollY = useRef(0);
+    const lastScrollSampleMs = useRef(0);
     const previousDesktopMode = useRef(settings.desktopSite);
     const liveOperator = useRef({
       name: '',
@@ -1155,10 +1156,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           }}
           onMessage={handleMessage}
           onNavigationStateChange={handleNavigation}
-          scrollEventThrottle={100}
           onScroll={
             Platform.OS === 'android' && settings.pullToRefresh
               ? event => {
+                  const now = Date.now();
+                  if (now - lastScrollSampleMs.current < 100) return;
+                  lastScrollSampleMs.current = now;
                   webScrollY.current = event.nativeEvent.contentOffset.y;
                 }
               : undefined
