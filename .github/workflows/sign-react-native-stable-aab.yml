@@ -38,8 +38,19 @@ jobs:
           KEY="$RUNNER_TEMP/dmz-existing-upload-key.jks"
           base64 --decode .java-signing-source/signing/dmz-ranked-update.jks.b64 > "$KEY"
           chmod 600 "$KEY"
-          KEY_SHA1="$(keytool -list -v -keystore "$KEY"             -storepass android -alias androiddebugkey |
-            sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
+          # List the keystore independently of alias. The original Java signing
+          # file may use a different alias from the old Gradle configuration.
+          if ! keytool -list -v -keystore "$KEY" -storepass android > "$RUNNER_TEMP/key-report.txt" 2>&1; then
+            echo "::error::The existing keystore could not be opened with the repository's Android signing password."
+            sed -n '1,8p' "$RUNNER_TEMP/key-report.txt"
+            exit 1
+          fi
+          KEY_SHA1="$(sed -n 's/^[[:space:]]*SHA1: //p' "$RUNNER_TEMP/key-report.txt" | head -n 1)"
+          KEY_ALIAS="$(sed -n 's/^Alias name: //p' "$RUNNER_TEMP/key-report.txt" | head -n 1)"
+          if [ -z "$KEY_ALIAS" ] || [ -z "$KEY_SHA1" ]; then
+            echo "::error::Could not read alias or certificate from the stored keystore."
+            exit 1
+          fi
           EXPECTED_SHA1="E2:A5:91:C6:B8:2E:FE:1F:5E:67:17:0D:A4:AE:68:1E:D0:9F:BE:E5"
           echo "Existing keystore SHA-1: $KEY_SHA1"
           if [ "$KEY_SHA1" != "$EXPECTED_SHA1" ]; then
@@ -48,6 +59,7 @@ jobs:
           fi
           echo "Existing keystore matches the recorded Play upload certificate."
           echo "DMZ_KEYSTORE=$KEY" >> "$GITHUB_ENV"
+          echo "DMZ_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
 
       - name: Sign production React Native bundle
         run: |
@@ -55,7 +67,7 @@ jobs:
           ORIGINAL="unsigned/DMZ-Ranked-React-Native-Stable-1.1.0-177.aab"
           SIGNED="DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed.aab"
           test -s "$ORIGINAL"
-          jarsigner             -keystore "$DMZ_KEYSTORE" -storepass android -keypass android             -signedjar "$SIGNED" "$ORIGINAL" androiddebugkey
+          jarsigner             -keystore "$DMZ_KEYSTORE" -storepass android -keypass android             -signedjar "$SIGNED" "$ORIGINAL" "$DMZ_KEY_ALIAS"
           jarsigner -verify "$SIGNED"
           SIGNED_SHA1="$(keytool -printcert -jarfile "$SIGNED"             | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
           EXPECTED_SHA1="E2:A5:91:C6:B8:2E:FE:1F:5E:67:17:0D:A4:AE:68:1E:D0:9F:BE:E5"
