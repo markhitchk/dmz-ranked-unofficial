@@ -6,6 +6,13 @@ export type WebViewPackageInfo = {
   versionName: string;
 };
 
+export type DisplayInfo = {
+  currentRefreshRate: number;
+  supportedRefreshRates: number[];
+  width: number;
+  height: number;
+};
+
 type DmzMigrationNative = {
   launchLegacyExperience(): Promise<boolean>;
   deactivateLegacyExperience(): Promise<boolean>;
@@ -13,6 +20,7 @@ type DmzMigrationNative = {
   readPeerPayload(): Promise<string | null>;
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
+  getDisplayInfo(): Promise<DisplayInfo | null>;
   clearWebViewData(): Promise<boolean>;
   syncWidgetSettings(selectedOperator: string): Promise<boolean>;
   requestPinDmzWidget(): Promise<boolean>;
@@ -52,6 +60,10 @@ export function getDefaultWebViewUserAgent(): string | null {
 
 export async function getWebViewPackage(): Promise<WebViewPackageInfo | null> {
   return nativeModule?.getWebViewPackage() ?? null;
+}
+
+export async function getDisplayInfo(): Promise<DisplayInfo | null> {
+  return nativeModule?.getDisplayInfo() ?? null;
 }
 
 export async function clearWebViewData(): Promise<boolean> {
