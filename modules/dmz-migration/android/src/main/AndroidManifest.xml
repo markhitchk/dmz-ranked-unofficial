@@ -9,23 +9,6 @@
     </queries>
 
     <application>
-        <activity
-            android:name="com.harleytg.dmzranked.legacy.MainActivity"
-            android:enabled="false"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|uiMode"
-            android:exported="false"
-            android:screenOrientation="unspecified"
-            android:theme="@style/Theme.DMZRanked" />
-        <activity
-            android:name="com.harleytg.dmzranked.legacy.SettingsActivity"
-            android:enabled="false"
-            android:exported="false"
-            android:theme="@style/Theme.DMZRanked" />
-        <activity
-            android:name="com.harleytg.dmzranked.legacy.FeedbackActivity"
-            android:enabled="false"
-            android:exported="false"
-            android:theme="@style/Theme.DMZRanked" />
         <receiver
             android:name="expo.modules.dmzmigration.DmzRankedWidgetProvider"
             android:exported="false">
