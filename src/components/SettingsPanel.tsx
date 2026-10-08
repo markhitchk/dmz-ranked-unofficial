@@ -746,7 +746,6 @@ export function SettingsPanel({
       `Detailed loading: ${settings.verboseLoading ? 'On' : 'Off'}`,
       `WebView debugging: ${settings.webviewDebug ? 'On' : 'Off'}`,
       `Developer mode: ${settings.developerMode ? 'On' : 'Off'}`,
-      `App experience: ${settings.experienceVersion === 'v1' ? 'V1 Legacy' : 'V2 Current'}`,
       `Content size: ${settings.contentSize}`,
       `Operator: ${settings.selectedOperator || 'none'}`,
       `Operator backups: ${backupCount}`,
@@ -825,7 +824,7 @@ export function SettingsPanel({
   );
   const showDeveloper =
     developerUnlocked &&
-    matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current display refresh rate hz screen resolution performance fps frame time jank stutter');
+    matches(q, 'developer diagnostics runtime webview debugging copy lock display refresh rate hz screen resolution performance fps frame time jank stutter');
 
   const any =
     showAbout ||
@@ -1526,7 +1525,7 @@ export function SettingsPanel({
               <SectionLabel badge="DEV">DEVELOPER OPTIONS</SectionLabel>
               <ToggleCard
                 title="Developer Mode"
-                summary="Enables advanced diagnostics, WebView inspection, and app-experience controls."
+                summary="Enables advanced diagnostics and WebView inspection tools."
                 value={settings.developerMode}
                 onChange={value => {
                   onUpdate('developerMode', value);
@@ -1536,57 +1535,6 @@ export function SettingsPanel({
                   }
                 }}
               />
-
-              <View style={styles.cardGap}>
-                <SettingsCard>
-                  <View style={styles.experienceCard}>
-                    <Text style={styles.cardTitleCondensed}>App experience version</Text>
-                    <Text style={styles.cardSummary}>
-                      V2 is the current React Native app. V1 stays dormant until you explicitly activate it here, then launches the embedded legacy Java/non-React app sourced from the main branch.
-                    </Text>
-                    <View style={styles.experienceRow}>
-                      <Pressable
-                        onPress={() => onUpdate('experienceVersion', 'v1')}
-                        style={[
-                          styles.experienceOption,
-                          settings.experienceVersion === 'v1' && styles.experienceOptionActive
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.experienceOptionTitle,
-                            settings.experienceVersion === 'v1' && styles.experienceOptionTitleActive
-                          ]}
-                        >
-                          V1 LEGACY
-                        </Text>
-                        <Text style={styles.experienceOptionMeta}>JAVA</Text>
-                      </Pressable>
-                      <View style={styles.experienceSpacer} />
-                      <Pressable
-                        onPress={() => onUpdate('experienceVersion', 'v2')}
-                        style={[
-                          styles.experienceOption,
-                          settings.experienceVersion === 'v2' && styles.experienceOptionActive
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.experienceOptionTitle,
-                            settings.experienceVersion === 'v2' && styles.experienceOptionTitleActive
-                          ]}
-                        >
-                          V2 CURRENT
-                        </Text>
-                        <Text style={styles.experienceOptionMeta}>REACT NATIVE</Text>
-                      </Pressable>
-                    </View>
-                    <Text style={styles.experienceNotice}>
-                      Selected: {settings.experienceVersion === 'v1' ? 'V1 Legacy Java • Active' : 'V2 Current React Native • V1 Dormant'}. V1 is disabled at the Android component level until activation. Returning to V2 disables V1 again.
-                    </Text>
-                  </View>
-                </SettingsCard>
-              </View>
 
               <SectionLabel>DIAGNOSTICS</SectionLabel>
               <SettingsCard>
@@ -1624,13 +1572,12 @@ export function SettingsPanel({
               />
               <ActionCard
                 title="Lock developer tools"
-                summary="Hide developer controls, return to V2, and put V1 back into dormant mode until the seven-tap PIN unlock is completed."
+                summary="Hide developer controls until the seven-tap PIN unlock is completed again."
                 label="LOCK"
                 onPress={() => {
-                  onUpdate('experienceVersion', 'v2');
                   onUpdate('developerMode', false);
                   setQuery('');
-                  toast('Developer Mode disabled • V1 dormant.');
+                  toast('Developer Mode disabled.');
                 }}
               />
             </>
