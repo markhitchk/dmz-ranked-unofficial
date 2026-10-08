@@ -32,7 +32,7 @@ import { getLastNotificationSync } from '../services/backgroundNotificationSync'
 import type { AppSettings, ContentSize } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
-import { getDisplayInfo, getWebViewPackage } from '../../modules/dmz-migration';
+import { getDisplayInfo, getWebViewPackage, sampleUiPerformance } from '../../modules/dmz-migration';
 
 const PAYPAL_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
 const KOFI_URL = 'https://ko-fi.com/harleytg_#checkoutModal';
@@ -320,6 +320,8 @@ export function SettingsPanel({
   const [lastSyncText, setLastSyncText] = useState('Not checked yet');
   const [webViewPackageText, setWebViewPackageText] = useState('Unknown');
   const [displayInfoText, setDisplayInfoText] = useState('Detecting display…');
+  const [performanceInfoText, setPerformanceInfoText] = useState('Not tested yet.');
+  const [performanceTesting, setPerformanceTesting] = useState(false);
   const [dialog, setDialog] = useState<DialogMode>(null);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
@@ -472,6 +474,39 @@ export function SettingsPanel({
     }
   };
 
+
+  const runPerformanceTest = async () => {
+    if (Platform.OS !== 'android' || performanceTesting) return;
+    setPerformanceTesting(true);
+    setPerformanceInfoText('Measuring for 5 seconds… scroll now.');
+    toast('Performance test started — scroll for 5 seconds.', true);
+
+    try {
+      const sample = await sampleUiPerformance(5000);
+      if (!sample) {
+        setPerformanceInfoText('Performance sample unavailable.');
+        toast('Performance sample unavailable.', true);
+        return;
+      }
+
+      const fps = sample.estimatedFps.toFixed(1);
+      const avg = sample.averageFrameTimeMs.toFixed(1);
+      const p95 = sample.p95FrameTimeMs.toFixed(1);
+      const jank = sample.jankPercent.toFixed(1);
+      const hz = Math.round(sample.refreshRate);
+
+      setPerformanceInfoText(
+        `${sample.quality} • ${fps} FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}`
+      );
+      toast(`Performance: ${sample.quality} • ${fps} FPS • ${jank}% jank`, true);
+    } catch {
+      setPerformanceInfoText('Performance sample failed.');
+      toast('Performance sample failed.', true);
+    } finally {
+      setPerformanceTesting(false);
+    }
+  };
+
   const operatorStatus = settings.selectedOperator
     ? [
         settings.operatorVerified
@@ -583,6 +618,7 @@ export function SettingsPanel({
       `Device: ${[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown'}`,
       `WebView: ${webViewPackageText}`,
       `Display: ${displayInfoText}`,
+      `Performance: ${performanceInfoText}`,
       `Notification permission: ${notificationStatus}`,
       `Website notifications: ${settings.siteNotifications ? 'On' : 'Off'}`,
       `Desktop website: ${settings.desktopSite ? 'On' : 'Off'}`,
@@ -665,7 +701,7 @@ export function SettingsPanel({
   );
   const showDeveloper =
     developerUnlocked &&
-    matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current display refresh rate hz screen resolution');
+    matches(q, 'developer diagnostics runtime webview debugging copy lock experience v1 v2 legacy current display refresh rate hz screen resolution performance fps frame time jank stutter');
 
   const any =
     showAbout ||
@@ -1398,11 +1434,20 @@ export function SettingsPanel({
                     {Platform.OS === 'ios' ? 'iOS' : 'Android'} {Device.osVersion ?? String(Platform.Version)} • {[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown device'}
                     {'\n'}WebView: {webViewPackageText}
                     {'\n'}Display: {displayInfoText}
+                    {'\n'}Performance: {performanceInfoText}
                     {'\n'}Notifications: {notificationStatus} • Desktop: {settings.desktopSite ? 'On' : 'Off'} • Pull refresh: {settings.pullToRefresh ? 'On' : 'Off'}
                     {'\n'}Remember page: {settings.rememberLastPage ? 'On' : 'Off'} • WebView debug: {settings.webviewDebug ? 'On' : 'Off'}
                   </Text>
                 </View>
               </SettingsCard>
+              <ActionCard
+                title="Scroll performance test"
+                summary={performanceTesting
+                  ? 'Measuring frame pacing now — keep scrolling for the full 5 seconds.'
+                  : `${performanceInfoText} Tap TEST, then scroll for 5 seconds to measure FPS, frame time, and jank.`}
+                label={performanceTesting ? 'RUNNING…' : 'TEST'}
+                onPress={() => void runPerformanceTest()}
+              />
               <ToggleCard
                 title="WebView debugging"
                 summary="Developer option. Allow inspection when supported by the native WebView build."
