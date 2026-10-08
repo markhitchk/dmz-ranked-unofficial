@@ -106,18 +106,30 @@ export function buildRemoteUiInjection(
     } catch (_) {}
   }
 
-  function ensureActive() {
+  // Avoid refreshing every app DOM control for every unrelated mutation.
+  function ensureActive(refreshDom) {
     var style = ensureCss();
     executeAppUiIfNeeded();
     document.documentElement.setAttribute('data-dmz-app-ui', 'installed');
     document.documentElement.setAttribute('data-dmz-app-css', 'active');
-    refreshAppDom();
+    if (refreshDom) refreshAppDom();
     return style;
+  }
+
+  function needsRepair() {
+    var style = document.getElementById(styleId);
+    return !style ||
+      style.textContent.length !== css.length ||
+      typeof window.__dmzHsBetaTabsRefresh !== 'function' ||
+      !window.__hsAppQolInstalled ||
+      !document.querySelector('nav.tabs.hs-site-tabs [data-hs-unofficial-app]') ||
+      !document.getElementById('unofficial-app') ||
+      !document.getElementById('dmz-hs-active-user-stats');
   }
 
   window.__dmzRnRevalidateAppUi = function () {
     try {
-      ensureActive();
+      ensureActive(true);
       return true;
     } catch (_) {
       return false;
@@ -132,6 +144,8 @@ export function buildRemoteUiInjection(
       clearInterval(window.__dmzRnUiWatchdogTimer);
     }
 
+    // Delay repairs until scrolling settles instead of repeatedly touching
+    // the page DOM during rapid touch and scroll events.
     var scheduled = false;
     function schedule() {
       if (scheduled) return;
@@ -139,8 +153,14 @@ export function buildRemoteUiInjection(
       clearTimeout(watchdogTimer);
       watchdogTimer = setTimeout(function () {
         scheduled = false;
-        try { ensureActive(); } catch (_) {}
-      }, 120);
+        if (window.__dmzAppScrolling) {
+          schedule();
+          return;
+        }
+        try {
+          if (needsRepair()) ensureActive(true);
+        } catch (_) {}
+      }, 450);
     }
 
     try {
@@ -151,9 +171,14 @@ export function buildRemoteUiInjection(
       );
     } catch (_) {}
 
+    // Recovery watchdog is intentionally slow and only repairs broken UI.
     window.__dmzRnUiWatchdogTimer = setInterval(function () {
-      try { ensureActive(); } catch (_) {}
-    }, 1600);
+      if (window.__dmzAppScrolling) return;
+      try {
+        if (needsRepair()) ensureActive(true);
+        else ensureCss();
+      } catch (_) {}
+    }, 8000);
   }
 
   function readyState(style) {
@@ -176,7 +201,7 @@ export function buildRemoteUiInjection(
   function check() {
     if (done) return;
     try {
-      var style = ensureActive();
+      var style = ensureActive(true);
       var ready = readyState(style);
       if (ready && stable) {
         done = true;
@@ -199,7 +224,7 @@ export function buildRemoteUiInjection(
     if (!${JSON.stringify(isValidAppUiPair(css, js))}) {
       throw new Error('Invalid or mismatched app interface payload pair');
     }
-    ensureActive();
+    ensureActive(true);
     check();
   } catch (error) {
     fail(error);
