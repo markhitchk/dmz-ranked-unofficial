@@ -16,7 +16,7 @@ export type DmzIconName =
   | 'settings'
   | 'sync';
 
-export function DmzIcon({
+export const DmzIcon = React.memo(function DmzIcon({
   name,
   size = 24,
   color
@@ -144,4 +144,4 @@ export function DmzIcon({
       />
     </Svg>
   );
-}
+});
