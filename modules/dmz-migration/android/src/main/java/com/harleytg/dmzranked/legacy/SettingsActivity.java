@@ -185,7 +185,7 @@ public class SettingsActivity extends Activity {
             aboutTitle.setText("DMZ RANKED");
         }
         if (aboutBetaBadge != null) {
-            aboutBetaBadge.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
+            aboutBetaBadge.setVisibility(View.GONE);
         }
         View betaProgramSection = findViewById(R.id.betaProgramSection);
         if (betaProgramSection != null) {
@@ -210,10 +210,7 @@ public class SettingsActivity extends Activity {
         TextView buildText = findViewById(R.id.buildText);
         TextView updateVersionText = findViewById(R.id.updateVersionText);
         if (settingsSubtitle != null) {
-            settingsSubtitle.setText(
-                    "Version " + versionName
-                            + " • Build "
-                            + (versionCode >= 0 ? versionCode : "Unknown"));
+            settingsSubtitle.setText("DMZ RANKED • ANDROID");
         }
         versionText.setText("Version " + versionName);
         buildText.setText(versionCode >= 0 ? "Build " + versionCode : "Build unknown");
