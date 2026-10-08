@@ -1,6 +1,7 @@
 import React, { useDeferredValue, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  FlatList,
   Image,
   Linking,
   Modal,
@@ -327,7 +328,6 @@ export function SettingsPanel({
   const developerFailures = useRef(0);
   const developerLockoutUntil = useRef(0);
   const searchEntry = useRef(new Animated.Value(1)).current;
-  const contentEntry = useRef(new Animated.Value(1)).current;
 
   const deferredQuery = useDeferredValue(query);
   const q = deferredQuery.trim().toLowerCase();
@@ -400,35 +400,21 @@ export function SettingsPanel({
     if (!visible) return;
 
     searchEntry.stopAnimation();
-    contentEntry.stopAnimation();
-
     if (!settings.appAnimations || Platform.OS === 'android') {
       searchEntry.setValue(1);
-      contentEntry.setValue(1);
       return;
     }
 
     searchEntry.setValue(0);
-    contentEntry.setValue(0);
-
-    const entry = Animated.parallel([
-      Animated.timing(searchEntry, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true
-      }),
-      Animated.timing(contentEntry, {
-        toValue: 1,
-        duration: 240,
-        delay: 45,
-        useNativeDriver: true
-      })
-    ]);
+    const entry = Animated.timing(searchEntry, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true
+    });
 
     entry.start();
     return () => entry.stop();
   }, [
-    contentEntry,
     searchEntry,
     settings.appAnimations,
     visible
@@ -672,99 +658,23 @@ export function SettingsPanel({
     showDanger ||
     showDeveloper;
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="none"
-      onRequestClose={onClose}
-      statusBarTranslucent
-      navigationBarTranslucent
-      hardwareAccelerated
-    >
-      <AppSafeArea contentScale={1}>
-        <View style={styles.toolbar}>
-          <Pressable
-            accessibilityLabel="Back"
-            style={styles.backButton}
-            onPress={onClose}
-          >
-            <DmzIcon name="back" size={24} />
-          </Pressable>
-          <Image
-            source={require('../../assets/dmz_ranked_logo_display.png')}
-            style={styles.toolbarLogo}
-            resizeMode="contain"
-          />
-          <View style={styles.toolbarCopy}>
-            <Text style={styles.toolbarTitle}>SETTINGS</Text>
-            <Text style={styles.toolbarSubtitle}>DMZ RANKED • ANDROID</Text>
-          </View>
-          <View style={styles.toolbarGoldLine} />
-        </View>
-
-        <Animated.View
-          style={[
-            styles.searchOuter,
-            Platform.OS === 'android'
-              ? null
-              : {
-                  opacity: searchEntry,
-                  transform: [
-                    {
-                      translateY: searchEntry.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-10, 0]
-                      })
-                    }
-                  ]
-                }
-          ]}
-        >
-          <View style={[styles.searchShell, styles.searchShellOptimized]}>
-            <DmzIcon name="search" size={21} color={colors.muted} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              autoCorrect={false}
-              autoCapitalize="none"
-              placeholder="Search settings…"
-              placeholderTextColor={colors.muted}
-              style={styles.search}
-              returnKeyType="done"
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.ScrollView
-          style={[
-            styles.scroll,
-            Platform.OS === 'android'
-              ? null
-              : {
-                  opacity: contentEntry,
-                  transform: [
-                    {
-                      translateY: contentEntry.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [18, 0]
-                      })
-                    }
-                  ]
-                }
-          ]}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          removeClippedSubviews={Platform.OS === 'android'}
-        >
-          {!any && q ? (
+  const settingsRows: Array<{ key: string; node: React.ReactNode }> = [
+    ...(q && !any
+      ? [{
+          key: 'empty',
+          node: (
             <Text style={styles.empty}>
               No app settings match your search.
             </Text>
-          ) : null}
-
-          {showAbout ? (
-            <SettingsCard>
+          )
+        }]
+      : []),
+    ...(showAbout
+      ? [{
+          key: 'about',
+          node: (
+            <>
+<SettingsCard>
               <View style={styles.aboutCard}>
                 <View style={styles.aboutTop}>
                   <Image
@@ -908,10 +818,16 @@ export function SettingsPanel({
                 ) : null}
               </View>
             </SettingsCard>
-          ) : null}
-
-          {showAppearance ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showAppearance
+      ? [{
+          key: 'appearance',
+          node: (
             <>
+<>
               <SectionLabel>APPEARANCE</SectionLabel>
 
               <SettingsCard>
@@ -935,10 +851,16 @@ export function SettingsPanel({
                 onChange={value => onUpdate('appAnimations', value)}
               />
             </>
-          ) : null}
-
-          {showWidgets ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showWidgets
+      ? [{
+          key: 'widgets',
+          node: (
             <>
+<>
               <SectionLabel badge="BETA ONLY">BETA WIDGETS</SectionLabel>
               <ActionCard
                 title="Add DMZ Ranked home widget"
@@ -953,10 +875,16 @@ export function SettingsPanel({
                 onPress={() => onAction({ type: 'refresh-widgets' })}
               />
             </>
-          ) : null}
-
-          {showExperience ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showExperience
+      ? [{
+          key: 'experience',
+          node: (
             <>
+<>
               <SectionLabel>APP EXPERIENCE</SectionLabel>
               <ToggleCard
                 title="Desktop website"
@@ -989,10 +917,16 @@ export function SettingsPanel({
                 onChange={value => onUpdate('verboseLoading', value)}
               />
             </>
-          ) : null}
-
-          {showOperators ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showOperators
+      ? [{
+          key: 'operators',
+          node: (
             <>
+<>
               <SectionLabel>OPERATORS</SectionLabel>
 
               <SettingsCard>
@@ -1141,10 +1075,16 @@ export function SettingsPanel({
                 </SettingsCard>
               </View>
             </>
-          ) : null}
-
-          {showNotifications ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showNotifications
+      ? [{
+          key: 'notifications',
+          node: (
             <>
+<>
               <SectionLabel>NOTIFICATIONS</SectionLabel>
               <ToggleCard
                 title="Website notifications"
@@ -1168,10 +1108,16 @@ export function SettingsPanel({
                 onPress={() => onAction({ type: 'test-notification' })}
               />
             </>
-          ) : null}
-
-          {showUpdates ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showUpdates
+      ? [{
+          key: 'updates',
+          node: (
             <>
+<>
               <SectionLabel>APP UPDATES</SectionLabel>
               <ActionCard
                 title="Live Google Play updates"
@@ -1186,10 +1132,16 @@ export function SettingsPanel({
                 onPress={() => onAction({ type: 'open-play-store' })}
               />
             </>
-          ) : null}
-
-          {showPageActions ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showPageActions
+      ? [{
+          key: 'page-actions',
+          node: (
             <>
+<>
               <SectionLabel>PAGE ACTIONS</SectionLabel>
               <ActionCard
                 title="Reload DMZ Ranked"
@@ -1207,10 +1159,16 @@ export function SettingsPanel({
                 onPress={() => onAction({ type: 'clear-cache' })}
               />
             </>
-          ) : null}
-
-          {showBeta ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showBeta
+      ? [{
+          key: 'beta',
+          node: (
             <>
+<>
               <SectionLabel>BETA PROGRAM</SectionLabel>
               <ActionCard
                 title="App Beta Discord"
@@ -1225,10 +1183,16 @@ export function SettingsPanel({
                 onPress={() => open(BETA_GROUP)}
               />
             </>
-          ) : null}
-
-          {showWebsiteTools ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showWebsiteTools
+      ? [{
+          key: 'website-tools',
+          node: (
             <>
+<>
               <SectionLabel>DMZ RANKED WEBSITE TOOLS</SectionLabel>
               <ActionCard
                 title="DMZ Ticker Builder"
@@ -1243,10 +1207,16 @@ export function SettingsPanel({
                 onPress={() => open(OBS_BUILDER)}
               />
             </>
-          ) : null}
-
-          {showHelp ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showHelp
+      ? [{
+          key: 'help',
+          node: (
             <>
+<>
               <SectionLabel>APP SUPPORT ZONE</SectionLabel>
               <ActionCard
                 title="Report an app problem"
@@ -1275,10 +1245,16 @@ export function SettingsPanel({
                 onPress={() => open(PAYPAL_URL)}
               />
             </>
-          ) : null}
-
-          {showTransfer ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showTransfer
+      ? [{
+          key: 'transfer',
+          node: (
             <>
+<>
               <SectionLabel>APP DATA TRANSFER</SectionLabel>
               <ActionCard
                 title="Import from other app"
@@ -1288,10 +1264,16 @@ export function SettingsPanel({
                 onPress={() => onAction({ type: 'peer-import' })}
               />
             </>
-          ) : null}
-
-          {showDanger ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showDanger
+      ? [{
+          key: 'danger',
+          node: (
             <>
+<>
               <SectionLabel danger>DANGER ZONE</SectionLabel>
               <ActionCard
                 title="Clear website data"
@@ -1308,10 +1290,16 @@ export function SettingsPanel({
                 onPress={() => setDialog('reset-settings')}
               />
             </>
-          ) : null}
-
-          {showDeveloper ? (
+            </>
+          )
+        }]
+      : []),
+    ...(showDeveloper
+      ? [{
+          key: 'developer',
+          node: (
             <>
+<>
               <SectionLabel badge="DEV">DEVELOPER OPTIONS</SectionLabel>
               <ToggleCard
                 title="Developer Mode"
@@ -1413,13 +1401,98 @@ export function SettingsPanel({
                 }}
               />
             </>
-          ) : null}
+            </>
+          )
+        }]
+      : []),
+    {
+      key: 'footer',
+      node: (
+        <Text style={styles.footerNotice}>
+        Unofficial client. DMZ Ranked website content and third-party
+        trademarks belong to their respective owners.
+        </Text>
+      )
+    }
+  ];
 
-          <Text style={styles.footerNotice}>
-            Unofficial client. DMZ Ranked website content and third-party
-            trademarks belong to their respective owners.
-          </Text>
-        </Animated.ScrollView>
+  return (
+    <Modal
+      visible={visible}
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+      hardwareAccelerated
+    >
+      <AppSafeArea contentScale={1}>
+        <View style={styles.toolbar}>
+          <Pressable
+            accessibilityLabel="Back"
+            style={styles.backButton}
+            onPress={onClose}
+          >
+            <DmzIcon name="back" size={24} />
+          </Pressable>
+          <Image
+            source={require('../../assets/dmz_ranked_logo_display.png')}
+            style={styles.toolbarLogo}
+            resizeMode="contain"
+          />
+          <View style={styles.toolbarCopy}>
+            <Text style={styles.toolbarTitle}>SETTINGS</Text>
+            <Text style={styles.toolbarSubtitle}>DMZ RANKED • ANDROID</Text>
+          </View>
+          <View style={styles.toolbarGoldLine} />
+        </View>
+
+        <Animated.View
+          style={[
+            styles.searchOuter,
+            Platform.OS === 'android'
+              ? null
+              : {
+                  opacity: searchEntry,
+                  transform: [
+                    {
+                      translateY: searchEntry.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-10, 0]
+                      })
+                    }
+                  ]
+                }
+          ]}
+        >
+          <View style={[styles.searchShell, styles.searchShellOptimized]}>
+            <DmzIcon name="search" size={21} color={colors.muted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+              placeholder="Search settings…"
+              placeholderTextColor={colors.muted}
+              style={styles.search}
+              returnKeyType="done"
+            />
+          </View>
+        </Animated.View>
+
+        <FlatList
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          data={settingsRows}
+          keyExtractor={item => item.key}
+          renderItem={({ item }) => item.node}
+          initialNumToRender={3}
+          maxToRenderPerBatch={2}
+          updateCellsBatchingPeriod={48}
+          windowSize={4}
+          removeClippedSubviews={Platform.OS === 'android'}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        />
 
         <DmzDialog
           visible={dialog === 'build-info'}
