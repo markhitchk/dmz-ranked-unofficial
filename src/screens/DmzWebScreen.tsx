@@ -968,6 +968,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           return;
         }
 
+        if (message.type === 'operator-backup-error') {
+          const requestId = message.requestId?.trim() || '';
+          const pending = backupRequests.current.get(requestId);
+          if (pending) {
+            clearTimeout(pending.timer);
+            backupRequests.current.delete(requestId);
+            pending.resolve({ ok: false, reason: message.reason ?? 'capture-failed' });
+          }
+          return;
+        }
+
         if (message.type === 'operator-restore-result') {
           const requestId = message.requestId?.trim() || '';
           const pending = restoreRequests.current.get(requestId);
