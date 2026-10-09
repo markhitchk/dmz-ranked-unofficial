@@ -57,6 +57,10 @@ export async function readPeerPayload(): Promise<string | null> {
   return nativeModule?.readPeerPayload() ?? null;
 }
 
+export async function readLegacyOperatorData(): Promise<LegacyOperatorData | null> {
+  return nativeModule?.readLegacyOperatorData() ?? null;
+}
+
 export function getDefaultWebViewUserAgent(): string | null {
   return nativeModule?.getDefaultWebViewUserAgent() ?? null;
 }
