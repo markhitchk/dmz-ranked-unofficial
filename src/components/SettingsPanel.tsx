@@ -380,7 +380,7 @@ export function SettingsPanel({
   };
 
   const needsOperatorMetadata =
-    visible && (q.includes('operator') || q.includes('developer'));
+    visible && (!q || q.includes('operator') || q.includes('developer'));
   const needsNotificationMetadata =
     visible && (q.includes('notification') || q.includes('developer'));
   const needsWebViewMetadata = visible && q.includes('developer');
