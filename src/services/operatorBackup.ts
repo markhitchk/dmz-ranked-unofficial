@@ -167,7 +167,8 @@ export async function importOperatorBackups(raw: string): Promise<number> {
       if (!name || !record?.storage || typeof record.storage !== 'object' || Array.isArray(record.storage)) continue;
       const savedAt = Number(record.savedAt) || Date.now();
       // Never replace a current React backup with an older Java/peer snapshot.
-      if (root[normalize(name)] && root[normalize(name)].savedAt >= savedAt) continue;
+      const existing = root[normalize(name)];
+      if (existing && existing.savedAt >= savedAt) continue;
       root[normalize(name)] = {
         operator: name,
         savedAt,
