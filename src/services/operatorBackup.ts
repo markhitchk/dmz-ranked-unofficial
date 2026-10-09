@@ -164,10 +164,13 @@ export async function importOperatorBackups(raw: string): Promise<number> {
 
     for (const record of Object.values(incoming)) {
       const name = cleanName(record?.operator || '');
-      if (!name || !record?.storage) continue;
+      if (!name || !record?.storage || typeof record.storage !== 'object' || Array.isArray(record.storage)) continue;
+      const savedAt = Number(record.savedAt) || Date.now();
+      // Never replace a current React backup with an older Java/peer snapshot.
+      if (root[normalize(name)] && root[normalize(name)].savedAt >= savedAt) continue;
       root[normalize(name)] = {
         operator: name,
-        savedAt: Number(record.savedAt) || Date.now(),
+        savedAt,
         origin: safeOrigin(record.origin),
         storage: sanitizeStorage(record.storage, name),
         entryCount: Object.keys(sanitizeStorage(record.storage, name)).length,
