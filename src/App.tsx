@@ -44,6 +44,7 @@ import {
 } from './services/appUpdates';
 import {
   autoImportProductionToBeta,
+  importLegacyJavaOperators,
   importFromPeer,
   publishMigrationPayload
 } from './services/peerMigration';
