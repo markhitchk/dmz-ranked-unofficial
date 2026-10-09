@@ -347,7 +347,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       protected: false
     });
     const restoreRequestSequence = useRef(0);
+    const backupRequestSequence = useRef(0);
     const lastAutoBackupMs = useRef(0);
+    const backupRequests = useRef(
+      new Map<
+        string,
+        {
+          timer: ReturnType<typeof setTimeout>;
+          resolve: (result: OperatorCaptureResult) => void;
+        }
+      >()
+    );
     const restoreRequests = useRef(
       new Map<
         string,
