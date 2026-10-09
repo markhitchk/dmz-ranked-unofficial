@@ -458,10 +458,29 @@ function AppContent() {
       }
 
       case 'save-operator':
-      case 'refresh-operator':
+      case 'refresh-operator': {
         webRef.current?.refreshOperator();
-        webRef.current?.captureOperatorBackup();
+        const result = await webRef.current?.saveOperatorBackupNow();
+        if (result?.ok) {
+          showNotice(`Saved ${result.operatorName} operator backup locally.`);
+        } else {
+          const reason = result?.reason ?? 'not-dmz';
+          showNotice(
+            reason === 'no-operator'
+              ? 'No operator is selected on DMZ Ranked. Choose an operator on the website first.'
+              : reason === 'no-data'
+                ? 'No safe website data to back up yet. Use the selected operator on DMZ Ranked, then sync again.'
+                : reason === 'not-dmz'
+                  ? 'Open DMZ Ranked before syncing an operator.'
+                  : reason === 'timeout'
+                    ? 'Operator sync timed out. Allow the website to load, then try again.'
+                    : 'Could not save the operator backup. Please retry.',
+            true,
+            'OPERATOR SYNC'
+          );
+        }
         return;
+      }
 
       case 'select-operator': {
         const operatorName = action.operatorName.trim();
