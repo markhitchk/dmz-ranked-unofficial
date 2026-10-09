@@ -16,6 +16,29 @@ export type PeerImportResult = {
 };
 
 const PRODUCTION_MIGRATION_KEY = 'dmz_production_migration_v1';
+const JAVA_OPERATOR_MIGRATION_KEY = 'dmz_java_operator_migration_v1';
+
+export type LegacyOperatorImport = {
+  selectedOperator: string;
+  importedOperators: number;
+};
+
+// Each app channel has its own private Android data directory. Read existing
+// Java app backups once before the React backup store becomes authoritative.
+export async function importLegacyJavaOperators(): Promise<LegacyOperatorImport | null> {
+  if ((await AsyncStorage.getItem(JAVA_OPERATOR_MIGRATION_KEY)) === '1') return null;
+  const legacy = await readLegacyOperatorData();
+  if (!legacy) return null;
+
+  const importedOperators = legacy.operatorBackups
+    ? await importOperatorBackups(legacy.operatorBackups)
+    : 0;
+  await AsyncStorage.setItem(JAVA_OPERATOR_MIGRATION_KEY, '1');
+  return {
+    selectedOperator: String(legacy.selectedOperator || '').trim(),
+    importedOperators
+  };
+}
 
 function toPatch(preferences: LegacyPreferences): Partial<AppSettings> {
   const patch: Partial<AppSettings> = {};
