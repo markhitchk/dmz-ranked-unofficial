@@ -107,7 +107,7 @@ export function createBridgeBootstrap(channel: string, selectedOperator = ''): s
     '      if(!name){var local=fromStorage(window.localStorage,"localStorage");if(local){name=local.name;source=local.source;}}',
     '      if(!name){var session=fromStorage(window.sessionStorage,"sessionStorage");if(session){name=session.name;source=session.source;}}',
     '      var sec=document.getElementById("nameSec"),secText="",secClass="";try{secText=clean(sec&&(sec.textContent||sec.innerText)||"");secClass=clean(sec&&sec.className||"");}catch(_){}',
-    '      var visible=false;try{visible=!!sec&&getComputedStyle(sec).display!=="none"&&getComputedStyle(sec).visibility!=="hidden"&&!!secText;}catch(_){visible=!!sec&&sec.style.display!=="none"&&!!secText;}',
+    '      var visible=!!sec&&sec.style.display!=="none"&&!!secText;',
     '      var verified=visible&&/VERIFIED ON THIS DEVICE/i.test(secText);',
     '      var protectedFlag=visible&&((/\\bprot\\b/i.test(secClass))||(/\\bPROTECTED\\b/i.test(secText)&&!/NOT PROTECTED/i.test(secText)));',
     '      return {name:name,source:source,verified:verified,protected:protectedFlag,statusVisible:visible};',
