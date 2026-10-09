@@ -24,8 +24,14 @@ export type UiPerformanceSample = {
   quality: 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Unavailable';
 };
 
+export type LegacyOperatorData = {
+  operatorBackups: string;
+  selectedOperator: string;
+};
+
 type DmzMigrationNative = {
   readPeerPayload(): Promise<string | null>;
+  readLegacyOperatorData(): Promise<LegacyOperatorData | null>;
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   getDisplayInfo(): Promise<DisplayInfo | null>;
