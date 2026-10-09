@@ -207,18 +207,42 @@ function AppContent() {
   }, [settings.keepAwake]);
 
   useEffect(() => {
-    if (!ready || channel !== 'beta' || Platform.OS !== 'android') return;
-    void autoImportProductionToBeta().then(imported => {
-      if (!imported) return;
-      replace({ ...settings, ...imported.patch });
-      setBackupRevision(value => value + 1);
-      ToastAndroid.show(
-        imported.importedOperators > 0
-          ? 'Imported app settings and operator backups from DMZ Ranked.'
-          : 'Imported app settings from DMZ Ranked.',
-        ToastAndroid.LONG
-      );
-    });
+    if (!ready || Platform.OS !== 'android') return;
+    let cancelled = false;
+    void (async () => {
+      // Import legacy SharedPreferences before the optional stable -> beta
+      // transfer. Both channels have their own Java data to preserve.
+      const legacy = await importLegacyJavaOperators().catch(() => null);
+      const imported = channel === 'beta'
+        ? await autoImportProductionToBeta().catch(() => null)
+        : null;
+      if (cancelled || (!legacy && !imported)) return;
+
+      const patch: Partial<AppSettings> = {};
+      if (legacy?.selectedOperator && !settings.selectedOperator) {
+        patch.selectedOperator = legacy.selectedOperator;
+      }
+      if (imported) Object.assign(patch, imported.patch);
+      if (Object.keys(patch).length) replace({ ...settings, ...patch });
+
+      if ((legacy?.importedOperators ?? 0) > 0 || imported) {
+        setBackupRevision(value => value + 1);
+      }
+      if (imported) {
+        ToastAndroid.show(
+          imported.importedOperators > 0
+            ? 'Imported app settings and operator backups from DMZ Ranked.'
+            : 'Imported app settings from DMZ Ranked.',
+          ToastAndroid.LONG
+        );
+      } else if (legacy?.importedOperators) {
+        ToastAndroid.show(
+          `Recovered ${legacy.importedOperators} operator backup${legacy.importedOperators === 1 ? '' : 's'} from the Java app.`,
+          ToastAndroid.LONG
+        );
+      }
+    })();
+    return () => { cancelled = true; };
   }, [channel, ready]);
 
   useEffect(() => {
