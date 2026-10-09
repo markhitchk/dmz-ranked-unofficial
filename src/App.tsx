@@ -464,7 +464,7 @@ function AppContent() {
         if (result?.ok) {
           showNotice(`Saved ${result.operatorName} operator backup locally.`);
         } else {
-          const reason = result?.reason ?? 'not-dmz';
+          const reason = result && !result.ok ? result.reason : 'not-dmz';
           showNotice(
             reason === 'no-operator'
               ? 'No operator is selected on DMZ Ranked. Choose an operator on the website first.'
