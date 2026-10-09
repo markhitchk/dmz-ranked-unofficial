@@ -1215,6 +1215,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             '\n' +
             URL_OBSERVER_SCRIPT
           }
+          // Android may skip before-content injection on some navigations.
+          // Reinstall the idempotent operator bridge after the DOM exists.
+          injectedJavaScript={bridge}
           onLoadStart={event => {
             installBrowserDialogParity();
             handleLoadStart(event.nativeEvent.url);
