@@ -526,6 +526,24 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       );
     }, []);
 
+    const saveOperatorBackupNow = useCallback(async (): Promise<OperatorCaptureResult> => {
+      if (!webRef.current || !isInternal(page.current.url)) {
+        return { ok: false, reason: 'not-dmz' };
+      }
+      const requestId = 'backup-' + Date.now().toString(36) +
+        '-' + (++backupRequestSequence.current).toString(36);
+      return await new Promise<OperatorCaptureResult>(resolve => {
+        const timer = setTimeout(() => {
+          backupRequests.current.delete(requestId);
+          resolve({ ok: false, reason: 'timeout' });
+        }, 5000);
+        backupRequests.current.set(requestId, { timer, resolve });
+        webRef.current?.injectJavaScript(
+          `(function(){var id=${JSON.stringify(requestId)};try{if(typeof window.__dmzRnCaptureBackup==='function'){window.__dmzRnCaptureBackup(id);}else{window.ReactNativeWebView.postMessage(JSON.stringify({type:'operator-backup-error',requestId:id,reason:'capture-failed'}));}}catch(e){window.ReactNativeWebView.postMessage(JSON.stringify({type:'operator-backup-error',requestId:id,reason:'capture-failed'}));}})();true;`
+        );
+      });
+    }, []);
+
     const restoreOperatorBackup = useCallback(
       async (operatorName: string): Promise<OperatorRestoreResult> => {
         if (!webRef.current || !isInternal(page.current.url)) {
