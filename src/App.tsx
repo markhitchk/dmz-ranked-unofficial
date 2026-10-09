@@ -49,7 +49,7 @@ import {
   publishMigrationPayload
 } from './services/peerMigration';
 import { colors, contentScaleFactor } from './theme';
-import type { AppChannel } from './types';
+import type { AppChannel, AppSettings } from './types';
 import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import {
