@@ -76,7 +76,13 @@ export type BridgeMessage =
       source?: string;
     }
   | {
+      type: 'operator-backup-error';
+      requestId?: string;
+      reason?: 'not-dmz' | 'no-operator' | 'no-data' | 'capture-failed';
+    }
+  | {
       type: 'operator-backup';
+      requestId?: string;
       name?: string;
       snapshot?: {
         origin?: string;
