@@ -1098,10 +1098,26 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             protected: Boolean(message.snapshot.protected),
             verified: Boolean(message.snapshot.verified)
           }).then(saved => {
-            if (saved) {
-              onOperatorBackupSaved?.(message.name!.trim());
+            if (saved) onOperatorBackupSaved?.(message.name!.trim());
+            const requestId = message.requestId?.trim() || '';
+            const pending = backupRequests.current.get(requestId);
+            if (pending) {
+              clearTimeout(pending.timer);
+              backupRequests.current.delete(requestId);
+              pending.resolve(saved
+                ? { ok: true, operatorName: message.name!.trim() }
+                : { ok: false, reason: 'save-failed' });
+            }
+          }).catch(() => {
+            const requestId = message.requestId?.trim() || '';
+            const pending = backupRequests.current.get(requestId);
+            if (pending) {
+              clearTimeout(pending.timer);
+              backupRequests.current.delete(requestId);
+              pending.resolve({ ok: false, reason: 'save-failed' });
             }
           });
+          return;
         }
       },
       [
