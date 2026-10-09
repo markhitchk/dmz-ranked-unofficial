@@ -220,6 +220,7 @@ export type DmzWebHandle = {
   refreshOperator: () => void;
   selectOperator: (operatorName: string) => Promise<boolean>;
   captureOperatorBackup: () => void;
+  saveOperatorBackupNow: () => Promise<OperatorCaptureResult>;
   restoreOperatorBackup: (
     operatorName: string
   ) => Promise<OperatorRestoreResult>;
