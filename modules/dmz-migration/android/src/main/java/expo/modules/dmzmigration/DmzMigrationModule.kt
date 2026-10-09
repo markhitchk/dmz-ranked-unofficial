@@ -75,6 +75,29 @@ class DmzMigrationModule : Module() {
       }
     }
 
+    // Java -> React Native in-place upgrade: both release channels retain their
+    // own Android SharedPreferences, but React's AsyncStorage does not read them.
+    // Return legacy operator data only from this application's private sandbox.
+    AsyncFunction("readLegacyOperatorData") {
+      val context = appContext.reactContext ?: return@AsyncFunction null
+      try {
+        val operatorPrefs = context.getSharedPreferences("dmz_operator_backups", 0)
+        val backups = operatorPrefs.getString("backups_v1", "{}") ?: "{}"
+        val appPrefs = context.getSharedPreferences("dmz_ranked_settings", 0)
+        val selected = appPrefs.getString("website_selected_operator", "")?.trim().orEmpty()
+        if (backups == "{}" && selected.isEmpty()) {
+          null
+        } else {
+          mapOf(
+            "operatorBackups" to backups,
+            "selectedOperator" to selected
+          )
+        }
+      } catch (_: Throwable) {
+        null
+      }
+    }
+
     Function("getDefaultWebViewUserAgent") {
       val context = appContext.reactContext ?: return@Function null
       try {
