@@ -183,6 +183,13 @@ function javaAndroidUserAgent(desktop: boolean): string | undefined {
   return `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) ${chromeToken} Safari/537.36 ${identity}`;
 }
 
+export type OperatorCaptureResult =
+  | { ok: true; operatorName: string }
+  | {
+      ok: false;
+      reason: 'not-dmz' | 'no-operator' | 'no-data' | 'capture-failed' | 'save-failed' | 'timeout';
+    };
+
 export type OperatorRestoreResult =
   | { ok: true; operatorName: string }
   | {
