@@ -685,7 +685,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           );
         }
       }),
-      [captureOperatorBackup, refreshOperator, restoreOperatorBackup, selectOperator]
+      [captureOperatorBackup, refreshOperator, restoreOperatorBackup, saveOperatorBackupNow, selectOperator]
     );
 
     const showOverlay = useCallback(
