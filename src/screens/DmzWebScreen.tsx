@@ -677,6 +677,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         refreshOperator,
         selectOperator,
         captureOperatorBackup,
+        saveOperatorBackupNow,
         restoreOperatorBackup,
         openAppTab: () => {
           webRef.current?.injectJavaScript(
