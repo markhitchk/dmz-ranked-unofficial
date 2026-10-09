@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
-import { readPeerPayload, setExportPayload } from '../../modules/dmz-migration';
+import { readLegacyOperatorData, readPeerPayload, setExportPayload } from '../../modules/dmz-migration';
 import {
   exportOperatorBackups,
   importOperatorBackups
