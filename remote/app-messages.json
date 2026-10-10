@@ -1,4 +1,18 @@
 {
   "schemaVersion": 1,
-  "messages": []
+  "messages": [
+    {
+      "id": "beta-notification-center-test-20261009",
+      "title": "🔔 Notification Center Test",
+      "body": "This is a test message from Harley's Studios! The new DMZ Ranked Notification Center is ready to try. Tap the bell icon in the app's title bar to find this message, then mark it as read. ✅",
+      "channels": [
+        "beta"
+      ],
+      "priority": "info",
+      "display": "popup",
+      "enabled": true,
+      "startsAt": "2026-10-09T00:00:00Z",
+      "expiresAt": "2026-10-13T00:00:00Z"
+    }
+  ]
 }
