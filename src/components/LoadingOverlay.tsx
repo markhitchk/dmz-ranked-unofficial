@@ -10,6 +10,8 @@ import {
 import * as Application from 'expo-application';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, condensedFont } from '../theme';
+import { useMotion } from '../motion/MotionProvider';
+import { MOTION } from '../motion/motionPolicy';
 import type { AppChannel } from '../types';
 
 type Props = {
@@ -27,6 +29,7 @@ export function LoadingOverlay({
   verbose,
   animations
 }: Props) {
+  const { loopsEnabled } = useMotion();
   const pulse = useRef(new Animated.Value(1)).current;
   const version = Application.nativeApplicationVersion ?? '1.0.69';
   const build = Application.nativeBuildVersion ?? '173';
@@ -35,7 +38,7 @@ export function LoadingOverlay({
     pulse.stopAnimation();
     pulse.setValue(1);
 
-    if (!animations) {
+    if (!animations || !loopsEnabled) {
       return;
     }
 
@@ -43,12 +46,12 @@ export function LoadingOverlay({
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1.06,
-          duration: 620,
+          duration: MOTION.logoPulseLegMs,
           useNativeDriver: true
         }),
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 620,
+          duration: MOTION.logoPulseLegMs,
           useNativeDriver: true
         })
       ])
@@ -59,7 +62,7 @@ export function LoadingOverlay({
       pulse.stopAnimation();
       pulse.setValue(1);
     };
-  }, [animations, pulse]);
+  }, [animations, loopsEnabled, pulse]);
 
   const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
 

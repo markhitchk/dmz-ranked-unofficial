@@ -118,3 +118,20 @@ test('long notification history arrays are not truncated on load', () => {
   const result = cleanStoredNotifications(input);
   assert.equal(result.length, input.length);
 });
+
+test('history keeps 200 records when inbox is empty after removal', () => {
+  const input = Array.from({ length: 200 }, (_, index) => ({
+    id: 'history-' + index,
+    title: '[System] Activity',
+    body: 'Archived activity ' + index,
+    category: 'system',
+    priority: 'info',
+    receivedAt: index + 1,
+    read: true
+  }));
+  const deleted = input.map(item => 'local:' + item.id);
+  assert.equal(mergedNotificationItems([], [], input, [], deleted).length, 0);
+  const history = mergedNotificationItems([], [], input, []);
+  assert.equal(history.length, 200);
+  assert.deepEqual(history.map(item => item.id).sort(), deleted.slice().sort());
+});

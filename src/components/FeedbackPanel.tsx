@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AppSafeArea } from './AppSafeArea';
+import { MotionPressable } from '../motion/MotionPressable';
+import { useMotion } from '../motion/MotionProvider';
+import { MOTION } from '../motion/motionPolicy';
+import { feedbackEntryEnabled } from '../motion/feedbackMotion';
 import {
+  Animated,
   Image,
   Linking,
   Platform,
@@ -43,6 +48,18 @@ export function FeedbackPanel({
   contentSize: ContentSize;
   onClose: () => void;
 }) {
+  const motion = useMotion();
+  const entry = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    entry.stopAnimation();
+    if (!feedbackEntryEnabled(visible, motion)) { entry.setValue(1); return; }
+    entry.setValue(0);
+    const transition = Animated.timing(entry, {
+      toValue: 1, duration: MOTION.settingsContentMs, useNativeDriver: true
+    });
+    transition.start();
+    return () => transition.stop();
+  }, [entry, visible, motion.enabled]);
   const platformName = Platform.OS === 'ios' ? 'iOS' : 'Android';
   const platformClient = Platform.OS === 'ios' ? 'iOS client' : 'Android client';
   const [category, setCategory] = useState(CATEGORIES[0]!);
@@ -103,10 +120,13 @@ export function FeedbackPanel({
       navigationBarTranslucent
     >
       <AppSafeArea contentScale={contentScaleFactor(contentSize)}>
+        <Animated.View style={{ flex: 1, opacity: entry, transform: [{
+          translateY: entry.interpolate({ inputRange: [0, 1], outputRange: [10, 0] })
+        }] }}>
         <View style={styles.toolbar}>
-          <Pressable style={styles.back} onPress={onClose}>
+          <MotionPressable style={styles.back} onPress={onClose}>
             <DmzIcon name="back" size={24} />
-          </Pressable>
+          </MotionPressable>
           <Image
             source={require('../../assets/dmz_ranked_logo_display.png')}
             style={styles.logo}
@@ -139,7 +159,7 @@ export function FeedbackPanel({
           </DmzCard>
 
           <Text style={styles.section}>REPORT TYPE</Text>
-          <Pressable onPress={() => setCategoryOpen(true)}>
+          <MotionPressable onPress={() => setCategoryOpen(true)}>
             <DmzActionCard>
               <View style={styles.categoryCard}>
                 <View style={styles.flex}>
@@ -149,7 +169,7 @@ export function FeedbackPanel({
                 <Text style={styles.chevron}>›</Text>
               </View>
             </DmzActionCard>
-          </Pressable>
+          </MotionPressable>
 
           <View style={styles.inputGap}>
             <DmzActionCard>
@@ -219,7 +239,7 @@ export function FeedbackPanel({
           </Text>
 
           <View style={styles.sendGap}>
-            <Pressable disabled={sending} onPress={() => void submit()}>
+            <MotionPressable disabled={sending} onPress={() => void submit()}>
               <DmzGoldButton>
                 <View style={styles.sendButton}>
                   <Text style={styles.sendText}>
@@ -227,7 +247,7 @@ export function FeedbackPanel({
                   </Text>
                 </View>
               </DmzGoldButton>
-            </Pressable>
+            </MotionPressable>
           </View>
 
           <Text style={styles.section}>APP SUPPORT ZONE</Text>
@@ -260,6 +280,7 @@ export function FeedbackPanel({
             onPress={() => void Linking.openURL(MAIN_DISCORD_URL)}
           />
         </ScrollView>
+        </Animated.View>
 
         <DmzDialog
           visible={categoryOpen}
@@ -306,14 +327,14 @@ function SupportButton({
 }) {
   return (
     <View style={styles.supportGap}>
-      <Pressable onPress={onPress}>
+      <MotionPressable onPress={onPress}>
         <DmzActionCard>
           <View style={styles.supportButton}>
             <Text style={styles.supportText}>{title}</Text>
             <Text style={styles.supportArrow}>↗</Text>
           </View>
         </DmzActionCard>
-      </Pressable>
+      </MotionPressable>
     </View>
   );
 }

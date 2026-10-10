@@ -13,6 +13,10 @@ import {
 import * as Application from 'expo-application';
 import * as Clipboard from 'expo-clipboard';
 import { DmzIcon } from './DmzIcon';
+import { MotionPressable } from '../motion/MotionPressable';
+import { useMotion } from '../motion/MotionProvider';
+import { MOTION } from '../motion/motionPolicy';
+import { nextHeaderMetaIndex } from '../motion/headerMetadata';
 import { colors, condensedFont } from '../theme';
 import type { AppChannel } from '../types';
 import {
@@ -55,7 +59,10 @@ export function AppHeader({
 }: Props) {
   const version = Application.nativeApplicationVersion ?? '1.1.0';
   const build = Application.nativeBuildVersion ?? '176';
+  const { loopsEnabled } = useMotion();
   const titleOpacity = useRef(new Animated.Value(1)).current;
+  const metaOpacity = useRef(new Animated.Value(1)).current;
+  const [metaIndex, setMetaIndex] = useState(0);
   const [editing, setEditing] = useState(false);
   const [draftUrl, setDraftUrl] = useState(currentUrl);
 
@@ -64,7 +71,7 @@ export function AppHeader({
   }, [currentUrl, editing]);
 
   useEffect(() => {
-    if (!loading || !animations) {
+    if (!loading || !loopsEnabled) {
       titleOpacity.stopAnimation();
       titleOpacity.setValue(1);
       return;
@@ -74,19 +81,47 @@ export function AppHeader({
       Animated.sequence([
         Animated.timing(titleOpacity, {
           toValue: 0.62,
-          duration: 520,
+          duration: MOTION.titlePulseLegMs,
           useNativeDriver: true
         }),
         Animated.timing(titleOpacity, {
           toValue: 1,
-          duration: 520,
+          duration: MOTION.titlePulseLegMs,
           useNativeDriver: true
         })
       ])
     );
     loop.start();
     return () => loop.stop();
-  }, [animations, loading, titleOpacity]);
+  }, [loopsEnabled, loading, titleOpacity]);
+
+  useEffect(() => {
+    let active = true;
+    metaOpacity.stopAnimation();
+    if (!loopsEnabled || loading) {
+      setMetaIndex(0);
+      metaOpacity.setValue(1);
+      return;
+    }
+    const rotate = () => {
+      Animated.timing(metaOpacity, {
+        toValue: 0.25, duration: MOTION.metadataFadeOutMs, useNativeDriver: true
+      }).start(({ finished }) => {
+        if (!active || !finished) return;
+        setMetaIndex(index => nextHeaderMetaIndex(index, 2));
+        Animated.timing(metaOpacity, {
+          toValue: 1, duration: MOTION.metadataFadeInMs, useNativeDriver: true
+        }).start();
+      });
+    };
+    const interval = setInterval(rotate, MOTION.metadataIntervalMs);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      metaOpacity.stopAnimation();
+      metaOpacity.setValue(1);
+    };
+  }, [loopsEnabled, loading, metaOpacity]);
 
   const beginEditing = () => {
     setDraftUrl(currentUrl);
@@ -136,12 +171,15 @@ export function AppHeader({
             DMZ Ranked
           </Animated.Text>
           {channel === 'beta' ? <Text style={styles.beta}>BETA</Text> : null}
-          <Text numberOfLines={1} style={styles.meta}>
-            v{version} • {build}{!online ? ' • OFFLINE' : ''}
-          </Text>
+          <Animated.Text numberOfLines={1} style={[styles.meta, { opacity: metaOpacity }]}>
+            {metaIndex === 0 || !loopsEnabled
+              ? `v${version} • ${build}`
+              : "Made by Harley's Studios"}
+            {!online ? ' • OFFLINE' : ''}
+          </Animated.Text>
         </View>
 
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel={`Notification Center${unreadMessages ? `, ${unreadMessages} unread` : ''}`}
           onPress={onOpenMessages}
@@ -153,9 +191,9 @@ export function AppHeader({
               <Text style={styles.messageBadgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
             </View>
           ) : null}
-        </Pressable>
+        </MotionPressable>
 
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Settings"
           onPress={onOpenSettings}
@@ -163,11 +201,11 @@ export function AppHeader({
           style={styles.settingsButton}
         >
           <DmzIcon name="settings" size={24} color={colors.gold} />
-        </Pressable>
+        </MotionPressable>
       </View>
 
       <View style={styles.browserRow}>
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Back"
           disabled={!canGoBack}
@@ -175,9 +213,9 @@ export function AppHeader({
           style={[styles.navButton, !canGoBack && styles.navButtonDisabled]}
         >
           <DmzIcon name="back" size={19} color={colors.white} />
-        </Pressable>
+        </MotionPressable>
 
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Forward"
           disabled={!canGoForward}
@@ -185,7 +223,7 @@ export function AppHeader({
           style={[styles.navButton, !canGoForward && styles.navButtonDisabled]}
         >
           <DmzIcon name="forward" size={19} color={colors.white} />
-        </Pressable>
+        </MotionPressable>
 
         <View style={[styles.addressShell, editing && styles.addressShellEditing]}>
           <DmzIcon
@@ -211,7 +249,7 @@ export function AppHeader({
               accessibilityLabel="URL"
             />
           ) : (
-            <Pressable
+            <MotionPressable
               accessibilityRole="button"
               accessibilityLabel="Edit URL"
               onPress={beginEditing}
@@ -221,12 +259,12 @@ export function AppHeader({
               <Text numberOfLines={1} style={styles.addressText}>
                 {compactUrl || 'dmzranked.com'}
               </Text>
-            </Pressable>
+            </MotionPressable>
           )}
 
           {editing ? (
             <>
-              <Pressable
+              <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Copy URL"
                 onPress={copyAddress}
@@ -234,8 +272,8 @@ export function AppHeader({
                 style={styles.inlineButton}
               >
                 <DmzIcon name="copy" size={15} color={colors.muted} />
-              </Pressable>
-              <Pressable
+              </MotionPressable>
+              <MotionPressable
                 accessibilityRole="button"
                 accessibilityLabel="Cancel URL editing"
                 onPress={cancelEditing}
@@ -243,19 +281,19 @@ export function AppHeader({
                 style={styles.inlineButton}
               >
                 <DmzIcon name="close" size={16} color={colors.muted} />
-              </Pressable>
+              </MotionPressable>
             </>
           ) : null}
         </View>
 
-        <Pressable
+        <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Reload"
           onPress={onReload}
           style={styles.navButton}
         >
           <DmzIcon name="reload" size={18} color={colors.white} />
-        </Pressable>
+        </MotionPressable>
       </View>
 
       <View style={styles.goldLine} />

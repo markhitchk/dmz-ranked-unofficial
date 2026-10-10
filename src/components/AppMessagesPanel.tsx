@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Linking,
   Modal,
   Pressable,
@@ -13,6 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NotificationCenterItem, NoticeCategory } from '../services/notificationCenterCore';
 import { DmzIcon } from './DmzIcon';
 import { colors, condensedFont } from '../theme';
+import { MotionPressable } from '../motion/MotionPressable';
+import { useMotion } from '../motion/MotionProvider';
+import { notificationTabScale } from '../motion/notificationMotion';
 
 type Filter = 'all' | 'system' | 'reports' | 'updates' | 'developer' | 'history';
 type Props = {
@@ -62,13 +66,28 @@ export function AppMessagesPanel({
   onDeleteMany
 }: Props) {
   const insets = useSafeAreaInsets();
+  const motion = useMotion();
+  const expandOpacity = useRef(new Animated.Value(1)).current;
+  const [animatingId, setAnimatingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const listRef = useRef<ScrollView>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const toggleExpanded = (id: string) => {
+    expandOpacity.stopAnimation();
+    if (motion.enabled) {
+      setAnimatingId(id);
+      expandOpacity.setValue(0.65);
+      Animated.timing(expandOpacity, {
+        toValue: 1, duration: 180, useNativeDriver: true
+      }).start(() => setAnimatingId(current => current === id ? null : current));
+    } else {
+      expandOpacity.setValue(1);
+      setAnimatingId(null);
+    }
     setExpanded(current => ({ ...current, [id]: !current[id] }));
   };
+  useEffect(() => () => { expandOpacity.stopAnimation(); }, [expandOpacity]);
   useEffect(() => {
     if (visible) {
       listRef.current?.scrollTo({ y: 0, animated: false });
@@ -126,7 +145,7 @@ export function AppMessagesPanel({
               </Text>
             </View>
             {filter !== 'history' ? (
-              <Pressable
+              <MotionPressable
                 onPress={() => confirmDelete(messages.map(message => message.id), 'Clear inbox')}
                 disabled={!messages.length}
                 accessibilityRole="button"
@@ -134,16 +153,16 @@ export function AppMessagesPanel({
                 style={styles.deleteAllButton}
               >
                 <DmzIcon name="trash" size={18} color={messages.length ? colors.red : colors.muted} />
-              </Pressable>
+              </MotionPressable>
             ) : null}
-            <Pressable
+            <MotionPressable
               onPress={onClose}
               accessibilityRole="button"
               accessibilityLabel="Close notifications"
               style={styles.close}
             >
               <Text style={styles.closeText}>✕</Text>
-            </Pressable>
+            </MotionPressable>
           </View>
 
           <ScrollView
@@ -159,7 +178,7 @@ export function AppMessagesPanel({
               ).length;
               const visibleCount = tab.id === 'history' ? historyMessages.length : count;
               return (
-                <Pressable
+                <MotionPressable
                   key={tab.id}
                   accessibilityRole="button"
                   accessibilityState={{ selected: filter === tab.id }}
@@ -167,7 +186,8 @@ export function AppMessagesPanel({
                     setFilter(tab.id);
                     listRef.current?.scrollTo({ y: 0, animated: false });
                   }}
-                  style={[styles.tab, filter === tab.id && styles.tabSelected]}
+                  style={[styles.tab, filter === tab.id && styles.tabSelected,
+                    { opacity: notificationTabScale(filter === tab.id, motion.enabled) }]}
                 >
                   <Text
                     style={[styles.tabLabel, filter === tab.id && styles.tabLabelSelected]}
@@ -176,13 +196,13 @@ export function AppMessagesPanel({
                   >
                     {tab.label}{visibleCount ? ` · ${visibleCount}` : ''}
                   </Text>
-                </Pressable>
+                </MotionPressable>
               );
             })}
           </ScrollView>
 
           <View style={styles.actions}>
-            <Pressable
+            <MotionPressable
               onPress={onRefresh}
               disabled={refreshing}
               style={styles.action}
@@ -192,7 +212,7 @@ export function AppMessagesPanel({
               <Text style={styles.actionText} maxFontSizeMultiplier={1.3}>
                 {refreshing ? 'CHECKING…' : '↻ REFRESH'}
               </Text>
-            </Pressable>
+            </MotionPressable>
             {filter === 'history' ? (
               <View style={[styles.action, styles.historyIndicator]}>
                 <Text style={styles.historyIndicatorText} maxFontSizeMultiplier={1.3}>
@@ -200,7 +220,7 @@ export function AppMessagesPanel({
                 </Text>
               </View>
             ) : (
-              <Pressable
+              <MotionPressable
                 onPress={onReadAll}
                 disabled={!unread}
                 style={[styles.action, !unread && styles.disabled]}
@@ -208,7 +228,7 @@ export function AppMessagesPanel({
                 accessibilityLabel="Mark all notifications read"
               >
                 <Text style={styles.actionText} maxFontSizeMultiplier={1.3}>✓ MARK ALL READ</Text>
-              </Pressable>
+              </MotionPressable>
             )}
           </View>
 
@@ -244,16 +264,17 @@ export function AppMessagesPanel({
                   </Text>
                 </View>
                 <Text style={styles.title} numberOfLines={2}>{message.title}</Text>
-                <Text
-                  style={styles.body}
+                <Animated.Text
+                  style={[styles.body,
+                    animatingId === message.id ? { opacity: expandOpacity } : null]}
                   numberOfLines={expanded[message.id] ? undefined : 3}
                 >
                   {message.body}
-                </Text>
+                </Animated.Text>
                 <Text style={styles.date}>{displayDate(message.receivedAt)}</Text>
                 <View style={styles.messageActions}>
                   {message.body.length > 110 ? (
-                    <Pressable
+                    <MotionPressable
                       onPress={() => toggleExpanded(message.id)}
                       style={styles.textAction}
                       accessibilityRole="button"
@@ -262,10 +283,10 @@ export function AppMessagesPanel({
                       <Text style={styles.textActionLabel}>
                         {expanded[message.id] ? 'SHOW LESS' : 'READ MORE'}
                       </Text>
-                    </Pressable>
+                    </MotionPressable>
                   ) : null}
                   {message.link ? (
-                    <Pressable
+                    <MotionPressable
                       accessibilityRole="link"
                       onPress={() => {
                         if (filter !== 'history') onRead(message.id);
@@ -274,17 +295,17 @@ export function AppMessagesPanel({
                       style={styles.messageAction}
                     >
                       <Text style={styles.messageActionText}>{message.linkLabel ?? 'OPEN LINK'} ↗</Text>
-                    </Pressable>
+                    </MotionPressable>
                   ) : null}
                   {filter !== 'history' ? (
                     <>
                       {!message.isRead ? (
-                        <Pressable onPress={() => onRead(message.id)} style={styles.messageAction}
+                        <MotionPressable onPress={() => onRead(message.id)} style={styles.messageAction}
                           accessibilityRole="button">
                           <Text style={styles.messageActionText}>MARK READ ✓</Text>
-                        </Pressable>
+                        </MotionPressable>
                       ) : null}
-                      <Pressable
+                      <MotionPressable
                         onPress={() => confirmDelete([message.id], 'Move to history')}
                         style={[styles.messageAction, styles.deleteAction]}
                         accessibilityRole="button"
@@ -292,7 +313,7 @@ export function AppMessagesPanel({
                       >
                         <DmzIcon name="trash" size={14} color={colors.red} />
                         <Text style={[styles.messageActionText, styles.deleteText]}>REMOVE</Text>
-                      </Pressable>
+                      </MotionPressable>
                     </>
                   ) : null}
                 </View>
