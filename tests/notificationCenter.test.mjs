@@ -79,3 +79,42 @@ test('deleted local alerts and remote announcements stay hidden after refresh', 
   const list = mergedNotificationItems(remote, [], local, [], deleted);
   assert.deepEqual(list, []);
 });
+
+test('inbox removal cannot erase the immutable notification history', () => {
+  const remote = [{ id: 'release-5', title: 'Studio announcement',
+    body: 'Server information', priority: 'info' }];
+  const stored = [{ id: 'local-5', title: '[Reports] New report',
+    body: 'Your raid has been reported', category: 'reports',
+    priority: 'warning', receivedAt: 4567, read: false }];
+  const archive = [{ ...remote[0], firstSeenAt: 1234 }];
+  const removedFromInbox = ['remote:release-5', 'local:local-5'];
+
+  const inbox = mergedNotificationItems(remote, [], stored, [], removedFromInbox);
+  const history = mergedNotificationItems(remote, [], stored, archive);
+
+  assert.equal(inbox.length, 0);
+  assert.deepEqual(history.map(item => item.id), ['local:local-5', 'remote:release-5']);
+  assert.equal(history[0].body, stored[0].body);
+});
+
+test('expired developer announcements remain in history but not inbox', () => {
+  const archive = [{ id: 'expired', title: 'Older update', body: 'Old notice',
+    priority: 'info', firstSeenAt: 1670000000000 }];
+  const inbox = mergedNotificationItems([], [], [], []);
+  const history = mergedNotificationItems([], [], [], archive);
+  assert.equal(inbox.length, 0);
+  assert.equal(history.length, 1);
+  assert.equal(history[0].isRead, true);
+});
+
+test('long notification history arrays are not truncated on load', () => {
+  const input = Array.from({ length: 350 }, (_, index) => ({
+    id: 'record-' + index,
+    title: 'Event ' + index,
+    body: 'Text',
+    receivedAt: index + 1,
+    read: true
+  }));
+  const result = cleanStoredNotifications(input);
+  assert.equal(result.length, input.length);
+});

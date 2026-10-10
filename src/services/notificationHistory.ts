@@ -4,8 +4,6 @@ import type { ArchivedRemoteMessage } from './notificationCenterCore';
 
 const ARCHIVE_KEY = 'dmz_notification_center_remote_history_v1';
 const DELETED_KEY = 'dmz_notification_center_deleted_v1';
-const MAX_HISTORY = 200;
-const MAX_DELETED = 500;
 let queue: Promise<void> = Promise.resolve();
 
 function serial<T>(action: () => Promise<T>): Promise<T> {
@@ -21,7 +19,7 @@ function cleanArchive(value: unknown): ArchivedRemoteMessage[] {
   if (!Array.isArray(value)) return [];
   const result: ArchivedRemoteMessage[] = [];
   const seen = new Set<string>();
-  for (const raw of value.slice(0, MAX_HISTORY)) {
+  for (const raw of value) {
     if (!raw || typeof raw !== 'object') continue;
     const item = raw as Record<string, unknown>;
     if (!validId(item.id) || seen.has(item.id)) continue;
@@ -73,26 +71,16 @@ export async function archiveRemoteMessages(messages: AppMessage[]): Promise<Arc
       });
     }
     const next = [...map.values()]
-      .sort((a, b) => b.firstSeenAt - a.firstSeenAt)
-      .slice(0, MAX_HISTORY);
+      .sort((a, b) => b.firstSeenAt - a.firstSeenAt);
     await AsyncStorage.setItem(ARCHIVE_KEY, JSON.stringify(next));
     return next;
-  });
-}
-
-export async function deleteArchivedRemoteMessages(ids: string[]): Promise<void> {
-  if (!ids.length) return;
-  await serial(async () => {
-    const wanted = new Set(ids.filter(validId));
-    const next = (await readHistory()).filter(item => !wanted.has(item.id));
-    await AsyncStorage.setItem(ARCHIVE_KEY, JSON.stringify(next));
   });
 }
 
 function cleanDeleted(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const match = /^(?:remote:[a-zA-Z0-9_-]{1,80}|local:[a-zA-Z0-9_-]{1,100})$/;
-  return [...new Set(value.filter((x): x is string => typeof x === 'string' && match.test(x)))].slice(-MAX_DELETED);
+  return [...new Set(value.filter((x): x is string => typeof x === 'string' && match.test(x)))];
 }
 
 export async function loadDeletedNotificationIds(): Promise<string[]> {

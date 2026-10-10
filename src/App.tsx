@@ -18,7 +18,6 @@ import { loadAppMessages, loadReadMessageIds, saveReadMessageIds } from './servi
 import type { AppMessage } from './services/appMessagesCore';
 import {
   loadNotificationHistory,
-  deleteLocalNotifications,
   markLocalNotificationsRead,
   subscribeNotificationCenter
 } from './services/notificationCenter';
@@ -31,8 +30,7 @@ import {
   appendDeletedNotificationIds,
   archiveRemoteMessages,
   loadArchivedRemoteMessages,
-  loadDeletedNotificationIds,
-  deleteArchivedRemoteMessages
+  loadDeletedNotificationIds
 } from './services/notificationHistory';
 import { DmzDialog } from './components/DmzDialog';
 import { FeedbackPanel } from './components/FeedbackPanel';
@@ -262,27 +260,15 @@ function AppContent() {
 
   const deleteNotifications = (ids: string[]) => {
     if (!ids.length) return;
-    const localIds = ids.filter(id => id.startsWith('local:')).map(id => id.slice(6));
-    const remoteIds = ids.filter(id => id.startsWith('remote:')).map(id => id.slice(7));
-
-    // Update the screen and badge immediately. Never remove server messages:
-    // a deletion is local to this device and survives subsequent refreshes.
-    const nextDeleted = [...new Set([...deletedIdsRef.current, ...ids])].slice(-500);
+    // Inbox deletion is only an archive operation: notification content
+    // remains persisted locally and is always visible in read-only History.
+    const nextDeleted = [...new Set([...deletedIdsRef.current, ...ids])];
     deletedIdsRef.current = nextDeleted;
     setDeletedNotificationIds(nextDeleted);
-    if (localIds.length) {
-      setLocalNotifications(current => current.filter(item => !localIds.includes(item.id)));
-    }
-    if (remoteIds.length) {
-      setArchivedRemote(current => current.filter(item => !remoteIds.includes(item.id)));
-    }
-
     deleteQueue.current = deleteQueue.current
       .catch(() => undefined)
       .then(async () => {
         await appendDeletedNotificationIds(ids);
-        if (localIds.length) await deleteLocalNotifications(localIds);
-        if (remoteIds.length) await deleteArchivedRemoteMessages(remoteIds);
       })
       .catch(() => {
         showNotice('Unable to save the deletion. Please try again.', true);
@@ -834,10 +820,14 @@ function AppContent() {
     return <View style={styles.boot} />;
   }
 
-  const allNotifications = mergedNotificationItems(
-    appMessages, readMessageIds, localNotifications, archivedRemote, deletedNotificationIds
+  // Inbox is a dismissible view; History is the independent, immutable record.
+  const inboxNotifications = mergedNotificationItems(
+    appMessages, readMessageIds, localNotifications, [], deletedNotificationIds
   );
-  const unreadMessages = allNotifications.filter(message => !message.isRead);
+  const historyNotifications = mergedNotificationItems(
+    appMessages, readMessageIds, localNotifications, archivedRemote
+  );
+  const unreadMessages = inboxNotifications.filter(message => !message.isRead);
   const popupMessage =
     messageStorageReady && !messagesOpen && !settingsOpen && !feedbackOpen && !loading && !appDialog
       ? appMessages.find(message =>
@@ -899,13 +889,13 @@ function AppContent() {
 
       <AppMessagesPanel
         visible={messagesOpen}
-        messages={allNotifications}
+        messages={inboxNotifications}
+        historyMessages={historyNotifications}
         refreshing={refreshingMessages}
         onClose={() => setMessagesOpen(false)}
         onRefresh={() => { void refreshAppMessages(); }}
         onRead={id => markAppMessagesRead([id])}
-        onReadAll={() => markAppMessagesRead(allNotifications.filter(item => !item.isRead).map(item => item.id))}
-        onDelete={id => deleteNotifications([id])}
+        onReadAll={() => markAppMessagesRead(inboxNotifications.filter(item => !item.isRead).map(item => item.id))}
         onDeleteMany={deleteNotifications}
       />
 

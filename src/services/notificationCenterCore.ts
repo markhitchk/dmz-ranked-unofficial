@@ -48,7 +48,7 @@ export function cleanStoredNotifications(raw: unknown): StoredNotification[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
   const result: StoredNotification[] = [];
-  for (const value of raw.slice(0, 300)) {
+  for (const value of raw) {
     if (!value || typeof value !== 'object') continue;
     const record = value as Partial<StoredNotification>;
     if (typeof record.id !== 'string' || !/^[\w-]{1,100}$/.test(record.id) || seen.has(record.id)) continue;
@@ -66,7 +66,7 @@ export function cleanStoredNotifications(raw: unknown): StoredNotification[] {
       read: Boolean(record.read)
     });
   }
-  return result.sort((a, b) => b.receivedAt - a.receivedAt).slice(0, 150);
+  return result.sort((a, b) => b.receivedAt - a.receivedAt);
 }
 
 export function mergedNotificationItems(

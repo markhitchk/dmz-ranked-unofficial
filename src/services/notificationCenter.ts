@@ -7,7 +7,6 @@ import {
 } from './notificationCenterCore';
 
 const KEY = 'dmz_notification_center_history_v1';
-const MAX_ITEMS = 150;
 const DEDUP_WINDOW_MS = 90_000;
 let mutations = Promise.resolve();
 const listeners = new Set<() => void>();
@@ -70,7 +69,7 @@ export async function recordLocalNotification(
       receivedAt: now,
       read: false
     };
-    await AsyncStorage.setItem(KEY, JSON.stringify([entry, ...current].slice(0, MAX_ITEMS)));
+    await AsyncStorage.setItem(KEY, JSON.stringify([entry, ...current]));
     broadcast();
     return { entry, isNew: true };
   });
@@ -88,15 +87,3 @@ export async function markLocalNotificationsRead(ids: string[]): Promise<void> {
   });
 }
 
-/** Permanently remove selected local entries. Serialized with incoming alerts. */
-export async function deleteLocalNotifications(ids: string[]): Promise<void> {
-  if (!ids.length) return;
-  await serial(async () => {
-    const wanted = new Set(ids);
-    const existing = await read();
-    const next = existing.filter(item => !wanted.has(item.id));
-    if (next.length === existing.length) return;
-    await AsyncStorage.setItem(KEY, JSON.stringify(next));
-    broadcast();
-  });
-}

@@ -18,12 +18,12 @@ type Filter = 'all' | 'system' | 'reports' | 'updates' | 'developer' | 'history'
 type Props = {
   visible: boolean;
   messages: NotificationCenterItem[];
+  historyMessages: NotificationCenterItem[];
   refreshing: boolean;
   onClose: () => void;
   onRefresh: () => void;
   onRead: (id: string) => void;
   onReadAll: () => void;
-  onDelete: (id: string) => void;
   onDeleteMany: (ids: string[]) => void;
 };
 
@@ -53,12 +53,12 @@ function displayDate(value: number): string {
 export function AppMessagesPanel({
   visible,
   messages,
+  historyMessages,
   refreshing,
   onClose,
   onRefresh,
   onRead,
   onReadAll,
-  onDelete,
   onDeleteMany
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -76,18 +76,18 @@ export function AppMessagesPanel({
   }, [visible]);
 
   const unread = messages.filter(item => !item.isRead).length;
-  const selected = messages.filter(item => filter === 'history'
-    ? item.isRead
-    : filterMatches(filter, item.category));
+  const selected = filter === 'history'
+    ? historyMessages
+    : messages.filter(item => filterMatches(filter, item.category));
 
   const confirmDelete = (ids: string[], label: string) => {
     if (!ids.length) return;
     Alert.alert(
       label,
-      `Delete ${ids.length} notification${ids.length === 1 ? '' : 's'} from this device? This cannot be undone.`,
+      `Remove ${ids.length} notification${ids.length === 1 ? '' : 's'} from your inbox? You can always find them in persistent, read-only History.`,
       [
         { text: 'CANCEL', style: 'cancel' },
-        { text: 'DELETE', style: 'destructive', onPress: () => onDeleteMany(ids) }
+        { text: 'MOVE TO HISTORY', onPress: () => onDeleteMany(ids) }
       ]
     );
   };
@@ -119,17 +119,23 @@ export function AppMessagesPanel({
               >
                 NOTIFICATION CENTER
               </Text>
-              <Text style={styles.summary}>{unread} unread • {messages.length} notifications</Text>
+              <Text style={styles.summary}>
+                {filter === 'history'
+                  ? `${historyMessages.length} saved forever on this device`
+                  : `${unread} unread • ${messages.length} in inbox`}
+              </Text>
             </View>
-            <Pressable
-              onPress={() => confirmDelete(messages.map(message => message.id), 'Clear notifications')}
-              disabled={!messages.length}
-              accessibilityRole="button"
-              accessibilityLabel="Delete all notifications"
-              style={styles.deleteAllButton}
-            >
-              <DmzIcon name="trash" size={18} color={messages.length ? colors.red : colors.muted} />
-            </Pressable>
+            {filter !== 'history' ? (
+              <Pressable
+                onPress={() => confirmDelete(messages.map(message => message.id), 'Clear inbox')}
+                disabled={!messages.length}
+                accessibilityRole="button"
+                accessibilityLabel="Move all inbox notifications to history"
+                style={styles.deleteAllButton}
+              >
+                <DmzIcon name="trash" size={18} color={messages.length ? colors.red : colors.muted} />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
@@ -149,8 +155,9 @@ export function AppMessagesPanel({
           >
             {FILTERS.map(tab => {
               const count = messages.filter(item =>
-                tab.id === 'history' ? item.isRead : !item.isRead && filterMatches(tab.id, item.category)
+                tab.id === 'history' ? false : !item.isRead && filterMatches(tab.id, item.category)
               ).length;
+              const visibleCount = tab.id === 'history' ? historyMessages.length : count;
               return (
                 <Pressable
                   key={tab.id}
@@ -167,7 +174,7 @@ export function AppMessagesPanel({
                     maxFontSizeMultiplier={1.25}
                     numberOfLines={1}
                   >
-                    {tab.label}{count ? ` · ${count}` : ''}
+                    {tab.label}{visibleCount ? ` · ${visibleCount}` : ''}
                   </Text>
                 </Pressable>
               );
@@ -187,17 +194,11 @@ export function AppMessagesPanel({
               </Text>
             </Pressable>
             {filter === 'history' ? (
-              <Pressable
-                onPress={() => confirmDelete(selected.map(item => item.id), 'Clear notification history')}
-                disabled={!selected.length}
-                style={[styles.action, !selected.length && styles.disabled]}
-                accessibilityRole="button"
-                accessibilityLabel="Clear notification history"
-              >
-                <Text style={[styles.actionText, styles.deleteText]} maxFontSizeMultiplier={1.3}>
-                  CLEAR HISTORY
+              <View style={[styles.action, styles.historyIndicator]}>
+                <Text style={styles.historyIndicatorText} maxFontSizeMultiplier={1.3}>
+                  🔒 READ-ONLY HISTORY
                 </Text>
-              </Pressable>
+              </View>
             ) : (
               <Pressable
                 onPress={onReadAll}
@@ -223,7 +224,7 @@ export function AppMessagesPanel({
                 <Text style={styles.emptyHeading}>ALL CAUGHT UP 🔔</Text>
                 <Text style={styles.body}>
                   {filter === 'history'
-                    ? 'Previously read notifications will appear here, including older developer announcements.'
+                    ? 'Your complete, read-only record appears here. New alerts are saved automatically.'
                     : 'No notifications in this category.'}
                 </Text>
               </View>
@@ -239,7 +240,7 @@ export function AppMessagesPanel({
                     {categoryLabel(message.category)} · {message.priority.toUpperCase()}
                   </Text>
                   <Text style={message.isRead ? styles.read : styles.unread}>
-                    {message.isRead ? 'READ' : '● NEW'}
+                    {filter === 'history' ? 'SAVED' : message.isRead ? 'READ' : '● NEW'}
                   </Text>
                 </View>
                 <Text style={styles.title} numberOfLines={2}>{message.title}</Text>
@@ -267,7 +268,7 @@ export function AppMessagesPanel({
                     <Pressable
                       accessibilityRole="link"
                       onPress={() => {
-                        onRead(message.id);
+                        if (filter !== 'history') onRead(message.id);
                         void Linking.openURL(message.link!).catch(() => undefined);
                       }}
                       style={styles.messageAction}
@@ -275,27 +276,33 @@ export function AppMessagesPanel({
                       <Text style={styles.messageActionText}>{message.linkLabel ?? 'OPEN LINK'} ↗</Text>
                     </Pressable>
                   ) : null}
-                  {!message.isRead ? (
-                    <Pressable onPress={() => onRead(message.id)} style={styles.messageAction}
-                      accessibilityRole="button">
-                      <Text style={styles.messageActionText}>MARK READ ✓</Text>
-                    </Pressable>
+                  {filter !== 'history' ? (
+                    <>
+                      {!message.isRead ? (
+                        <Pressable onPress={() => onRead(message.id)} style={styles.messageAction}
+                          accessibilityRole="button">
+                          <Text style={styles.messageActionText}>MARK READ ✓</Text>
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        onPress={() => confirmDelete([message.id], 'Move to history')}
+                        style={[styles.messageAction, styles.deleteAction]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Move notification to history: ${message.title}`}
+                      >
+                        <DmzIcon name="trash" size={14} color={colors.red} />
+                        <Text style={[styles.messageActionText, styles.deleteText]}>REMOVE</Text>
+                      </Pressable>
+                    </>
                   ) : null}
-                  <Pressable
-                    onPress={() => onDelete(message.id)}
-                    style={[styles.messageAction, styles.deleteAction]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete notification: ${message.title}`}
-                  >
-                    <DmzIcon name="trash" size={14} color={colors.red} />
-                    <Text style={[styles.messageActionText, styles.deleteText]}>DELETE</Text>
-                  </Pressable>
                 </View>
               </View>
             ))}
           </ScrollView>
           <Text style={styles.footer}>
-            Recent alerts are kept on this device. Use History for read notifications, or Delete to remove them.
+            {filter === 'history'
+              ? 'History is persistent and cannot be deleted from within the app. Clearing app data or uninstalling can erase it.'
+              : 'Remove clears the inbox only. History retains all received notifications, even after they expire.'}
           </Text>
         </View>
       </View>
@@ -435,6 +442,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 5, borderColor: colors.cardBorder,
   },
   deleteText: { color: colors.red },
+  historyIndicator: { backgroundColor: colors.panel },
+  historyIndicatorText: { color: colors.goldSoft, fontSize: 11, fontWeight: '800' },
   textAction: {
     minHeight: 33, paddingHorizontal: 9,
     marginRight: 'auto', justifyContent: 'center'

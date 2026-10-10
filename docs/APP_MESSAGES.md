@@ -70,3 +70,11 @@ closed apps are not woken up to receive them. Existing website notifications use
 
 Keep announcements relevant. This is a public feed; do not include private
 information or user-specific operator details.
+
+## Unified Notification Center history (Beta build 183+)
+
+- The bell's **ALL / SYSTEM / REPORTS / UPDATES / MESSAGES** tabs show current inbox alerts.
+- **REMOVE** or **Clear inbox** hides notifications from the inbox only. It does not destroy the underlying records.
+- The separate **HISTORY** tab shows every locally recorded website notification, system alert and developer message, including inbox-removed and expired messages. It is read-only: there is no Delete or Clear History control.
+- History is saved locally on the device between app launches without an automatic expiration or record-count cap. It is not a server-side archive. Clearing app data or uninstalling the app may erase this data; lost history from older versions cannot be reconstructed automatically.
+- New developer announcements are archived when fetched; existing website alerts are archived when processed by the app. Events never received on the device cannot appear in history.
