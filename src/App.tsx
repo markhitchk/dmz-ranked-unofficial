@@ -806,7 +806,9 @@ function AppContent() {
         visible={Boolean(popupMessage)}
         eyebrow="HARLEY'S STUDIOS • MESSAGE"
         title={popupMessage?.title ?? ''}
-        message={popupMessage?.body ?? ''}
+        message={popupMessage && popupMessage.body.length > 420
+          ? popupMessage.body.slice(0, 420) + '…\n\nOpen App Messages to read the full announcement.'
+          : popupMessage?.body ?? ''}
         positiveLabel={popupMessage?.link ? (popupMessage.linkLabel ?? 'OPEN LINK') : 'GOT IT'}
         negativeLabel="DISMISS"
         animations={settings.appAnimations}
