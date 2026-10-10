@@ -23,7 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     ios: {
       bundleIdentifier: packageId,
-      buildNumber: isBeta ? '181' : '177',
+      buildNumber: isBeta ? '182' : '177',
       supportsTablet: true,
       infoPlist: {
         LSApplicationQueriesSchemes: ['itms-apps']
@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: packageId,
-      versionCode: isBeta ? 181 : 177,
+      versionCode: isBeta ? 182 : 177,
       allowBackup: true,
       adaptiveIcon: {
         foregroundImage: './assets/dmz_launcher_foreground.png',

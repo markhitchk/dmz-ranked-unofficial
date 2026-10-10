@@ -87,3 +87,16 @@ export async function markLocalNotificationsRead(ids: string[]): Promise<void> {
     broadcast();
   });
 }
+
+/** Permanently remove selected local entries. Serialized with incoming alerts. */
+export async function deleteLocalNotifications(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  await serial(async () => {
+    const wanted = new Set(ids);
+    const existing = await read();
+    const next = existing.filter(item => !wanted.has(item.id));
+    if (next.length === existing.length) return;
+    await AsyncStorage.setItem(KEY, JSON.stringify(next));
+    broadcast();
+  });
+}

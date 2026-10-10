@@ -1,6 +1,16 @@
 export type NoticeCategory = 'system' | 'reports' | 'updates' | 'website' | 'developer';
 export type NoticePriority = 'info' | 'warning' | 'important';
 
+export type ArchivedRemoteMessage = {
+  id: string;
+  title: string;
+  body: string;
+  priority: NoticePriority;
+  firstSeenAt: number;
+  link?: string;
+  linkLabel?: string;
+};
+
 export type StoredNotification = {
   id: string;
   title: string;
@@ -63,19 +73,40 @@ export function mergedNotificationItems(
   remote: Array<{ id: string; title: string; body: string; priority: NoticePriority;
     link?: string; linkLabel?: string }>,
   readRemote: string[],
-  stored: StoredNotification[]
+  stored: StoredNotification[],
+  history: ArchivedRemoteMessage[] = [],
+  deletedIds: string[] = []
 ): NotificationCenterItem[] {
   const seen = new Set(readRemote);
+  const deleted = new Set(deletedIds);
+  const archiveById = new Map(history.map(message => [message.id, message]));
+  const currentIds = new Set(remote.map(message => message.id));
+
   const remoteItems: NotificationCenterItem[] = remote.map((message, index) => ({
     id: 'remote:' + message.id,
     title: message.title,
     body: message.body,
     category: 'developer',
     priority: message.priority,
-    receivedAt: 0 - index,
+    receivedAt: archiveById.get(message.id)?.firstSeenAt ?? -index,
     isRead: seen.has(message.id),
     ...(message.link ? { link: message.link, linkLabel: message.linkLabel } : {})
   }));
+
+  // Expired/removed announcements remain available in History, not as unread.
+  const expiredItems: NotificationCenterItem[] = history
+    .filter(message => !currentIds.has(message.id))
+    .map(message => ({
+      id: 'remote:' + message.id,
+      title: message.title,
+      body: message.body,
+      category: 'developer',
+      priority: message.priority,
+      receivedAt: message.firstSeenAt,
+      isRead: true,
+      ...(message.link ? { link: message.link, linkLabel: message.linkLabel } : {})
+    }));
+
   const localItems: NotificationCenterItem[] = stored.map(message => ({
     id: 'local:' + message.id,
     title: noticeTitle(message.title),
@@ -85,5 +116,8 @@ export function mergedNotificationItems(
     receivedAt: message.receivedAt,
     isRead: message.read
   }));
-  return [...remoteItems, ...localItems].sort((a, b) => b.receivedAt - a.receivedAt);
+
+  return [...remoteItems, ...expiredItems, ...localItems]
+    .filter(message => !deleted.has(message.id))
+    .sort((a, b) => b.receivedAt - a.receivedAt);
 }

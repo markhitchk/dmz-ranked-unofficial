@@ -48,3 +48,34 @@ test('announcements and local notifications merge without confusing read flags',
   assert.equal(entries[1].category, 'developer');
   assert.equal(entries[1].link, 'https://example.com');
 });
+
+test('historical developer messages remain readable after remote feed expiry', () => {
+  const archived = [{
+    id: 'announcement-1', title: 'Studio news', body: 'Released yesterday',
+    priority: 'info', firstSeenAt: 3000
+  }];
+  const list = mergedNotificationItems([], [], [], archived);
+  assert.deepEqual(list.map(item => item.id), ['remote:announcement-1']);
+  assert.equal(list[0].isRead, true);
+  assert.equal(list[0].receivedAt, 3000);
+  assert.equal(list[0].category, 'developer');
+});
+
+test('remote active messages merge with archive snapshots without duplicates', () => {
+  const message = { id: 'release-1', title: 'New update', body: 'Try it',
+    priority: 'important' };
+  const archive = [{ ...message, firstSeenAt: 1000 }];
+  const list = mergedNotificationItems([message], [], [], archive);
+  assert.equal(list.length, 1);
+  assert.equal(list[0].receivedAt, 1000);
+  assert.equal(list[0].isRead, false);
+});
+
+test('deleted local alerts and remote announcements stay hidden after refresh', () => {
+  const remote = [{ id: 'announcement', title: 'Pinned', body: 'Hello', priority: 'info' }];
+  const local = [{ id: 'local1', title: '[System] Test', body: 'OK',
+    category: 'system', priority: 'info', receivedAt: 123, read: false }];
+  const deleted = ['remote:announcement', 'local:local1'];
+  const list = mergedNotificationItems(remote, [], local, [], deleted);
+  assert.deepEqual(list, []);
+});

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Linking,
   Modal,
   Pressable,
@@ -13,7 +14,7 @@ import type { NotificationCenterItem, NoticeCategory } from '../services/notific
 import { DmzIcon } from './DmzIcon';
 import { colors, condensedFont } from '../theme';
 
-type Filter = 'all' | 'system' | 'reports' | 'updates' | 'developer';
+type Filter = 'all' | 'system' | 'reports' | 'updates' | 'developer' | 'history';
 type Props = {
   visible: boolean;
   messages: NotificationCenterItem[];
@@ -22,6 +23,8 @@ type Props = {
   onRefresh: () => void;
   onRead: (id: string) => void;
   onReadAll: () => void;
+  onDelete: (id: string) => void;
+  onDeleteMany: (ids: string[]) => void;
 };
 
 const FILTERS: { id: Filter; label: string }[] = [
@@ -29,7 +32,8 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'system', label: 'SYSTEM' },
   { id: 'reports', label: 'REPORTS' },
   { id: 'updates', label: 'UPDATES' },
-  { id: 'developer', label: 'MESSAGES' }
+  { id: 'developer', label: 'MESSAGES' },
+  { id: 'history', label: 'HISTORY' }
 ];
 function filterMatches(filter: Filter, category: NoticeCategory): boolean {
   return filter === 'all' || filter === category ||
@@ -53,7 +57,9 @@ export function AppMessagesPanel({
   onClose,
   onRefresh,
   onRead,
-  onReadAll
+  onReadAll,
+  onDelete,
+  onDeleteMany
 }: Props) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<Filter>('all');
@@ -70,7 +76,21 @@ export function AppMessagesPanel({
   }, [visible]);
 
   const unread = messages.filter(item => !item.isRead).length;
-  const selected = messages.filter(item => filterMatches(filter, item.category));
+  const selected = messages.filter(item => filter === 'history'
+    ? item.isRead
+    : filterMatches(filter, item.category));
+
+  const confirmDelete = (ids: string[], label: string) => {
+    if (!ids.length) return;
+    Alert.alert(
+      label,
+      `Delete ${ids.length} notification${ids.length === 1 ? '' : 's'} from this device? This cannot be undone.`,
+      [
+        { text: 'CANCEL', style: 'cancel' },
+        { text: 'DELETE', style: 'destructive', onPress: () => onDeleteMany(ids) }
+      ]
+    );
+  };
 
   return (
     <Modal
@@ -102,6 +122,15 @@ export function AppMessagesPanel({
               <Text style={styles.summary}>{unread} unread • {messages.length} notifications</Text>
             </View>
             <Pressable
+              onPress={() => confirmDelete(messages.map(message => message.id), 'Clear notifications')}
+              disabled={!messages.length}
+              accessibilityRole="button"
+              accessibilityLabel="Delete all notifications"
+              style={styles.deleteAllButton}
+            >
+              <DmzIcon name="trash" size={18} color={messages.length ? colors.red : colors.muted} />
+            </Pressable>
+            <Pressable
               onPress={onClose}
               accessibilityRole="button"
               accessibilityLabel="Close notifications"
@@ -120,7 +149,8 @@ export function AppMessagesPanel({
           >
             {FILTERS.map(tab => {
               const count = messages.filter(item =>
-                !item.isRead && filterMatches(tab.id, item.category)).length;
+                tab.id === 'history' ? item.isRead : !item.isRead && filterMatches(tab.id, item.category)
+              ).length;
               return (
                 <Pressable
                   key={tab.id}
@@ -156,15 +186,29 @@ export function AppMessagesPanel({
                 {refreshing ? 'CHECKING…' : '↻ REFRESH'}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={onReadAll}
-              disabled={!unread}
-              style={[styles.action, !unread && styles.disabled]}
-              accessibilityRole="button"
-              accessibilityLabel="Mark all notifications read"
-            >
-              <Text style={styles.actionText} maxFontSizeMultiplier={1.3}>✓ MARK ALL READ</Text>
-            </Pressable>
+            {filter === 'history' ? (
+              <Pressable
+                onPress={() => confirmDelete(selected.map(item => item.id), 'Clear notification history')}
+                disabled={!selected.length}
+                style={[styles.action, !selected.length && styles.disabled]}
+                accessibilityRole="button"
+                accessibilityLabel="Clear notification history"
+              >
+                <Text style={[styles.actionText, styles.deleteText]} maxFontSizeMultiplier={1.3}>
+                  CLEAR HISTORY
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={onReadAll}
+                disabled={!unread}
+                style={[styles.action, !unread && styles.disabled]}
+                accessibilityRole="button"
+                accessibilityLabel="Mark all notifications read"
+              >
+                <Text style={styles.actionText} maxFontSizeMultiplier={1.3}>✓ MARK ALL READ</Text>
+              </Pressable>
+            )}
           </View>
 
           <ScrollView
@@ -177,7 +221,11 @@ export function AppMessagesPanel({
             {selected.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyHeading}>ALL CAUGHT UP 🔔</Text>
-                <Text style={styles.body}>No {filter === 'all' ? 'notifications' : filter.toLowerCase() + ' alerts'} to display.</Text>
+                <Text style={styles.body}>
+                  {filter === 'history'
+                    ? 'Previously read notifications will appear here, including older developer announcements.'
+                    : 'No notifications in this category.'}
+                </Text>
               </View>
             ) : selected.map(message => (
               <View key={message.id}
@@ -233,11 +281,22 @@ export function AppMessagesPanel({
                       <Text style={styles.messageActionText}>MARK READ ✓</Text>
                     </Pressable>
                   ) : null}
+                  <Pressable
+                    onPress={() => onDelete(message.id)}
+                    style={[styles.messageAction, styles.deleteAction]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete notification: ${message.title}`}
+                  >
+                    <DmzIcon name="trash" size={14} color={colors.red} />
+                    <Text style={[styles.messageActionText, styles.deleteText]}>DELETE</Text>
+                  </Pressable>
                 </View>
               </View>
             ))}
           </ScrollView>
-          <Text style={styles.footer}>Alerts are saved here even when Android pop-ups are disabled.</Text>
+          <Text style={styles.footer}>
+            Recent alerts are kept on this device. Use History for read notifications, or Delete to remove them.
+          </Text>
         </View>
       </View>
     </Modal>
@@ -285,6 +344,10 @@ const styles = StyleSheet.create({
     color: colors.white, fontWeight: '900', marginTop: 3
   },
   summary: { color: colors.muted, fontSize: 11, marginTop: 4 },
+  deleteAllButton: {
+    flexShrink: 0, height: 44, width: 34,
+    alignItems: 'center', justifyContent: 'center'
+  },
   close: {
     flexShrink: 0, height: 44, width: 36,
     alignItems: 'center', justifyContent: 'center'
@@ -368,6 +431,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center'
   },
   messageActionText: { fontSize: 11, fontWeight: '800', color: colors.gold },
+  deleteAction: {
+    flexDirection: 'row', gap: 5, borderColor: colors.cardBorder,
+  },
+  deleteText: { color: colors.red },
   textAction: {
     minHeight: 33, paddingHorizontal: 9,
     marginRight: 'auto', justifyContent: 'center'

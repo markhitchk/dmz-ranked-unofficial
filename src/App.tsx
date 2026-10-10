@@ -18,13 +18,22 @@ import { loadAppMessages, loadReadMessageIds, saveReadMessageIds } from './servi
 import type { AppMessage } from './services/appMessagesCore';
 import {
   loadNotificationHistory,
+  deleteLocalNotifications,
   markLocalNotificationsRead,
   subscribeNotificationCenter
 } from './services/notificationCenter';
 import {
   mergedNotificationItems,
+  type ArchivedRemoteMessage,
   type StoredNotification
 } from './services/notificationCenterCore';
+import {
+  appendDeletedNotificationIds,
+  archiveRemoteMessages,
+  loadArchivedRemoteMessages,
+  loadDeletedNotificationIds,
+  deleteArchivedRemoteMessages
+} from './services/notificationHistory';
 import { DmzDialog } from './components/DmzDialog';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import {
@@ -101,6 +110,10 @@ function AppContent() {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [appMessages, setAppMessages] = useState<AppMessage[]>([]);
   const [localNotifications, setLocalNotifications] = useState<StoredNotification[]>([]);
+  const [archivedRemote, setArchivedRemote] = useState<ArchivedRemoteMessage[]>([]);
+  const [deletedNotificationIds, setDeletedNotificationIds] = useState<string[]>([]);
+  const deletedIdsRef = useRef<string[]>([]);
+  const deleteQueue = useRef<Promise<void>>(Promise.resolve());
   const [readMessageIds, setReadMessageIds] = useState<string[]>([]);
   const [messageStorageReady, setMessageStorageReady] = useState(false);
   const [refreshingMessages, setRefreshingMessages] = useState(false);
@@ -151,7 +164,15 @@ function AppContent() {
     setRefreshingMessages(true);
     try {
       await Promise.all([
-        loadAppMessages(channel).then(setAppMessages),
+        loadAppMessages(channel).then(async messages => {
+          // Archive the original message so it remains in History after expiry.
+          // Failure to write history must not hide live messages.
+          try {
+            const history = await archiveRemoteMessages(messages);
+            setArchivedRemote(history);
+          } catch { /* Keep the previously stored snapshot. */ }
+          setAppMessages(messages);
+        }),
         refreshLocalNotifications()
       ]);
     } finally {
@@ -193,10 +214,17 @@ function AppContent() {
   useEffect(() => {
     if (!ready) return;
     let alive = true;
-    void loadReadMessageIds().then(ids => {
+    void Promise.all([
+      loadReadMessageIds(),
+      loadDeletedNotificationIds(),
+      loadArchivedRemoteMessages()
+    ]).then(([ids, deleted, history]) => {
       if (!alive) return;
       readMessageIdsRef.current = ids;
+      deletedIdsRef.current = deleted;
       setReadMessageIds(ids);
+      setDeletedNotificationIds(deleted);
+      setArchivedRemote(history);
       setMessageStorageReady(true);
       void refreshAppMessages();
     });
@@ -230,6 +258,36 @@ function AppContent() {
       );
       void markLocalNotificationsRead(localIds).catch(() => undefined);
     }
+  };
+
+  const deleteNotifications = (ids: string[]) => {
+    if (!ids.length) return;
+    const localIds = ids.filter(id => id.startsWith('local:')).map(id => id.slice(6));
+    const remoteIds = ids.filter(id => id.startsWith('remote:')).map(id => id.slice(7));
+
+    // Update the screen and badge immediately. Never remove server messages:
+    // a deletion is local to this device and survives subsequent refreshes.
+    const nextDeleted = [...new Set([...deletedIdsRef.current, ...ids])].slice(-500);
+    deletedIdsRef.current = nextDeleted;
+    setDeletedNotificationIds(nextDeleted);
+    if (localIds.length) {
+      setLocalNotifications(current => current.filter(item => !localIds.includes(item.id)));
+    }
+    if (remoteIds.length) {
+      setArchivedRemote(current => current.filter(item => !remoteIds.includes(item.id)));
+    }
+
+    deleteQueue.current = deleteQueue.current
+      .catch(() => undefined)
+      .then(async () => {
+        await appendDeletedNotificationIds(ids);
+        if (localIds.length) await deleteLocalNotifications(localIds);
+        if (remoteIds.length) await deleteArchivedRemoteMessages(remoteIds);
+      })
+      .catch(() => {
+        showNotice('Unable to save the deletion. Please try again.', true);
+        void refreshLocalNotifications();
+      });
   };
 
   const openSettings = (target?: string) => {
@@ -776,12 +834,15 @@ function AppContent() {
     return <View style={styles.boot} />;
   }
 
-  const allNotifications = mergedNotificationItems(appMessages, readMessageIds, localNotifications);
+  const allNotifications = mergedNotificationItems(
+    appMessages, readMessageIds, localNotifications, archivedRemote, deletedNotificationIds
+  );
   const unreadMessages = allNotifications.filter(message => !message.isRead);
   const popupMessage =
     messageStorageReady && !messagesOpen && !settingsOpen && !feedbackOpen && !loading && !appDialog
       ? appMessages.find(message =>
-          message.display === 'popup' && !readMessageIds.includes(message.id)
+          message.display === 'popup' && !readMessageIds.includes(message.id) &&
+          !deletedNotificationIds.includes('remote:' + message.id)
         )
       : undefined;
 
@@ -844,6 +905,8 @@ function AppContent() {
         onRefresh={() => { void refreshAppMessages(); }}
         onRead={id => markAppMessagesRead([id])}
         onReadAll={() => markAppMessagesRead(allNotifications.filter(item => !item.isRead).map(item => item.id))}
+        onDelete={id => deleteNotifications([id])}
+        onDeleteMany={deleteNotifications}
       />
 
       <FeedbackPanel
