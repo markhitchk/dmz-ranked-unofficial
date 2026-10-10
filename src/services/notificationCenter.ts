@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { WelcomeNotice } from './welcomeNotice';
 import {
   classifyNotification,
   cleanStoredNotifications,
@@ -87,3 +88,35 @@ export async function markLocalNotificationsRead(ids: string[]): Promise<void> {
   });
 }
 
+
+/**
+ * Persist the per-build welcome notice in the system inbox and read-only
+ * history. Changing the operator personalizes the same record in place,
+ * without marking an acknowledged welcome unread again.
+ */
+export async function ensureWelcomeNotification(notice: WelcomeNotice): Promise<void> {
+  await serial(async () => {
+    const entries = await read();
+    const previousIndex = entries.findIndex(item => item.id === notice.id);
+    const previous = previousIndex === -1 ? undefined : entries[previousIndex];
+    if (previous &&
+      previous.title === notice.title &&
+      previous.body === notice.body
+    ) return;
+
+    const nextEntry: StoredNotification = {
+      id: notice.id,
+      title: notice.title,
+      body: notice.body,
+      category: 'system',
+      priority: 'info',
+      receivedAt: previous?.receivedAt ?? Date.now(),
+      read: previous?.read ?? false
+    };
+    const updated = previousIndex === -1
+      ? [nextEntry, ...entries]
+      : entries.map(item => item.id === notice.id ? nextEntry : item);
+    await AsyncStorage.setItem(KEY, JSON.stringify(updated));
+    broadcast();
+  });
+}

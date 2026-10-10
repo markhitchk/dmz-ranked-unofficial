@@ -78,3 +78,22 @@ information or user-specific operator details.
 - The separate **HISTORY** tab shows every locally recorded website notification, system alert and developer message, including inbox-removed and expired messages. It is read-only: there is no Delete or Clear History control.
 - History is saved locally on the device between app launches without an automatic expiration or record-count cap. It is not a server-side archive. Clearing app data or uninstalling the app may erase this data; lost history from older versions cannot be reconstructed automatically.
 - New developer announcements are archived when fetched; existing website alerts are archived when processed by the app. Events never received on the device cannot appear in history.
+
+## Dynamic build welcome (Beta 184+ and future Stable builds)
+
+The app creates a local **SYSTEM** welcome notification for each newly
+installed version and build, without using the remote announcement feed or
+sending an Android heads-up notification on every launch.
+
+- **Beta:** welcomes the selected operator to DMZ Ranked BETA, shows the
+  installed version/build, and explains that Beta-only experimental features
+  may change or never reach Stable.
+- **Stable:** welcomes the operator to the Stable version of DMZ Ranked,
+  shows its installed version/build, and provides a brief release/channel note.
+- The displayed `@operator` is populated from the selected website operator
+  in app settings. Until an operator is selected, the greeting is `@Guest`.
+- Each installed channel/version/build uses one stable notification ID;
+  repeat launches do not create duplicate unread welcomes. If the selected
+  operator changes, the greeting updates in place while preserving read state.
+- The welcome remains in the persistent, read-only History if dismissed from
+  the inbox or when a new version is installed.

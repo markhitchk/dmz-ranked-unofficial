@@ -19,6 +19,7 @@ import type { AppMessage } from './services/appMessagesCore';
 import {
   loadNotificationHistory,
   markLocalNotificationsRead,
+  ensureWelcomeNotification,
   subscribeNotificationCenter
 } from './services/notificationCenter';
 import {
@@ -33,6 +34,7 @@ import {
   loadDeletedNotificationIds
 } from './services/notificationHistory';
 import { DmzDialog } from './components/DmzDialog';
+import { buildWelcomeNotice } from './services/welcomeNotice';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import {
   SettingsPanel,
@@ -151,6 +153,20 @@ function AppContent() {
   const channel =
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
     'stable';
+
+  // Personalized, version-specific welcome. This is a local SYSTEM notice,
+  // not a broadcast or an Android heads-up notification on every launch.
+  useEffect(() => {
+    if (!ready) return;
+    const notice = buildWelcomeNotice({
+      channel,
+      version: Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? 'unknown',
+      build: Application.nativeBuildVersion ??
+        String(Constants.expoConfig?.android?.versionCode ?? 'unknown'),
+      operatorName: settings.selectedOperator
+    });
+    void ensureWelcomeNotification(notice).catch(() => undefined);
+  }, [ready, channel, settings.selectedOperator]);
 
   const refreshLocalNotifications = useCallback(async () => {
     setLocalNotifications(await loadNotificationHistory());
