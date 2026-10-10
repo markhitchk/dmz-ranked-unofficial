@@ -62,7 +62,7 @@ jobs:
               if (cfg.extra?.appChannel !== "stable" || cfg.name !== "DMZ Ranked") {
                 throw Error("Stable channel/name configuration is incorrect");
               }
-              if (cfg.android?.versionCode !== 177) {
+              if (cfg.android?.versionCode !== 186) {
                 throw Error("Unexpected Android versionCode");
               }
               console.log("Verified stable: " + cfg.android.package + ", versionCode " + cfg.android.versionCode);
@@ -103,7 +103,16 @@ jobs:
           test -s android/app/build/outputs/bundle/release/app-release.aab
           unzip -t android/app/build/outputs/bundle/release/app-release.aab | tail -1
 
-      - name: Sign only with configured Play upload key
+      # The main Java Play release used a historical upload key stored in the
+      # Actions cache. Check for this verified key if repository signing
+      # secrets are not set; never distribute a debug-signed bundle.
+      - name: Restore existing Play upload keystore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: dmz-ranked-apk-signing-v1
+
+      - name: Sign with pinned Play upload certificate when available
         env:
           DMZ_UPLOAD_KEYSTORE_B64: ${{ secrets.DMZ_UPLOAD_KEYSTORE_B64 }}
           DMZ_UPLOAD_STORE_PASSWORD: ${{ secrets.DMZ_UPLOAD_STORE_PASSWORD }}
@@ -112,31 +121,57 @@ jobs:
         run: |
           set -euo pipefail
           AAB=android/app/build/outputs/bundle/release/app-release.aab
+          EXPECTED_SHA1="E2:A5:91:C6:B8:2E:FE:1F:5E:67:17:0D:A4:AE:68:1E:D0:9F:BE:E5"
+
           if [ -n "$DMZ_UPLOAD_KEYSTORE_B64" ] && [ -n "$DMZ_UPLOAD_STORE_PASSWORD" ] && [ -n "$DMZ_UPLOAD_KEY_ALIAS" ] && [ -n "$DMZ_UPLOAD_KEY_PASSWORD" ]; then
-            printf '%s' "$DMZ_UPLOAD_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/dmz-upload.jks"
-            jarsigner -keystore "$RUNNER_TEMP/dmz-upload.jks" \
-              -storepass:env DMZ_UPLOAD_STORE_PASSWORD \
-              -keypass:env DMZ_UPLOAD_KEY_PASSWORD \
-              -signedjar "$RUNNER_TEMP/dmz-stable-signed.aab" \
-              "$AAB" "$DMZ_UPLOAD_KEY_ALIAS"
-            mv "$RUNNER_TEMP/dmz-stable-signed.aab" "$AAB"
-            jarsigner -verify "$AAB"
-            rm -f "$RUNNER_TEMP/dmz-upload.jks"
-            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed-AAB' >> "$GITHUB_ENV"
-            echo 'Stable AAB signed with configured upload key (Play certificate compatibility must still be checked).'
+            KEYSTORE="$RUNNER_TEMP/dmz-upload.jks"
+            printf '%s' "$DMZ_UPLOAD_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+            SIGN_STORE_PASSWORD="$DMZ_UPLOAD_STORE_PASSWORD"
+            SIGN_KEY_PASSWORD="$DMZ_UPLOAD_KEY_PASSWORD"
+            SIGN_ALIAS="$DMZ_UPLOAD_KEY_ALIAS"
+            echo 'Using supplied repository upload-key secrets.'
+          elif [ -s "$HOME/.android/debug.keystore" ]; then
+            KEYSTORE="$HOME/.android/debug.keystore"
+            SIGN_STORE_PASSWORD=android
+            SIGN_KEY_PASSWORD=android
+            SIGN_ALIAS=androiddebugkey
+            echo 'Using cached original Play upload key; verifying certificate.'
           else
-            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-177-Unsigned-AAB' >> "$GITHUB_ENV"
-            echo 'WARNING: No full Play upload-key secret set. Publishing an unsigned AAB artifact; it is NOT Play-upload-ready.'
+            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-186-Unsigned-AAB' >> "$GITHUB_ENV"
+            echo '::warning::No verified Play upload key available; AAB will be unsigned, NOT Play upload ready.'
+            exit 0
           fi
+          export SIGN_STORE_PASSWORD SIGN_KEY_PASSWORD
+
+          ACTUAL_SHA1="$(keytool -list -v -keystore "$KEYSTORE" -storepass:env SIGN_STORE_PASSWORD -alias "$SIGN_ALIAS" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
+          if [ "$ACTUAL_SHA1" != "$EXPECTED_SHA1" ]; then
+            echo "::error::Upload key certificate mismatch: $ACTUAL_SHA1; refusing to sign."
+            exit 1
+          fi
+
+          jarsigner -keystore "$KEYSTORE" \
+            -storepass:env SIGN_STORE_PASSWORD -keypass:env SIGN_KEY_PASSWORD \
+            -signedjar "$RUNNER_TEMP/dmz-stable-signed.aab" \
+            "$AAB" "$SIGN_ALIAS"
+          mv "$RUNNER_TEMP/dmz-stable-signed.aab" "$AAB"
+          jarsigner -verify "$AAB"
+          SIGNED_SHA1="$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA1: //p' | head -n 1)"
+          if [ "$SIGNED_SHA1" != "$EXPECTED_SHA1" ]; then
+            echo "::error::AAB signing certificate did not match pinned Play upload certificate."
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/dmz-upload.jks"
+          echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-186-Signed-AAB' >> "$GITHUB_ENV"
+          echo 'Stable AAB signed with pinned upload certificate.'
 
       - name: Rename stable AAB
         run: |
-          cp android/app/build/outputs/bundle/release/app-release.aab DMZ-Ranked-React-Native-Stable-1.1.0-177.aab
+          cp android/app/build/outputs/bundle/release/app-release.aab DMZ-Ranked-React-Native-Stable-1.1.0-186.aab
 
       - name: Upload non-beta AAB
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: DMZ-Ranked-React-Native-Stable-1.1.0-177.aab
+          path: DMZ-Ranked-React-Native-Stable-1.1.0-186.aab
           if-no-files-found: error
           retention-days: 30
