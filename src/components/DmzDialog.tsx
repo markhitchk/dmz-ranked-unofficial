@@ -100,6 +100,12 @@ export function DmzDialog({
   const actionAccepted = useRef(false);
   const wasVisible = useRef(false);
 
+  // Validation dialogs stay visible after a rejected submission.
+  // Re-arm the action when a PIN/value or validation error changes.
+  useEffect(() => {
+    if (visible && input) actionAccepted.current = false;
+  }, [visible, input?.value, input?.error]);
+
   const negative = () => {
     if (actionAccepted.current) return;
     actionAccepted.current = true;
