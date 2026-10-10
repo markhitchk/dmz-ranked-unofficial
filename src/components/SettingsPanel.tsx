@@ -61,6 +61,7 @@ export type SettingsAction =
   | { type: 'restore-operator'; operatorName: string }
   | { type: 'open-app-tab' }
   | { type: 'test-notification' }
+  | { type: 'open-notification-center' }
   | { type: 'check-updates' }
   | { type: 'open-play-store' }
   | { type: 'open-notification-settings' }
@@ -811,7 +812,7 @@ export function SettingsPanel({
   );
   const showNotifications = matches(
     q,
-    'notifications report review approval website alerts permission sound vibration test'
+'notifications bell inbox message center report review approval website alerts permission sound vibration test'
   );
   const showUpdates =
     Platform.OS === 'android' &&
@@ -1327,9 +1328,16 @@ export function SettingsPanel({
             <>
 <>
               <SectionLabel>NOTIFICATIONS</SectionLabel>
+              <ActionCard
+                title="Notification Center"
+                summary="Open the bell inbox for website events, raid reports, system updates, and Harley's Studios messages."
+                label="OPEN ›"
+                icon={<DmzIcon name="bell" size={27} />}
+                onPress={() => onAction({ type: 'open-notification-center' })}
+              />
               <ToggleCard
                 title="Website notifications"
-                summary="Real-time DMZ Ranked report/review alerts use an ongoing Android foreground service and check the live board every few seconds. Turn this off to stop live monitoring."
+                summary="Enable Android pop-up alerts and background checks for website reports and updates. Alerts received inside the app stay in the bell inbox even when Android notifications are off."
                 value={settings.siteNotifications}
                 onChange={value => onUpdate('siteNotifications', value)}
               />
@@ -1344,7 +1352,7 @@ export function SettingsPanel({
               />
               <ActionCard
                 title="Test notification"
-                summary={`Send a local DMZ Ranked test notification. Last sync: ${lastSyncText}`}
+                summary={`Send an alert through the Notification Center and Android notification tray when allowed. Last sync: ${lastSyncText}`}
                 label="TEST"
                 onPress={() => onAction({ type: 'test-notification' })}
               />

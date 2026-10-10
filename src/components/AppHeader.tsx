@@ -143,11 +143,11 @@ export function AppHeader({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`App messages${unreadMessages ? `, ${unreadMessages} unread` : ''}`}
+          accessibilityLabel={`Notification Center${unreadMessages ? `, ${unreadMessages} unread` : ''}`}
           onPress={onOpenMessages}
           style={styles.messagesButton}
         >
-          <DmzIcon name="notification" size={21} color={colors.gold} />
+          <DmzIcon name="bell" size={21} color={colors.gold} />
           {unreadMessages > 0 ? (
             <View style={styles.messageBadge}>
               <Text style={styles.messageBadgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>

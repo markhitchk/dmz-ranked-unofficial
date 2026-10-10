@@ -9,12 +9,22 @@ import {
 } from 'react-native';
 import Constants from 'expo-constants';
 import * as Application from 'expo-application';
+import * as Notifications from 'expo-notifications';
 import * as KeepAwake from 'expo-keep-awake';
 import NetInfo from '@react-native-community/netinfo';
 import { AppHeader } from './components/AppHeader';
 import { AppMessagesPanel } from './components/AppMessagesPanel';
 import { loadAppMessages, loadReadMessageIds, saveReadMessageIds } from './services/appMessages';
 import type { AppMessage } from './services/appMessagesCore';
+import {
+  loadNotificationHistory,
+  markLocalNotificationsRead,
+  subscribeNotificationCenter
+} from './services/notificationCenter';
+import {
+  mergedNotificationItems,
+  type StoredNotification
+} from './services/notificationCenterCore';
 import { DmzDialog } from './components/DmzDialog';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import {
@@ -90,6 +100,7 @@ function AppContent() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [appMessages, setAppMessages] = useState<AppMessage[]>([]);
+  const [localNotifications, setLocalNotifications] = useState<StoredNotification[]>([]);
   const [readMessageIds, setReadMessageIds] = useState<string[]>([]);
   const [messageStorageReady, setMessageStorageReady] = useState(false);
   const [refreshingMessages, setRefreshingMessages] = useState(false);
@@ -130,17 +141,54 @@ function AppContent() {
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
     'stable';
 
+  const refreshLocalNotifications = useCallback(async () => {
+    setLocalNotifications(await loadNotificationHistory());
+  }, []);
+
   const refreshAppMessages = useCallback(async () => {
     if (messageRefreshBusy.current) return;
     messageRefreshBusy.current = true;
     setRefreshingMessages(true);
     try {
-      setAppMessages(await loadAppMessages(channel));
+      await Promise.all([
+        loadAppMessages(channel).then(setAppMessages),
+        refreshLocalNotifications()
+      ]);
     } finally {
       messageRefreshBusy.current = false;
       setRefreshingMessages(false);
     }
-  }, [channel]);
+  }, [channel, refreshLocalNotifications]);
+
+  useEffect(() => {
+    if (!ready) return;
+    void refreshLocalNotifications();
+    return subscribeNotificationCenter(() => {
+      void refreshLocalNotifications();
+    });
+  }, [ready, refreshLocalNotifications]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const openFromAndroidTray = (response: Notifications.NotificationResponse) => {
+      const data = response.notification.request.content.data;
+      if (data?.openNotificationCenter !== true &&
+          data?.source !== 'dmzranked-notifications' &&
+          data?.source !== 'dmzranked.com') return;
+      setSettingsOpen(false);
+      setFeedbackOpen(false);
+      setMessagesOpen(true);
+      if (typeof data.notificationId === 'string') {
+        void markLocalNotificationsRead([data.notificationId]).catch(() => undefined);
+      }
+      void Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(openFromAndroidTray);
+    void Notifications.getLastNotificationResponseAsync().then(last => {
+      if (last) openFromAndroidTray(last);
+    }).catch(() => undefined);
+    return () => subscription.remove();
+  }, [ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -166,12 +214,22 @@ function AppContent() {
   }, [ready, refreshAppMessages]);
 
   const markAppMessagesRead = (ids: string[]) => {
-    const next = [...new Set([...readMessageIdsRef.current, ...ids])].slice(-200);
-    readMessageIdsRef.current = next;
-    setReadMessageIds(next);
-    messageSaveQueue.current = messageSaveQueue.current
-      .catch(() => undefined)
-      .then(() => saveReadMessageIds(next));
+    const remoteIds = ids.filter(id => id.startsWith('remote:')).map(id => id.slice(7));
+    const localIds = ids.filter(id => id.startsWith('local:')).map(id => id.slice(6));
+    if (remoteIds.length) {
+      const next = [...new Set([...readMessageIdsRef.current, ...remoteIds])].slice(-200);
+      readMessageIdsRef.current = next;
+      setReadMessageIds(next);
+      messageSaveQueue.current = messageSaveQueue.current
+        .catch(() => undefined)
+        .then(() => saveReadMessageIds(next));
+    }
+    if (localIds.length) {
+      setLocalNotifications(previous =>
+        previous.map(item => localIds.includes(item.id) ? { ...item, read: true } : item)
+      );
+      void markLocalNotificationsRead(localIds).catch(() => undefined);
+    }
   };
 
   const openSettings = (target?: string) => {
@@ -609,9 +667,15 @@ function AppContent() {
       case 'test-notification':
         await showWebsiteNotification(
           '[System] Test notification',
-          'Heads-up notifications are working on this device. This is a local app test.'
+          'Test alert from DMZ Ranked. Every system alert now appears in the Notification Center.'
         );
-        showNotice('Test notification sent.');
+        showNotice('Test saved to your bell. Android pop-up depends on notification settings.');
+        return;
+
+      case 'open-notification-center':
+        closeSettings();
+        setMessagesOpen(true);
+        void refreshAppMessages();
         return;
 
       case 'open-notification-settings':
@@ -712,10 +776,13 @@ function AppContent() {
     return <View style={styles.boot} />;
   }
 
-  const unreadMessages = appMessages.filter(message => !readMessageIds.includes(message.id));
+  const allNotifications = mergedNotificationItems(appMessages, readMessageIds, localNotifications);
+  const unreadMessages = allNotifications.filter(message => !message.isRead);
   const popupMessage =
     messageStorageReady && !messagesOpen && !settingsOpen && !feedbackOpen && !loading && !appDialog
-      ? unreadMessages.find(message => message.display === 'popup')
+      ? appMessages.find(message =>
+          message.display === 'popup' && !readMessageIds.includes(message.id)
+        )
       : undefined;
 
   return (
@@ -771,13 +838,12 @@ function AppContent() {
 
       <AppMessagesPanel
         visible={messagesOpen}
-        messages={appMessages}
-        readIds={readMessageIds}
+        messages={allNotifications}
         refreshing={refreshingMessages}
         onClose={() => setMessagesOpen(false)}
         onRefresh={() => { void refreshAppMessages(); }}
         onRead={id => markAppMessagesRead([id])}
-        onReadAll={() => markAppMessagesRead(appMessages.map(message => message.id))}
+        onReadAll={() => markAppMessagesRead(allNotifications.filter(item => !item.isRead).map(item => item.id))}
       />
 
       <FeedbackPanel
@@ -815,13 +881,13 @@ function AppContent() {
         contentScale={contentScaleFactor(settings.contentSize)}
         onPositive={() => {
           if (!popupMessage) return;
-          markAppMessagesRead([popupMessage.id]);
+          markAppMessagesRead(['remote:' + popupMessage.id]);
           if (popupMessage.link) {
             void Linking.openURL(popupMessage.link).catch(() => undefined);
           }
         }}
         onNegative={() => {
-          if (popupMessage) markAppMessagesRead([popupMessage.id]);
+          if (popupMessage) markAppMessagesRead(['remote:' + popupMessage.id]);
         }}
       />
       </View>

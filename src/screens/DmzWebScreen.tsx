@@ -995,12 +995,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           return;
         }
 
-        if (message.type === 'notification' && settings.siteNotifications) {
+        if (message.type === 'notification') {
           const title = message.title?.trim() || 'DMZ Ranked';
           const body = message.body?.trim() || 'New activity is available.';
-          void recordForegroundNotification(title, body).then(() =>
-            showWebsiteNotification(title, body)
-          );
+          void recordForegroundNotification(title, body)
+            .then(() => showWebsiteNotification(title, body))
+            .catch(() => undefined);
           return;
         }
 

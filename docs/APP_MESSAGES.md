@@ -62,11 +62,11 @@ publish one**.
 - `startsAt`, `expiresAt`: optional timezone-qualified ISO 8601 timestamps.
 - `link` and `linkLabel`: optional external **HTTPS** link/button.
 
-The header Messages icon shows unread count, and messages can be marked read
+The title-bar bell opens the unified Notification Center with website events, operator/raid reports, system notices and Harley's Studios announcements. The unread badge combines all categories. Messages can be marked read
 individually or all at once. Read state is private local app data. A message
 with a given ID is shown as a pop-up only until the user acknowledges it. These
 are **in-app announcements**, not background remote push notifications:
-closed apps are not woken up to receive them.
+closed apps are not woken up to receive them. Existing website notifications use Android background checks when enabled; Android determines the timing. Each processed alert is also saved into the local Notification Center when notification permission is denied.
 
 Keep announcements relevant. This is a public feed; do not include private
 information or user-specific operator details.

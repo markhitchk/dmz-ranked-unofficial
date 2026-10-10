@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { recordLocalNotification } from './notificationCenter';
+import { loadSettings } from './storage';
 
 export const CHANNEL_ID = 'dmz_site_alerts_v3_heads_up';
 
@@ -70,6 +72,13 @@ export async function showWebsiteNotification(
   title: string,
   body: string
 ): Promise<void> {
+  // The in-app Notification Center is authoritative: record first even
+  // when Android notification permission is denied or system alerts are off.
+  const { entry, isNew } = await recordLocalNotification(title, body);
+  if (!isNew) return;
+
+  const settings = await loadSettings();
+  if (!settings.siteNotifications) return;
   const permission = await Notifications.getPermissionsAsync();
   if (permission.status !== 'granted') return;
 
@@ -86,7 +95,12 @@ export async function showWebsiteNotification(
       color: '#F6C453',
       autoDismiss: true,
       priority: Notifications.AndroidNotificationPriority.HIGH,
-      data: { source: 'dmzranked.com', alertTitle: alertLine }
+      data: {
+        source: 'dmzranked-notifications',
+        notificationId: entry.id,
+        openNotificationCenter: true,
+        alertTitle: alertLine
+      }
     },
     trigger: Platform.OS === 'android' ? { channelId: CHANNEL_ID } : null
   });

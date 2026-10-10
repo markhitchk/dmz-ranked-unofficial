@@ -9,7 +9,7 @@ This branch is the Android/iOS migration of the DMZ Ranked Unofficial app.
 - React Native WebView
 - AsyncStorage for app preferences
 - NetInfo for connection state
-- Expo Notifications for native/local notifications
+- Expo Notifications for Android tray alerts and a persistent in-app Notification Center unifying website events, system alerts, raid reports, and remote Harley's Studios messages
 - Continuous Native Generation: Android/iOS projects are generated from `app.config.ts`
 
 The existing dmzranked.com site remains the source of the main experience. The app injects the canonical `remote/app-ui/app.css` and `remote/app-ui/app.js` into the WebView.
