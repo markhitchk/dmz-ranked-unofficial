@@ -33,6 +33,8 @@ type Props = {
   onReload: () => void;
   onNavigate: (url: string) => void;
   onOpenSettings: () => void;
+  unreadMessages: number;
+  onOpenMessages: () => void;
 };
 
 export function AppHeader({
@@ -47,7 +49,9 @@ export function AppHeader({
   onGoForward,
   onReload,
   onNavigate,
-  onOpenSettings
+  onOpenSettings,
+  unreadMessages,
+  onOpenMessages
 }: Props) {
   const version = Application.nativeApplicationVersion ?? '1.1.0';
   const build = Application.nativeBuildVersion ?? '176';
@@ -136,6 +140,20 @@ export function AppHeader({
             v{version} • {build}{!online ? ' • OFFLINE' : ''}
           </Text>
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`App messages${unreadMessages ? `, ${unreadMessages} unread` : ''}`}
+          onPress={onOpenMessages}
+          style={styles.messagesButton}
+        >
+          <DmzIcon name="notification" size={21} color={colors.gold} />
+          {unreadMessages > 0 ? (
+            <View style={styles.messageBadge}>
+              <Text style={styles.messageBadgeText}>{unreadMessages > 9 ? '9+' : unreadMessages}</Text>
+            </View>
+          ) : null}
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -293,6 +311,25 @@ const styles = StyleSheet.create({
     fontFamily: condensedFont,
     fontSize: 10
   },
+  messagesButton: {
+    width: 37,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  messageBadge: {
+    position: 'absolute',
+    right: 0,
+    top: 2,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 2,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.red
+  },
+  messageBadgeText: { color: colors.white, fontSize: 9, fontWeight: '900' },
   settingsButton: {
     width: 40,
     height: 40,

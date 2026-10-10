@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
   Linking,
@@ -12,6 +12,9 @@ import * as Application from 'expo-application';
 import * as KeepAwake from 'expo-keep-awake';
 import NetInfo from '@react-native-community/netinfo';
 import { AppHeader } from './components/AppHeader';
+import { AppMessagesPanel } from './components/AppMessagesPanel';
+import { loadAppMessages, loadReadMessageIds, saveReadMessageIds } from './services/appMessages';
+import type { AppMessage } from './services/appMessagesCore';
 import { DmzDialog } from './components/DmzDialog';
 import { FeedbackPanel } from './components/FeedbackPanel';
 import {
@@ -85,6 +88,14 @@ function AppContent() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTarget, setSettingsTarget] = useState<string | undefined>();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [appMessages, setAppMessages] = useState<AppMessage[]>([]);
+  const [readMessageIds, setReadMessageIds] = useState<string[]>([]);
+  const [messageStorageReady, setMessageStorageReady] = useState(false);
+  const [refreshingMessages, setRefreshingMessages] = useState(false);
+  const readMessageIdsRef = useRef<string[]>([]);
+  const messageSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const messageRefreshBusy = useRef(false);
   const [online, setOnline] = useState(true);
   const [loading, setLoading] = useState(true);
   const [navigation, setNavigation] = useState<DmzNavigationState>({
@@ -118,6 +129,50 @@ function AppContent() {
   const channel =
     (Constants.expoConfig?.extra?.appChannel as AppChannel | undefined) ??
     'stable';
+
+  const refreshAppMessages = useCallback(async () => {
+    if (messageRefreshBusy.current) return;
+    messageRefreshBusy.current = true;
+    setRefreshingMessages(true);
+    try {
+      setAppMessages(await loadAppMessages(channel));
+    } finally {
+      messageRefreshBusy.current = false;
+      setRefreshingMessages(false);
+    }
+  }, [channel]);
+
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    void loadReadMessageIds().then(ids => {
+      if (!alive) return;
+      readMessageIdsRef.current = ids;
+      setReadMessageIds(ids);
+      setMessageStorageReady(true);
+      void refreshAppMessages();
+    });
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') void refreshAppMessages();
+    }, 5 * 60 * 1000);
+    const listener = AppState.addEventListener('change', state => {
+      if (state === 'active') void refreshAppMessages();
+    });
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      listener.remove();
+    };
+  }, [ready, refreshAppMessages]);
+
+  const markAppMessagesRead = (ids: string[]) => {
+    const next = [...new Set([...readMessageIdsRef.current, ...ids])].slice(-200);
+    readMessageIdsRef.current = next;
+    setReadMessageIds(next);
+    messageSaveQueue.current = messageSaveQueue.current
+      .catch(() => undefined)
+      .then(() => saveReadMessageIds(next));
+  };
 
   const openSettings = (target?: string) => {
     const nextTarget = target?.trim() || undefined;
@@ -657,6 +712,12 @@ function AppContent() {
     return <View style={styles.boot} />;
   }
 
+  const unreadMessages = appMessages.filter(message => !readMessageIds.includes(message.id));
+  const popupMessage =
+    messageStorageReady && !messagesOpen && !settingsOpen && !feedbackOpen && !loading && !appDialog
+      ? unreadMessages.find(message => message.display === 'popup')
+      : undefined;
+
   return (
     <AppSafeArea
       initialWindow
@@ -677,11 +738,13 @@ function AppContent() {
         onReload={() => webRef.current?.reload()}
         onNavigate={url => webRef.current?.navigate(url)}
         onOpenSettings={() => openSettings()}
+        unreadMessages={unreadMessages.length}
+        onOpenMessages={() => setMessagesOpen(true)}
       />
 
       <DmzWebScreen
         ref={webRef}
-        suspendBackgroundWork={settingsOpen || feedbackOpen}
+        suspendBackgroundWork={settingsOpen || feedbackOpen || messagesOpen || Boolean(popupMessage)}
         settings={settings}
         channel={channel}
         onOpenSettings={openSettings}
@@ -706,6 +769,17 @@ function AppContent() {
         onAction={action => void handleAction(action)}
       />
 
+      <AppMessagesPanel
+        visible={messagesOpen}
+        messages={appMessages}
+        readIds={readMessageIds}
+        refreshing={refreshingMessages}
+        onClose={() => setMessagesOpen(false)}
+        onRefresh={() => { void refreshAppMessages(); }}
+        onRead={id => markAppMessagesRead([id])}
+        onReadAll={() => markAppMessagesRead(appMessages.map(message => message.id))}
+      />
+
       <FeedbackPanel
         visible={feedbackOpen}
         animations={settings.appAnimations}
@@ -727,6 +801,26 @@ function AppContent() {
           action?.();
         }}
         onNegative={() => setAppDialog(null)}
+      />
+      <DmzDialog
+        visible={Boolean(popupMessage)}
+        eyebrow="HARLEY'S STUDIOS • MESSAGE"
+        title={popupMessage?.title ?? ''}
+        message={popupMessage?.body ?? ''}
+        positiveLabel={popupMessage?.link ? (popupMessage.linkLabel ?? 'OPEN LINK') : 'GOT IT'}
+        negativeLabel="DISMISS"
+        animations={settings.appAnimations}
+        contentScale={contentScaleFactor(settings.contentSize)}
+        onPositive={() => {
+          if (!popupMessage) return;
+          markAppMessagesRead([popupMessage.id]);
+          if (popupMessage.link) {
+            void Linking.openURL(popupMessage.link).catch(() => undefined);
+          }
+        }}
+        onNegative={() => {
+          if (popupMessage) markAppMessagesRead([popupMessage.id]);
+        }}
       />
       </View>
     </AppSafeArea>
