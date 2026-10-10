@@ -34,7 +34,7 @@ export function MotionPressable({
 
   const change = (pressed: boolean) => {
     const target = pressed && enabled && !disabled ? pressedScale
-      : pressScaleTarget(false, disabled, enabled);
+      : pressScaleTarget(false, Boolean(disabled), enabled);
     scale.stopAnimation();
     if (!enabled || disabled) {
       scale.setValue(1);
