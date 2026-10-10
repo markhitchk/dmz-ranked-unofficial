@@ -13,10 +13,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, condensedFont } from '../theme';
-import { useMotion } from '../motion/MotionProvider';
-import { MotionPressable } from '../motion/MotionPressable';
-import { MOTION } from '../motion/motionPolicy';
-import { nextDialogPhase, type DialogPhase } from '../motion/dialogTransition';
 
 export type DmzDialogChoice = {
   label: string;
@@ -92,75 +88,21 @@ export function DmzDialog({
 }: Props) {
   const animation = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
-  const { enabled: motionEnabled } = useMotion();
-  const animate = animations && motionEnabled;
   const [mounted, setMounted] = useState(visible);
-  const phase = useRef<DialogPhase>(visible ? 'entering' : 'hidden');
-  const revision = useRef(0);
-  const actionAccepted = useRef(false);
-  const wasVisible = useRef(false);
-
-  // Validation dialogs stay visible after a rejected submission.
-  // Re-arm the action when a PIN/value or validation error changes.
-  useEffect(() => {
-    if (visible && input) actionAccepted.current = false;
-  }, [visible, input?.value, input?.error]);
-
-  const negative = () => {
-    if (actionAccepted.current) return;
-    actionAccepted.current = true;
-    onNegative?.();
-  };
-  const positive = () => {
-    if (actionAccepted.current) return;
-    actionAccepted.current = true;
-    onPositive?.();
-  };
 
   useEffect(() => {
-    const token = ++revision.current;
-    animation.stopAnimation();
     if (visible) {
-      if (!wasVisible.current) actionAccepted.current = false;
-      wasVisible.current = true;
-      phase.current = nextDialogPhase(phase.current, 'open');
       setMounted(true);
-      if (!animate) {
-        animation.setValue(1);
-        phase.current = nextDialogPhase(phase.current, 'entered');
-      } else {
-        animation.setValue(0);
-        Animated.timing(animation, {
-          toValue: 1, duration: MOTION.dialogOpenMs, useNativeDriver: true
-        }).start(({ finished }) => {
-          if (finished && revision.current === token) {
-            phase.current = nextDialogPhase(phase.current, 'entered');
-          }
-        });
-      }
-    } else {
-      wasVisible.current = false;
-      phase.current = nextDialogPhase(phase.current, 'close');
-      if (!animate || phase.current === 'hidden') {
-        animation.setValue(0);
-        setMounted(false);
-        phase.current = 'hidden';
-      } else {
-        Animated.timing(animation, {
-          toValue: 0, duration: MOTION.dialogCloseMs, useNativeDriver: true
-        }).start(({ finished }) => {
-          if (finished && revision.current === token) {
-            phase.current = nextDialogPhase(phase.current, 'exited');
-            setMounted(false);
-          }
-        });
-      }
+      animation.setValue(animations ? 0 : 1);
+      Animated.timing(animation, {
+        toValue: 1,
+        duration: animations ? 190 : 0,
+        useNativeDriver: true
+      }).start();
+    } else if (mounted) {
+      setMounted(false);
     }
-    return () => {
-      ++revision.current;
-      animation.stopAnimation();
-    };
-  }, [animation, animate, visible]);
+  }, [animation, animations, mounted, visible]);
 
   if (!mounted && !visible) return null;
 
@@ -173,12 +115,12 @@ export function DmzDialog({
 
   return (
     <Modal
-      visible={mounted}
+      visible={visible}
       transparent
       animationType="none"
       statusBarTranslucent
       navigationBarTranslucent
-      onRequestClose={negative}
+      onRequestClose={onNegative}
     >
       <Pressable
         style={[
@@ -193,7 +135,7 @@ export function DmzDialog({
             paddingLeft: insets.left
           }
         ]}
-        onPress={negative}
+        onPress={onNegative}
       >
         <View
           style={[
@@ -295,7 +237,7 @@ export function DmzDialog({
               {choices?.length ? (
                 <View style={styles.choices}>
                   {choices.map((choice, index) => (
-                    <MotionPressable
+                    <Pressable
                       key={choice.label + index}
                       onPress={choice.onPress}
                       style={[
@@ -349,7 +291,7 @@ export function DmzDialog({
                           {choice.selected ? 'ACTIVE' : 'SELECT'}
                         </Text>
                       </View>
-                    </MotionPressable>
+                    </Pressable>
                   ))}
                   {operatorPicker ? (
                     <Text style={styles.choiceFooter}>
@@ -361,20 +303,20 @@ export function DmzDialog({
 
               {operatorPicker && choices?.length ? (
                 negativeLabel ? (
-                  <MotionPressable style={styles.fullCancel} onPress={negative}>
+                  <Pressable style={styles.fullCancel} onPress={onNegative}>
                     <Text style={styles.cancelText}>{negativeLabel}</Text>
-                  </MotionPressable>
+                  </Pressable>
                 ) : null
               ) : (
                 <View style={styles.actions}>
                   {negativeLabel ? (
-                    <MotionPressable
+                    <Pressable
                       style={[
                         styles.action,
                         styles.secondaryAction,
                         danger && styles.secondaryDanger
                       ]}
-                      onPress={negative}
+                      onPress={onNegative}
                     >
                       <Text
                         style={[
@@ -384,16 +326,16 @@ export function DmzDialog({
                       >
                         {negativeLabel}
                       </Text>
-                    </MotionPressable>
+                    </Pressable>
                   ) : null}
 
-                  <MotionPressable
+                  <Pressable
                     style={[
                       styles.action,
                       negativeLabel ? styles.actionGap : null,
                       danger ? styles.dangerAction : styles.primaryAction
                     ]}
-                    onPress={positive}
+                    onPress={onPositive}
                   >
                     <Text
                       style={
@@ -402,7 +344,7 @@ export function DmzDialog({
                     >
                       {positiveLabel}
                     </Text>
-                  </MotionPressable>
+                  </Pressable>
                 </View>
               )}
             </LinearGradient>

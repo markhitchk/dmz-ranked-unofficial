@@ -56,12 +56,12 @@ jobs:
 
       - name: Rename APK
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk DMZ-Ranked-React-Native-Beta-1.1.0-185.apk
+          cp android/app/build/outputs/apk/release/app-release.apk DMZ-Ranked-React-Native-Beta-1.1.0-186.apk
 
       - name: Upload beta APK
         uses: actions/upload-artifact@v4
         with:
-          name: DMZ-Ranked-React-Native-Beta-1.1.0-185
-          path: DMZ-Ranked-React-Native-Beta-1.1.0-185.apk
+          name: DMZ-Ranked-React-Native-Beta-1.1.0-186
+          path: DMZ-Ranked-React-Native-Beta-1.1.0-186.apk
           if-no-files-found: error
           retention-days: 30

@@ -32,10 +32,6 @@ import { getLastNotificationSync } from '../services/backgroundNotificationSync'
 import type { AppSettings, ContentSize } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
-import { useMotion } from '../motion/MotionProvider';
-import { MotionPressable } from '../motion/MotionPressable';
-import { MOTION } from '../motion/motionPolicy';
-import { shouldStartSettingsEntry } from '../motion/settingsMotion';
 import { getDisplayInfo, getWebViewPackage, sampleUiPerformance } from '../../modules/dmz-migration';
 
 const PAYPAL_URL = 'https://share.google/9nj1GcaYNu3qJTTeu';
@@ -214,21 +210,18 @@ function ToggleCard({
   return (
     <View style={styles.cardGap}>
       <SettingsCard>
-        <View style={styles.toggleCard}>
-          <MotionPressable style={styles.flexCopy} onPress={() => onChange(!value)}
-            accessibilityRole="switch" accessibilityState={{ checked: value }}>
-            <View>
+        <Pressable style={styles.toggleCard} onPress={() => onChange(!value)}>
+          <View style={styles.flexCopy}>
             <Text style={styles.cardTitleCondensed}>{title}</Text>
             <Text style={styles.cardSummary}>{summary}</Text>
-            </View>
-          </MotionPressable>
+          </View>
           <Switch
             value={value}
             onValueChange={onChange}
             trackColor={{ false: '#3A4141', true: '#A87C26' }}
             thumbColor={value ? colors.gold : '#C8CDCA'}
           />
-        </View>
+        </Pressable>
       </SettingsCard>
     </View>
   );
@@ -250,7 +243,7 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <MotionPressable
+    <Pressable
       onPress={onPress}
       style={[styles.cardGap, styles.settingsCardSurface, styles.settingsActionSurface]}
     >
@@ -268,7 +261,7 @@ function ActionCard({
           <GoldAction label={label} onPress={onPress} />
         )}
       </View>
-    </MotionPressable>
+    </Pressable>
   );
 }
 
@@ -284,7 +277,7 @@ function CreditSupportCard({
   onPress: () => void;
 }) {
   return (
-    <MotionPressable
+    <Pressable
       onPress={onPress}
       style={[
         styles.creditSupportGap,
@@ -301,7 +294,7 @@ function CreditSupportCard({
           <Text style={styles.creditSupportButtonText}>{label}</Text>
         </View>
       </View>
-    </MotionPressable>
+    </Pressable>
   );
 }
 
@@ -359,10 +352,7 @@ export function SettingsPanel({
   const developerTapStarted = useRef(0);
   const developerFailures = useRef(0);
   const developerLockoutUntil = useRef(0);
-  const { enabled: motionEnabled } = useMotion();
-  const previousVisible = useRef(false);
   const searchEntry = useRef(new Animated.Value(1)).current;
-  const contentEntry = useRef(new Animated.Value(1)).current;
 
   const deferredQuery = useDeferredValue(query);
   const q = deferredQuery.trim().toLowerCase();
@@ -471,28 +461,28 @@ export function SettingsPanel({
   }, [needsDisplayMetadata]);
 
   useEffect(() => {
-    const entering = shouldStartSettingsEntry(previousVisible.current, visible, motionEnabled);
-    previousVisible.current = visible;
+    if (!visible) return;
+
     searchEntry.stopAnimation();
-    contentEntry.stopAnimation();
-    if (!entering) {
+    if (!settings.appAnimations || Platform.OS === 'android') {
       searchEntry.setValue(1);
-      contentEntry.setValue(1);
       return;
     }
+
     searchEntry.setValue(0);
-    contentEntry.setValue(0);
-    const search = Animated.timing(searchEntry, {
-      toValue: 1, duration: MOTION.settingsSearchMs, useNativeDriver: true
+    const entry = Animated.timing(searchEntry, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true
     });
-    const content = Animated.timing(contentEntry, {
-      toValue: 1, duration: MOTION.settingsContentMs, useNativeDriver: true,
-      delay: MOTION.settingsContentDelayMs
-    });
-    search.start();
-    content.start();
-    return () => { search.stop(); content.stop(); };
-  }, [searchEntry, contentEntry, motionEnabled, visible]);
+
+    entry.start();
+    return () => entry.stop();
+  }, [
+    searchEntry,
+    settings.appAnimations,
+    visible
+  ]);
 
   useEffect(() => {
     if (
@@ -740,14 +730,14 @@ export function SettingsPanel({
   const sizeButton = (size: ContentSize, label: string) => {
     const active = settings.contentSize === size;
     return (
-      <MotionPressable
+      <Pressable
         onPress={() => onUpdate('contentSize', size)}
         style={[styles.sizeButton, active && styles.sizeButtonActive]}
       >
         <Text style={[styles.sizeButtonText, active && styles.sizeButtonTextActive]}>
           {label}
         </Text>
-      </MotionPressable>
+      </Pressable>
     );
   };
 
@@ -903,7 +893,7 @@ export function SettingsPanel({
 
                     </View>
                     <Text style={styles.aboutVersion}>Version {version}</Text>
-                    <MotionPressable
+                    <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Build ${build}. Developer options unlock.`}
                       accessibilityHint="Tap seven times to unlock developer options. Long press for build details."
@@ -913,7 +903,7 @@ export function SettingsPanel({
                       hitSlop={8}
                     >
                       <Text style={styles.aboutBuild}>Build {build}</Text>
-                    </MotionPressable>
+                    </Pressable>
                     <Text style={styles.unofficialClient}>
                       Unofficial {Platform.OS === 'android' ? 'Android' : 'iOS'} client
                     </Text>
@@ -924,7 +914,7 @@ export function SettingsPanel({
                   Website by YoLando &amp; dCHINZ • App by Harley&apos;s Studios
                 </Text>
 
-                <MotionPressable
+                <Pressable
                   onPress={() => setCreditsExpanded(value => !value)}
                   style={styles.creditsToggle}
                 >
@@ -935,7 +925,7 @@ export function SettingsPanel({
                       </Text>
                     </View>
                   </DmzGoldButton>
-                </MotionPressable>
+                </Pressable>
 
                 {creditsExpanded ? (
                   <View style={styles.creditsContent}>
@@ -1191,7 +1181,7 @@ export function SettingsPanel({
                         Detected from DMZRanked.com
                       </Text>
                     </View>
-                    <MotionPressable
+                    <Pressable
                       onPress={() => onAction({ type: 'save-operator' })}
                       style={styles.syncButton}
                     >
@@ -1200,7 +1190,7 @@ export function SettingsPanel({
                         <Text style={styles.syncTitle}>SYNC</Text>
                         <Text style={styles.syncSubtitle}>From website</Text>
                       </View>
-                    </MotionPressable>
+                    </Pressable>
                   </View>
 
                   <View style={styles.operatorInner}>
@@ -1217,7 +1207,7 @@ export function SettingsPanel({
                       {backupCount} / 2 imported
                     </Text>
                     {backupNames.length ? (
-                      <MotionPressable
+                      <Pressable
                         onPress={() => setDialog('operator-picker')}
                         style={styles.operatorListButton}
                       >
@@ -1227,12 +1217,12 @@ export function SettingsPanel({
                         <Text style={styles.operatorPickerHint}>
                           PICK OPERATOR ›
                         </Text>
-                      </MotionPressable>
+                      </Pressable>
                     ) : null}
                   </View>
 
                   <View style={styles.operatorActions}>
-                    <MotionPressable
+                    <Pressable
                       style={styles.operatorAction}
                       onPress={() => {
                         onAction({ type: 'open-app-tab' });
@@ -1242,14 +1232,14 @@ export function SettingsPanel({
                       <Text style={styles.operatorActionText}>
                         OPEN WEBSITE
                       </Text>
-                    </MotionPressable>
+                    </Pressable>
                     <View style={styles.operatorActionSpacer} />
-                    <MotionPressable
+                    <Pressable
                       style={styles.operatorAction}
                       onPress={() => onAction({ type: 'refresh-operator' })}
                     >
                       <Text style={styles.operatorActionText}>REFRESH</Text>
-                    </MotionPressable>
+                    </Pressable>
                   </View>
                 </View>
               </SettingsCard>
@@ -1257,7 +1247,7 @@ export function SettingsPanel({
               <View style={styles.cardGap}>
                 <SettingsCard>
                   <View style={styles.backupCard}>
-                    <MotionPressable
+                    <Pressable
                       style={styles.backupHeader}
                       onPress={() =>
                         onUpdate('operatorAutoSave', !settings.operatorAutoSave)
@@ -1282,7 +1272,7 @@ export function SettingsPanel({
                             : '#C8CDCA'
                         }
                       />
-                    </MotionPressable>
+                    </Pressable>
 
                     <Text style={styles.backupSummary}>
                       {latestBackupText}
@@ -1296,14 +1286,14 @@ export function SettingsPanel({
                     </Text>
 
                     <View style={styles.backupActionRow}>
-                      <MotionPressable
+                      <Pressable
                         style={styles.backupActionButton}
                         onPress={() => onAction({ type: 'save-operator' })}
                       >
                         <Text style={styles.backupActionText}>BACKUP</Text>
-                      </MotionPressable>
+                      </Pressable>
                       <View style={styles.backupActionSpacer} />
-                      <MotionPressable
+                      <Pressable
                         style={styles.backupActionButton}
                         onPress={() =>
                           onAction({
@@ -1314,14 +1304,14 @@ export function SettingsPanel({
                         }
                       >
                         <Text style={styles.backupActionText}>RESTORE</Text>
-                      </MotionPressable>
+                      </Pressable>
                       <View style={styles.backupActionSpacer} />
-                      <MotionPressable
+                      <Pressable
                         style={styles.backupActionButton}
                         onPress={() => void exportBackups()}
                       >
                         <Text style={styles.backupActionText}>COPY</Text>
-                      </MotionPressable>
+                      </Pressable>
                     </View>
                   </View>
                 </SettingsCard>
@@ -1644,13 +1634,13 @@ export function SettingsPanel({
     >
       <AppSafeArea contentScale={1}>
         <View style={styles.toolbar}>
-          <MotionPressable
+          <Pressable
             accessibilityLabel="Back"
             style={styles.backButton}
             onPress={onClose}
           >
             <DmzIcon name="back" size={24} />
-          </MotionPressable>
+          </Pressable>
           <Image
             source={require('../../assets/dmz_ranked_logo_display.png')}
             style={styles.toolbarLogo}
@@ -1666,14 +1656,19 @@ export function SettingsPanel({
         <Animated.View
           style={[
             styles.searchOuter,
-            {
-              opacity: searchEntry,
-              transform: [{
-                translateY: searchEntry.interpolate({
-                  inputRange: [0, 1], outputRange: [-10, 0]
-                })
-              }]
-            }
+            Platform.OS === 'android'
+              ? null
+              : {
+                  opacity: searchEntry,
+                  transform: [
+                    {
+                      translateY: searchEntry.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-10, 0]
+                      })
+                    }
+                  ]
+                }
           ]}
         >
           <View style={[styles.searchShell, styles.searchShellOptimized]}>
@@ -1691,16 +1686,8 @@ export function SettingsPanel({
           </View>
         </Animated.View>
 
-        <Animated.View style={[styles.scroll, {
-          opacity: contentEntry,
-          transform: [{
-            translateY: contentEntry.interpolate({
-              inputRange: [0, 1], outputRange: [18, 0]
-            })
-          }]
-        }]}>
         <FlatList
-          style={{ flex: 1 }}
+          style={styles.scroll}
           contentContainerStyle={styles.content}
           data={flattenSettingsRows(settingsRows)}
           keyExtractor={item => item.key}
@@ -1713,7 +1700,6 @@ export function SettingsPanel({
           keyboardDismissMode="on-drag"
           nestedScrollEnabled
         />
-        </Animated.View>
 
         <DmzDialog
           visible={dialog === 'build-info'}

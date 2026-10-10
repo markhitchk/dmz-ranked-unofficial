@@ -71,7 +71,6 @@ import {
   publishMigrationPayload
 } from './services/peerMigration';
 import { colors, contentScaleFactor } from './theme';
-import { MotionProvider } from './motion/MotionProvider';
 import type { AppChannel, AppSettings } from './types';
 import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
@@ -854,7 +853,6 @@ function AppContent() {
       : undefined;
 
   return (
-    <MotionProvider enabledByUser={settings.appAnimations}>
     <AppSafeArea
       initialWindow
       contentScale={contentScaleFactor(settings.contentSize)}
@@ -963,7 +961,6 @@ function AppContent() {
       />
       </View>
     </AppSafeArea>
-    </MotionProvider>
   );
 }
 

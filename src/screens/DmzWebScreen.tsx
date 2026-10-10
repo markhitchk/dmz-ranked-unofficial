@@ -27,9 +27,6 @@ import { WebView } from 'react-native-webview';
 import type { AppSettings } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { LoadingOverlay } from '../components/LoadingOverlay';
-import { MotionPressable } from '../motion/MotionPressable';
-import { useMotion } from '../motion/MotionProvider';
-import { MOTION } from '../motion/motionPolicy';
 import {
   loadRemoteAppUi,
   type RemoteAppUiPayload
@@ -298,7 +295,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     },
     ref
   ) {
-    const { enabled: nativeMotionEnabled } = useMotion();
     const webRef = useRef<WebView>(null);
     const webHostRef = useRef<View>(null);
     const userAgent = useMemo(
@@ -724,17 +720,17 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
 
       finishTimer.current = setTimeout(() => {
         if (!gate.isCurrent(id)) return;
-        if (!nativeMotionEnabled) {
+        if (!settings.appAnimations) {
           finish();
           return;
         }
         Animated.timing(overlayOpacity, {
           toValue: 0,
-          duration: MOTION.loadingFadeMs,
+          duration: 180,
           useNativeDriver: true
         }).start(({ finished }) => { if (finished) finish(); });
       }, 120);
-    }, [captureOperatorBackup, gate, overlayOpacity, refreshOperator, setLoadingState, nativeMotionEnabled, settings.operatorAutoSave]);
+    }, [captureOperatorBackup, gate, overlayOpacity, refreshOperator, setLoadingState, settings.appAnimations, settings.operatorAutoSave]);
 
     const failLoad = useCallback((id: number, kind: 'network' | 'interface') => {
       if (!gate.isCurrent(id)) return;
@@ -765,7 +761,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       setNavProgressVisible(true);
       navProgressOpacity.stopAnimation();
 
-      if (!nativeMotionEnabled) {
+      if (!settings.appAnimations) {
         navProgressOpacity.setValue(1);
         return;
       }
@@ -775,14 +771,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         duration: 90,
         useNativeDriver: true
       }).start();
-    }, [navProgressOpacity, nativeMotionEnabled]);
+    }, [navProgressOpacity, settings.appAnimations]);
 
     const hideNavigationProgress = useCallback(() => {
       setNavProgress(100);
       if (navHideTimer.current) clearTimeout(navHideTimer.current);
       navHideTimer.current = setTimeout(() => {
         navProgressOpacity.stopAnimation();
-        if (!nativeMotionEnabled) {
+        if (!settings.appAnimations) {
           navProgressOpacity.setValue(0);
           setNavProgressVisible(false);
           return;
@@ -796,7 +792,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           if (finished) setNavProgressVisible(false);
         });
       }, 90);
-    }, [navProgressOpacity, nativeMotionEnabled]);
+    }, [navProgressOpacity, settings.appAnimations]);
 
     const handleLoadStart = useCallback((url: string) => {
       clearLoadTimers();
@@ -1363,7 +1359,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               progress={progress}
               status={status}
               verbose={settings.verboseLoading}
-              animations={nativeMotionEnabled}
+              animations={settings.appAnimations}
             />
           </Animated.View>
         ) : null}
@@ -1385,9 +1381,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
                   ? 'The app interface could not finish loading. Retry to load the complete DMZ Ranked app.'
                   : 'DMZ Ranked could not load. Check your connection, then reconnect to the leaderboard.'}
               </Text>
-              <MotionPressable style={styles.retry} onPress={retry}>
+              <Pressable style={styles.retry} onPress={retry}>
                 <Text style={styles.retryText}>RETRY DMZ RANKED</Text>
-              </MotionPressable>
+              </Pressable>
             </View>
           </View>
         ) : null}
