@@ -1,6 +1,7 @@
 import React, { useDeferredValue, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  AppState,
   FlatList,
   Image,
   Linking,
@@ -29,7 +30,7 @@ import {
   operatorNames
 } from '../services/operatorBackup';
 import { getLastNotificationSync } from '../services/backgroundNotificationSync';
-import type { AppSettings, ContentSize } from '../types';
+import type { AppSettings, ContentSize, RefreshRatePreference } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
 import { getDisplayInfo, getWebViewPackage, sampleUiPerformance } from '../../modules/dmz-migration';
@@ -342,7 +343,7 @@ export function SettingsPanel({
   const [lastSyncText, setLastSyncText] = useState('Not checked yet');
   const [webViewPackageText, setWebViewPackageText] = useState('Unknown');
   const [displayInfoText, setDisplayInfoText] = useState('Detecting display…');
-  const [performanceInfoText, setPerformanceInfoText] = useState('Not tested yet.');
+  const [performanceInfoText, setPerformanceInfoText] = useState('Not tested yet. Callback timing is an estimate, not WebView rendered FPS.');
   const [performanceTesting, setPerformanceTesting] = useState(false);
   const [dialog, setDialog] = useState<DialogMode>(null);
   const [pin, setPin] = useState('');
@@ -436,29 +437,41 @@ export function SettingsPanel({
 
   useEffect(() => {
     if (!needsDisplayMetadata) return;
-
-    void getDisplayInfo().then(info => {
-      if (!info) {
-        setDisplayInfoText('Native display metrics unavailable in this build.');
-        return;
-      }
-
-      const formatHz = (value: number) => {
-        const rounded = Math.round(value);
-        return Math.abs(value - rounded) < 0.05
-          ? String(rounded)
-          : value.toFixed(2);
-      };
-
-      const supported = info.supportedRefreshRates
-        .map(formatHz)
-        .join(' / ');
-
-      setDisplayInfoText(
-        `${info.width}×${info.height} • ${formatHz(info.currentRefreshRate)} Hz${supported ? ` • Supported: ${supported} Hz` : ''}`
-      );
+    let alive = true;
+    const refresh = () => {
+      void getDisplayInfo().then(info => {
+        if (!alive) return;
+        if (!info) {
+          setDisplayInfoText('Native display metrics unavailable in this build.');
+          return;
+        }
+        const formatHz = (value: number) => {
+          const rounded = Math.round(value);
+          return Math.abs(value - rounded) < 0.05 ? String(rounded) : value.toFixed(2);
+        };
+        const supported = info.supportedRefreshRates.map(formatHz).join(' / ');
+        const request = info.requestedRefreshRate > 0
+          ? ` • Requested: ${formatHz(info.requestedRefreshRate)} Hz`
+          : ' • Following Android';
+        setDisplayInfoText(
+          `${info.width}×${info.height} • Active: ${formatHz(info.currentRefreshRate)} Hz${supported ? ` • Supported: ${supported} Hz` : ''}${request}${info.powerSaveMode ? ' • Power saver on' : ''}`
+        );
+      }).catch(() => {
+        if (alive) setDisplayInfoText('Unable to read Android display metrics.');
+      });
+    };
+    refresh();
+    // Android may take a moment to apply or reject the requested rate.
+    const settleTimer = setTimeout(refresh, 700);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') refresh();
     });
-  }, [needsDisplayMetadata]);
+    return () => {
+      alive = false;
+      clearTimeout(settleTimer);
+      subscription.remove();
+    };
+  }, [needsDisplayMetadata, settings.refreshRatePreference]);
 
   useEffect(() => {
     if (!visible) return;
@@ -631,7 +644,7 @@ export function SettingsPanel({
           : ' • JS-thread estimate (not WebView FPS)';
 
       setPerformanceInfoText(
-        `${sample.quality} • ${fps} FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}${fallbackLabel}`
+        `${sample.quality} • ≈${fps} callback FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}${fallbackLabel}`
       );
       toast(
         `Performance: ${sample.quality} • ${fps} FPS • ${jank}% jank`,
@@ -727,6 +740,23 @@ export function SettingsPanel({
     }
   };
 
+  const refreshRateButton = (mode: RefreshRatePreference, label: string) => {
+    const active = (settings.refreshRatePreference ?? 'system') === mode;
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Refresh rate: ${label}`}
+        accessibilityState={{ selected: active }}
+        onPress={() => onUpdate('refreshRatePreference', mode)}
+        style={[styles.sizeButton, active && styles.sizeButtonActive]}
+      >
+        <Text style={[styles.sizeButtonText, active && styles.sizeButtonTextActive]}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+
   const sizeButton = (size: ContentSize, label: string) => {
     const active = settings.contentSize === size;
     return (
@@ -796,7 +826,7 @@ export function SettingsPanel({
     Platform.OS === 'android' &&
     matches(
       q,
-      'performance display refresh rate hz fps frame time jank stutter smooth scrolling scroll missed frames resolution'
+      'performance display refresh rate hz fps frame time jank stutter smooth scrolling scroll missed frames resolution system battery 60 90'
     );
   const showWidgets =
     channel === 'beta' &&
@@ -1076,9 +1106,27 @@ export function SettingsPanel({
                 </View>
               </SettingsCard>
 
+              <View style={styles.cardGap}>
+                <SettingsCard>
+                  <View style={styles.diagnosticsCard}>
+                    <Text style={styles.actionTitle}>Refresh-rate preference</Text>
+                    <Text style={styles.cardSummary}>
+                      System follows Android's display and battery settings. Smooth requests the highest supported rate; 60 Hz favors battery. Android can override either request.
+                    </Text>
+                    <View style={styles.sizeRow}>
+                      {refreshRateButton('system', 'SYSTEM')}
+                      <View style={styles.sizeSpacer} />
+                      {refreshRateButton('smooth', 'SMOOTH')}
+                      <View style={styles.sizeSpacer} />
+                      {refreshRateButton('battery', '60 Hz')}
+                    </View>
+                  </View>
+                </SettingsCard>
+              </View>
+
               <SettingsCard>
                 <View style={styles.diagnosticsCard}>
-                  <Text style={styles.actionTitle}>Measured performance</Text>
+                  <Text style={styles.actionTitle}>Native frame-pacing estimate</Text>
                   <Text style={styles.cardSummary}>
                     {performanceInfoText}
                   </Text>
@@ -1089,7 +1137,7 @@ export function SettingsPanel({
                 title="Scroll performance test"
                 summary={performanceTesting
                   ? 'Measuring frame pacing now — keep scrolling for the full 5 seconds.'
-                  : 'Tap TEST, then scroll for 5 seconds. This measures native UI frame pacing (not WebView paint FPS): FPS, frame time, jank and missed frames.'}
+                  : 'Tap TEST, then scroll for 5 seconds. Estimates native Choreographer callback pacing, not actual WebView rendered FPS.'}
                 label={performanceTesting ? 'RUNNING…' : 'TEST'}
                 onPress={() => void runPerformanceTest()}
               />
