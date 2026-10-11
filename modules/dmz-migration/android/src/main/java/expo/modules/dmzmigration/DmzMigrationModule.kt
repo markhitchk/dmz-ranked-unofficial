@@ -2,6 +2,10 @@ package expo.modules.dmzmigration
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -15,6 +19,29 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class DmzMigrationModule : Module() {
+  private var requestedRefreshPreference: String = "system"
+  private var powerSavingReceiver: BroadcastReceiver? = null
+  private var receiverContext: Context? = null
+
+  private fun applyPreferredRefreshRate(): Double? {
+    val activity = appContext.currentActivity ?: return null
+    val available = supportedRefreshRates(resolveDisplay(activity))
+    val isSavingPower = powerSaveMode(activity) == true
+    // Android power policy wins. Never request a high rate in Battery Saver.
+    val target = when {
+      isSavingPower -> 0.0
+      requestedRefreshPreference == "smooth" -> available.maxOrNull() ?: 0.0
+      requestedRefreshPreference == "battery" && available.size > 1 ->
+        available.minOrNull() ?: 0.0
+      else -> 0.0
+    }
+    val attrs = activity.window.attributes
+    attrs.preferredDisplayModeId = 0
+    attrs.preferredRefreshRate = target.toFloat()
+    activity.window.attributes = attrs
+    return target
+  }
+
   @Suppress("DEPRECATION")
   private fun resolveDisplay(
     context: android.content.Context?
@@ -177,43 +204,55 @@ class DmzMigrationModule : Module() {
       }
     }
 
-    // Window hints do not force a display mode. Android can override them for
-    // battery saver, device settings, thermal limits or another foreground app.
+    // Register a native receiver for Power Saving changes. No polling is
+    // needed to remove the app's refresh-rate hint when Battery Saver turns on.
+    OnCreate {
+      val context = appContext.reactContext?.applicationContext
+      if (context != null && powerSavingReceiver == null) {
+        val receiver = object : BroadcastReceiver() {
+          override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != PowerManager.ACTION_POWER_SAVE_MODE_CHANGED) return
+            Handler(Looper.getMainLooper()).post {
+              try {
+                applyPreferredRefreshRate()
+              } catch (_: Throwable) {
+                // System remains authoritative for display policy.
+              }
+            }
+          }
+        }
+        try {
+          context.registerReceiver(receiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
+          receiverContext = context
+          powerSavingReceiver = receiver
+        } catch (_: Throwable) {
+          // Supported refresh-rate preferences continue working without it.
+        }
+      }
+    }
+
+    OnDestroy {
+      val receiver = powerSavingReceiver
+      val context = receiverContext
+      if (receiver != null && context != null) {
+        try {
+          context.unregisterReceiver(receiver)
+        } catch (_: Throwable) {
+        }
+      }
+      powerSavingReceiver = null
+      receiverContext = null
+    }
+
+    // Window refresh-rate requests are advisory. Android Battery Saver and
+    // system display settings always take priority.
     AsyncFunction("setRefreshRatePreference") {
       preference: String, promise: expo.modules.kotlin.Promise ->
       Handler(Looper.getMainLooper()).post {
         try {
-          val activity = appContext.currentActivity
-          if (activity == null) {
-            promise.resolve(null)
-          } else {
-            val display = resolveDisplay(activity)
-            // Pick only refresh rates advertised by this display at its
-            // active resolution; 30/48/50/60/75/90/120/144 Hz all work.
-            val rates = supportedRefreshRates(display)
-            val savingPower = powerSaveMode(activity) == true
-            // Android Battery Saver policy takes priority over the app's
-            // high-refresh request; reset to OS-managed mode while enabled.
-            val requested = when {
-              savingPower -> 0.0
-              preference == "smooth" -> rates.maxOrNull()
-              preference == "battery" -> rates.minOrNull()?.takeIf { rate ->
-                // A lone "90 Hz" reading cannot be marketed as low power.
-                rates.any { it > rate + 0.01 }
-              }
-              else -> 0.0
-            }
-            if (requested == null) {
-              promise.resolve(null)
-              return@post
-            }
-            val attrs = activity.window.attributes
-            // Only hint the preferred rate, never force a resolution/mode id.
-            attrs.preferredDisplayModeId = 0
-            attrs.preferredRefreshRate = requested.toFloat()
-            activity.window.attributes = attrs
-            promise.resolve(requested.toDouble())
-          }
+          requestedRefreshPreference =
+            if (preference in listOf("system", "smooth", "battery")) preference else "system"
+          promise.resolve(applyPreferredRefreshRate())
         } catch (_: Throwable) {
           promise.resolve(null)
         }
