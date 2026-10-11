@@ -76,6 +76,7 @@ import { AppSafeArea } from './components/AppSafeArea';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import {
   clearWebViewData,
+  setRefreshRatePreference,
   refreshDmzWidgets,
   requestPinDmzWidget,
   syncWidgetSettings
@@ -378,6 +379,18 @@ function AppContent() {
       void KeepAwake.deactivateKeepAwake(tag);
     };
   }, [settings.keepAwake]);
+
+  // Apply or clear the Android display hint on settings changes and resume.
+  useEffect(() => {
+    if (!ready || Platform.OS !== 'android') return;
+    void setRefreshRatePreference(settings.refreshRatePreference ?? 'system');
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        void setRefreshRatePreference(settings.refreshRatePreference ?? 'system');
+      }
+    });
+    return () => subscription.remove();
+  }, [ready, settings.refreshRatePreference]);
 
   useEffect(() => {
     if (!ready || Platform.OS !== 'android') return;
