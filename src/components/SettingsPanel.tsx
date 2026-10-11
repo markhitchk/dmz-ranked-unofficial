@@ -447,7 +447,12 @@ export function SettingsPanel({
           setDisplayInfoText('Native display metrics unavailable in this build.');
           return;
         }
-        setSupportedDisplayRates(info.supportedRefreshRates.filter(hz => Number.isFinite(hz) && hz > 0));
+        const nextRates = info.supportedRefreshRates.filter(hz => Number.isFinite(hz) && hz > 0);
+        setSupportedDisplayRates(previous =>
+          previous.length === nextRates.length && previous.every((hz, index) => hz === nextRates[index])
+            ? previous
+            : nextRates
+        );
         const formatHz = (value: number) => {
           const rounded = Math.round(value);
           return Math.abs(value - rounded) < 0.05 ? String(rounded) : value.toFixed(2);
