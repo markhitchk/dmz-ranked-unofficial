@@ -1168,7 +1168,7 @@ export function SettingsPanel({
                     </View>
                     {displayMetricsReady && supportedDisplayRates.length === 1 ? (
                       <Text style={[styles.cardSummary, styles.refreshRateHint]}>
-                        Android currently reports only {supportedDisplayRates[0].toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz. A separate lower rate cannot be requested; change the phone's display settings if available.
+                        Android currently reports only {(supportedDisplayRates[0]?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'unknown')} Hz. A separate lower rate cannot be requested; change the phone's display settings if available.
                       </Text>
                     ) : null}
                     {powerSavingStatus === true ? (
