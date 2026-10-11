@@ -1,5 +1,6 @@
 export type AppChannel = 'stable' | 'beta';
 export type ContentSize = 'compact' | 'standard' | 'large';
+export type RefreshRatePreference = 'system' | 'smooth' | 'battery';
 
 export type AppSettings = {
   desktopSite: boolean;
@@ -10,6 +11,7 @@ export type AppSettings = {
   rememberLastPage: boolean;
   appUiOverrides: boolean;
   appAnimations: boolean;
+  refreshRatePreference: RefreshRatePreference;
   contentSize: ContentSize;
   developerMode: boolean;
   operatorAutoSave: boolean;
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   rememberLastPage: true,
   appUiOverrides: true,
   appAnimations: true,
+  refreshRatePreference: 'system',
   contentSize: 'standard',
   developerMode: false,
   operatorAutoSave: true,
