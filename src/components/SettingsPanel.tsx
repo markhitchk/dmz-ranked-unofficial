@@ -343,6 +343,7 @@ export function SettingsPanel({
   const [lastSyncText, setLastSyncText] = useState('Not checked yet');
   const [webViewPackageText, setWebViewPackageText] = useState('Unknown');
   const [displayInfoText, setDisplayInfoText] = useState('Detecting display…');
+  const [supportedDisplayRates, setSupportedDisplayRates] = useState<number[]>([]);
   const [performanceInfoText, setPerformanceInfoText] = useState('Not tested yet. Callback timing is an estimate, not WebView rendered FPS.');
   const [performanceTesting, setPerformanceTesting] = useState(false);
   const [dialog, setDialog] = useState<DialogMode>(null);
@@ -442,9 +443,11 @@ export function SettingsPanel({
       void getDisplayInfo().then(info => {
         if (!alive) return;
         if (!info) {
+          setSupportedDisplayRates([]);
           setDisplayInfoText('Native display metrics unavailable in this build.');
           return;
         }
+        setSupportedDisplayRates(info.supportedRefreshRates.filter(hz => Number.isFinite(hz) && hz > 0));
         const formatHz = (value: number) => {
           const rounded = Math.round(value);
           return Math.abs(value - rounded) < 0.05 ? String(rounded) : value.toFixed(2);
@@ -454,7 +457,7 @@ export function SettingsPanel({
           ? ` • Requested: ${formatHz(info.requestedRefreshRate)} Hz`
           : ' • Following Android';
         setDisplayInfoText(
-          `${info.width}×${info.height} • Active: ${formatHz(info.currentRefreshRate)} Hz${supported ? ` • Supported: ${supported} Hz` : ''}${request}${info.powerSaveMode ? ' • Power saver on' : ''}`
+          `${info.width}×${info.height} • Android active: ${info.currentRefreshRate > 0 ? `${formatHz(info.currentRefreshRate)} Hz` : 'Unknown'}${supported ? ` • Supported: ${supported} Hz` : ' • Supported: Unknown'}${request}${info.powerSaveMode ? ' • Power saver on' : ''}`
         );
       }).catch(() => {
         if (alive) setDisplayInfoText('Unable to read Android display metrics.');
@@ -463,12 +466,16 @@ export function SettingsPanel({
     refresh();
     // Android may take a moment to apply or reject the requested rate.
     const settleTimer = setTimeout(refresh, 700);
+    // Check only while the Settings performance section is in view.
+    // Allows detection of Android adaptive-mode changes without app-wide polling.
+    const poll = setInterval(refresh, 4000);
     const subscription = AppState.addEventListener('change', state => {
       if (state === 'active') refresh();
     });
     return () => {
       alive = false;
       clearTimeout(settleTimer);
+      clearInterval(poll);
       subscription.remove();
     };
   }, [needsDisplayMetadata, settings.refreshRatePreference]);
@@ -561,7 +568,7 @@ export function SettingsPanel({
             return;
           }
 
-          const hz = Math.max(1, targetRefreshRate || 60);
+          const hz = targetRefreshRate;
           const targetMs = 1000 / hz;
           const avg =
             intervals.length
@@ -622,7 +629,10 @@ export function SettingsPanel({
       const targetHz =
         nativeSample?.refreshRate ||
         display?.currentRefreshRate ||
-        60;
+        0;
+      if (!Number.isFinite(targetHz) || targetHz <= 0) {
+        throw new Error('Android did not report an active refresh rate.');
+      }
 
       const sample =
         nativeSample &&
@@ -636,22 +646,20 @@ export function SettingsPanel({
       const p95 = sample.p95FrameTimeMs.toFixed(1);
       const jank = sample.jankPercent.toFixed(1);
       const hz = Math.round(sample.refreshRate);
-      const fallbackLabel =
-        nativeSample &&
+      const nativeMeasurement = nativeSample &&
         nativeSample.quality !== 'Unavailable' &&
-        nativeSample.estimatedFps > 0
-          ? ''
-          : ' • JS-thread estimate (not WebView FPS)';
+        nativeSample.estimatedFps > 0;
+      const measurementLabel = nativeMeasurement ? 'native callback' : 'JS callback';
 
       setPerformanceInfoText(
-        `${sample.quality} • ≈${fps} callback FPS on ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames}${fallbackLabel}`
+        `${sample.quality} • ≈${fps} ${measurementLabel} FPS on reported ${hz} Hz • Avg ${avg} ms • P95 ${p95} ms • Jank ${jank}% • Missed ${sample.missedFrames} • Not WebView paint FPS`
       );
       toast(
         `Performance: ${sample.quality} • ${fps} FPS • ${jank}% jank`,
         true
       );
     } catch {
-      setPerformanceInfoText('Performance sample failed.');
+      setPerformanceInfoText('Performance test unavailable — could not read the device refresh rate or sample frames.');
       toast('Performance sample failed.', true);
     } finally {
       setPerformanceTesting(false);
@@ -1111,14 +1119,14 @@ export function SettingsPanel({
                   <View style={styles.diagnosticsCard}>
                     <Text style={styles.actionTitle}>Refresh-rate preference</Text>
                     <Text style={styles.cardSummary}>
-                      System follows Android's display and battery settings. Smooth requests the highest supported rate; 60 Hz favors battery. Android can override either request.
+                      Automatic follows the device. Smooth and Battery request the highest or lowest rates actually supported by this phone. Android may override requests.
                     </Text>
                     <View style={styles.sizeRow}>
-                      {refreshRateButton('system', 'SYSTEM')}
+                      {refreshRateButton('system', 'AUTO')}
                       <View style={styles.sizeSpacer} />
-                      {refreshRateButton('smooth', 'SMOOTH')}
+                      {refreshRateButton('smooth', supportedDisplayRates.length ? `MAX ${Math.max(...supportedDisplayRates).toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz` : 'SMOOTH')}
                       <View style={styles.sizeSpacer} />
-                      {refreshRateButton('battery', '60 Hz')}
+                      {refreshRateButton('battery', supportedDisplayRates.length ? `LOW ${Math.min(...supportedDisplayRates).toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz` : 'BATTERY')}
                     </View>
                   </View>
                 </SettingsCard>
