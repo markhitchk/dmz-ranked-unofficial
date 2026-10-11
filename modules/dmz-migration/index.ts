@@ -10,7 +10,7 @@ export type DisplayInfo = {
   currentRefreshRate: number;
   supportedRefreshRates: number[];
   requestedRefreshRate: number;
-  powerSaveMode: boolean;
+  powerSaveMode: boolean | null;
   width: number;
   height: number;
 };
