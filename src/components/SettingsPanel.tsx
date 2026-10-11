@@ -344,6 +344,8 @@ export function SettingsPanel({
   const [webViewPackageText, setWebViewPackageText] = useState('Unknown');
   const [displayInfoText, setDisplayInfoText] = useState('Detecting display…');
   const [supportedDisplayRates, setSupportedDisplayRates] = useState<number[]>([]);
+  const [powerSavingStatus, setPowerSavingStatus] = useState<boolean | null>(null);
+  const [displayMetricsReady, setDisplayMetricsReady] = useState(false);
   const [performanceInfoText, setPerformanceInfoText] = useState('Not tested yet. Callback timing is an estimate, not WebView rendered FPS.');
   const [performanceTesting, setPerformanceTesting] = useState(false);
   const [dialog, setDialog] = useState<DialogMode>(null);
@@ -444,9 +446,13 @@ export function SettingsPanel({
         if (!alive) return;
         if (!info) {
           setSupportedDisplayRates([]);
+          setDisplayMetricsReady(false);
+          setPowerSavingStatus(null);
           setDisplayInfoText('Native display metrics unavailable in this build.');
           return;
         }
+        setDisplayMetricsReady(true);
+        setPowerSavingStatus(previous => previous === info.powerSaveMode ? previous : info.powerSaveMode);
         const nextRates = info.supportedRefreshRates.filter(hz => Number.isFinite(hz) && hz > 0);
         setSupportedDisplayRates(previous =>
           previous.length === nextRates.length && previous.every((hz, index) => hz === nextRates[index])
@@ -461,8 +467,11 @@ export function SettingsPanel({
         const request = info.requestedRefreshRate > 0
           ? ` • Requested: ${formatHz(info.requestedRefreshRate)} Hz`
           : ' • Following Android';
+        const power = info.powerSaveMode === true
+          ? 'ON'
+          : info.powerSaveMode === false ? 'OFF' : 'Unknown';
         setDisplayInfoText(
-          `${info.width}×${info.height} • Android active: ${info.currentRefreshRate > 0 ? `${formatHz(info.currentRefreshRate)} Hz` : 'Unknown'}${supported ? ` • Supported: ${supported} Hz` : ' • Supported: Unknown'}${request}${info.powerSaveMode ? ' • Power saver on' : ''}`
+          `${info.width}×${info.height} • Android active: ${info.currentRefreshRate > 0 ? `${formatHz(info.currentRefreshRate)} Hz` : 'Unknown'}${supported ? ` • Supported: ${supported} Hz` : ' • Supported: Unknown'}${request} • Power saving: ${power}`
         );
       }).catch(() => {
         if (alive) setDisplayInfoText('Unable to read Android display metrics.');
@@ -753,15 +762,20 @@ export function SettingsPanel({
     }
   };
 
-  const refreshRateButton = (mode: RefreshRatePreference, label: string) => {
+  const refreshRateButton = (
+    mode: RefreshRatePreference,
+    label: string,
+    disabled = false
+  ) => {
     const active = (settings.refreshRatePreference ?? 'system') === mode;
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Refresh rate: ${label}`}
-        accessibilityState={{ selected: active }}
+        accessibilityState={{ selected: active, disabled }}
+        disabled={disabled}
         onPress={() => onUpdate('refreshRatePreference', mode)}
-        style={[styles.sizeButton, active && styles.sizeButtonActive]}
+        style={[styles.sizeButton, active && styles.sizeButtonActive, disabled && styles.refreshRateUnavailable]}
       >
         <Text style={[styles.sizeButtonText, active && styles.sizeButtonTextActive]}>
           {label}
@@ -1124,15 +1138,44 @@ export function SettingsPanel({
                   <View style={styles.diagnosticsCard}>
                     <Text style={styles.actionTitle}>Refresh-rate preference</Text>
                     <Text style={styles.cardSummary}>
-                      Automatic follows the device. Smooth and Battery request the highest or lowest rates actually supported by this phone. Android may override requests.
+                      Automatic follows Android. Smooth prefers the highest reported rate; Low prefers the lowest. Android may limit refresh rates, especially during Power Saving.
+                    </Text>
+                    <Text style={[styles.cardSummary, styles.powerSaveStatus]}>
+                      {powerSavingStatus === true
+                        ? 'Power Saving: ON • Android controls the refresh rate; high-refresh requests are paused.'
+                        : powerSavingStatus === false
+                          ? 'Power Saving: OFF • App refresh-rate preferences are available.'
+                          : 'Power Saving: Status unavailable'}
                     </Text>
                     <View style={styles.sizeRow}>
                       {refreshRateButton('system', 'AUTO')}
                       <View style={styles.sizeSpacer} />
-                      {refreshRateButton('smooth', supportedDisplayRates.length ? `MAX ${Math.max(...supportedDisplayRates).toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz` : 'SMOOTH')}
+                      {refreshRateButton(
+                        'smooth',
+                        supportedDisplayRates.length
+                          ? `MAX ${Math.max(...supportedDisplayRates).toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz`
+                          : 'MAX N/A',
+                        !displayMetricsReady || powerSavingStatus === true || supportedDisplayRates.length === 0
+                      )}
                       <View style={styles.sizeSpacer} />
-                      {refreshRateButton('battery', supportedDisplayRates.length ? `LOW ${Math.min(...supportedDisplayRates).toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz` : 'BATTERY')}
+                      {refreshRateButton(
+                        'battery',
+                        supportedDisplayRates.length > 1
+                          ? `LOW ${Math.min(...supportedDisplayRates).toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz`
+                          : 'LOW N/A',
+                        !displayMetricsReady || powerSavingStatus === true || supportedDisplayRates.length < 2
+                      )}
                     </View>
+                    {displayMetricsReady && supportedDisplayRates.length === 1 ? (
+                      <Text style={[styles.cardSummary, styles.refreshRateHint]}>
+                        Android currently reports only {supportedDisplayRates[0].toLocaleString(undefined, { maximumFractionDigits: 2 })} Hz. A separate lower rate cannot be requested; change the phone's display settings if available.
+                      </Text>
+                    ) : null}
+                    {powerSavingStatus === true ? (
+                      <Text style={[styles.cardSummary, styles.refreshRateHint]}>
+                        Refresh-rate selection is controlled by Android while Power Saving is on. Turn it off in Android settings to select Max or Low again.
+                      </Text>
+                    ) : null}
                   </View>
                 </SettingsCard>
               </View>
@@ -2199,6 +2242,9 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
   sizeButtonTextActive: { color: colors.white },
+  refreshRateUnavailable: { opacity: 0.45 },
+  refreshRateHint: { marginTop: 10, fontSize: 11 },
+  powerSaveStatus: { marginTop: 12, color: colors.goldSoft, fontWeight: '700' },
   toggleCard: {
     minHeight: 72,
     padding: 16,
