@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import kotlin.math.abs
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import android.webkit.WebSettings
@@ -126,6 +128,40 @@ class DmzMigrationModule : Module() {
       }
     }
 
+    // Window hints do not force a display mode. Android can override them for
+    // battery saver, device settings, thermal limits or another foreground app.
+    AsyncFunction("setRefreshRatePreference") {
+      preference: String, promise: expo.modules.kotlin.Promise ->
+      Handler(Looper.getMainLooper()).post {
+        try {
+          val activity = appContext.currentActivity
+          if (activity == null) {
+            promise.resolve(null)
+          } else {
+            val display = resolveDisplay(activity)
+            val rates = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display != null) {
+              display.supportedModes.map { it.refreshRate }.filter { it > 0f }
+            } else {
+              listOf(display?.refreshRate ?: 60f)
+            }
+            val requested = when (preference) {
+              "smooth" -> rates.maxOrNull() ?: 60f
+              "battery" -> rates.minByOrNull { abs(it - 60f) } ?: 60f
+              else -> 0f
+            }
+            val attrs = activity.window.attributes
+            // Only hint the preferred rate, never force a resolution/mode id.
+            attrs.preferredDisplayModeId = 0
+            attrs.preferredRefreshRate = requested
+            activity.window.attributes = attrs
+            promise.resolve(requested.toDouble())
+          }
+        } catch (_: Throwable) {
+          promise.resolve(null)
+        }
+      }
+    }
+
     AsyncFunction("getDisplayInfo") {
       val context = appContext.reactContext ?: appContext.currentActivity
       try {
@@ -183,8 +219,13 @@ class DmzMigrationModule : Module() {
           height = metrics?.heightPixels ?: 0
         }
 
+        val powerSaveMode = (context?.getSystemService(android.content.Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode ?: false
+        val requestedRate = activity?.window?.attributes?.preferredRefreshRate?.toDouble() ?: 0.0
+
         mapOf(
           "currentRefreshRate" to refreshRate,
+          "requestedRefreshRate" to requestedRate,
+          "powerSaveMode" to powerSaveMode,
           "supportedRefreshRates" to supportedRefreshRates,
           "width" to width,
           "height" to height
@@ -195,6 +236,8 @@ class DmzMigrationModule : Module() {
           ?.displayMetrics
         mapOf(
           "currentRefreshRate" to 60.0,
+          "requestedRefreshRate" to 0.0,
+          "powerSaveMode" to false,
           "supportedRefreshRates" to listOf(60.0),
           "width" to (metrics?.widthPixels ?: 0),
           "height" to (metrics?.heightPixels ?: 0)
