@@ -45,28 +45,53 @@ class DmzMigrationModule : Module() {
     return display.refreshRate.toDouble().takeIf { it.isFinite() && it > 0.0 } ?: 0.0
   }
 
+  /**
+   * Enumerate hardware refresh rates reported by Android, including seamless
+   * alternatives (Android 12+). Do not synthesize common values such as 60 Hz:
+   * OEMs sometimes expose only a single mode to third-party apps.
+   *
+   * PreferredRefreshRate is a hint, so Android will decide whether a mode
+   * advertised at another resolution is usable for this window.
+   */
   private fun supportedRefreshRates(
     display: android.view.Display?
   ): List<Double> {
     if (display == null) return emptyList()
-    val active = currentRefreshRate(appContext.currentActivity ?: appContext.reactContext)
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-      return if (active > 0.0) listOf(active) else emptyList()
-    }
 
-    // Restrict to the current physical resolution; alternative-resolution modes
-    // are not a valid refresh-rate-only preference.
-    val currentMode = display.mode
-    val sameResolution = display.supportedModes.filter {
-      it.physicalWidth == currentMode.physicalWidth &&
-        it.physicalHeight == currentMode.physicalHeight
+    val candidates = mutableListOf<Double>()
+    val active = display.refreshRate.toDouble()
+    if (active.isFinite() && active > 0.0) candidates.add(active)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      try {
+        val modes = display.supportedModes.toList()
+        // Include every OEM-advertised physical display mode; otherwise a
+        // lower rate offered under a different mode may be hidden from the app.
+        for (mode in modes) {
+          candidates.add(mode.refreshRate.toDouble())
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // These additional rates are guaranteed seamless if used, but
+            // may not appear as separate entries in supportedModes.
+            candidates.addAll(mode.alternativeRefreshRates.map { it.toDouble() })
+          }
+        }
+      } catch (_: Throwable) {
+        // Keep the current rate if mode enumeration is not available.
+      }
     }
-    val reported = sameResolution.map { it.refreshRate.toDouble() }
+    return candidates
       .filter { it.isFinite() && it > 0.0 }
       .distinctBy { kotlin.math.round(it * 100.0) / 100.0 }
       .sorted()
-    return if (reported.isNotEmpty()) reported
-      else if (active > 0.0) listOf(active) else emptyList()
+  }
+
+  private fun powerSaveMode(context: android.content.Context?): Boolean? {
+    return try {
+      val manager = context?.getSystemService(android.content.Context.POWER_SERVICE) as? PowerManager
+      manager?.isPowerSaveMode
+    } catch (_: Throwable) {
+      null
+    }
   }
 
   override fun definition() = ModuleDefinition {
@@ -166,9 +191,16 @@ class DmzMigrationModule : Module() {
             // Pick only refresh rates advertised by this display at its
             // active resolution; 30/48/50/60/75/90/120/144 Hz all work.
             val rates = supportedRefreshRates(display)
-            val requested = when (preference) {
-              "smooth" -> rates.maxOrNull()
-              "battery" -> rates.minOrNull()
+            val savingPower = powerSaveMode(activity) == true
+            // Android Battery Saver policy takes priority over the app's
+            // high-refresh request; reset to OS-managed mode while enabled.
+            val requested = when {
+              savingPower -> 0.0
+              preference == "smooth" -> rates.maxOrNull()
+              preference == "battery" -> rates.minOrNull()?.takeIf { rate ->
+                // A lone "90 Hz" reading cannot be marketed as low power.
+                rates.any { it > rate + 0.01 }
+              }
               else -> 0.0
             }
             if (requested == null) {
@@ -235,7 +267,7 @@ class DmzMigrationModule : Module() {
           height = metrics?.heightPixels ?: 0
         }
 
-        val powerSaveMode = (context?.getSystemService(android.content.Context.POWER_SERVICE) as? PowerManager)?.isPowerSaveMode ?: false
+        val powerSaveMode = powerSaveMode(context)
         val requestedRate = activity?.window?.attributes?.preferredRefreshRate?.toDouble() ?: 0.0
 
         mapOf(
@@ -253,7 +285,7 @@ class DmzMigrationModule : Module() {
         mapOf(
           "currentRefreshRate" to 0.0,
           "requestedRefreshRate" to 0.0,
-          "powerSaveMode" to false,
+          "powerSaveMode" to null,
           "supportedRefreshRates" to emptyList<Double>(),
           "width" to (metrics?.widthPixels ?: 0),
           "height" to (metrics?.heightPixels ?: 0)
