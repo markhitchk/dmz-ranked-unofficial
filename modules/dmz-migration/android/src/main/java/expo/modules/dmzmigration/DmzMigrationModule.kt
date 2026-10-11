@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
-import kotlin.math.abs
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import android.webkit.WebSettings
@@ -37,12 +36,37 @@ class DmzMigrationModule : Module() {
     return displayManager?.displays?.firstOrNull()
   }
 
+  // Android's reported active display mode, not an estimated frame rate.
+  // Unknown displays stay unknown; never invent a 60 Hz fallback.
   private fun currentRefreshRate(
     context: android.content.Context?
   ): Double {
-    return (resolveDisplay(context)?.refreshRate ?: 60f)
-      .toDouble()
-      .coerceAtLeast(1.0)
+    val display = resolveDisplay(context) ?: return 0.0
+    return display.refreshRate.toDouble().takeIf { it.isFinite() && it > 0.0 } ?: 0.0
+  }
+
+  private fun supportedRefreshRates(
+    display: android.view.Display?
+  ): List<Double> {
+    if (display == null) return emptyList()
+    val active = currentRefreshRate(appContext.currentActivity ?: appContext.reactContext)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+      return if (active > 0.0) listOf(active) else emptyList()
+    }
+
+    // Restrict to the current physical resolution; alternative-resolution modes
+    // are not a valid refresh-rate-only preference.
+    val currentMode = display.mode
+    val sameResolution = display.supportedModes.filter {
+      it.physicalWidth == currentMode.physicalWidth &&
+        it.physicalHeight == currentMode.physicalHeight
+    }
+    val reported = sameResolution.map { it.refreshRate.toDouble() }
+      .filter { it.isFinite() && it > 0.0 }
+      .distinctBy { kotlin.math.round(it * 100.0) / 100.0 }
+      .sorted()
+    return if (reported.isNotEmpty()) reported
+      else if (active > 0.0) listOf(active) else emptyList()
   }
 
   override fun definition() = ModuleDefinition {
@@ -139,20 +163,22 @@ class DmzMigrationModule : Module() {
             promise.resolve(null)
           } else {
             val display = resolveDisplay(activity)
-            val rates = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display != null) {
-              display.supportedModes.map { it.refreshRate }.filter { it > 0f }
-            } else {
-              listOf(display?.refreshRate ?: 60f)
-            }
+            // Pick only refresh rates advertised by this display at its
+            // active resolution; 30/48/50/60/75/90/120/144 Hz all work.
+            val rates = supportedRefreshRates(display)
             val requested = when (preference) {
-              "smooth" -> rates.maxOrNull() ?: 60f
-              "battery" -> rates.minByOrNull { abs(it - 60f) } ?: 60f
-              else -> 0f
+              "smooth" -> rates.maxOrNull()
+              "battery" -> rates.minOrNull()
+              else -> 0.0
+            }
+            if (requested == null) {
+              promise.resolve(null)
+              return@post
             }
             val attrs = activity.window.attributes
             // Only hint the preferred rate, never force a resolution/mode id.
             attrs.preferredDisplayModeId = 0
-            attrs.preferredRefreshRate = requested
+            attrs.preferredRefreshRate = requested.toFloat()
             activity.window.attributes = attrs
             promise.resolve(requested.toDouble())
           }
@@ -169,17 +195,7 @@ class DmzMigrationModule : Module() {
         val activity = appContext.currentActivity
         val refreshRate = currentRefreshRate(context)
 
-        val supportedRefreshRates =
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display != null) {
-            display.supportedModes
-              .map { it.refreshRate.toDouble() }
-              .filter { it > 0.0 }
-              .distinctBy { kotlin.math.round(it * 100.0) / 100.0 }
-              .sorted()
-              .ifEmpty { listOf(refreshRate) }
-          } else {
-            listOf(refreshRate)
-          }
+        val supportedRefreshRates = supportedRefreshRates(display)
 
         var width = 0
         var height = 0
@@ -235,10 +251,10 @@ class DmzMigrationModule : Module() {
           ?.resources
           ?.displayMetrics
         mapOf(
-          "currentRefreshRate" to 60.0,
+          "currentRefreshRate" to 0.0,
           "requestedRefreshRate" to 0.0,
           "powerSaveMode" to false,
-          "supportedRefreshRates" to listOf(60.0),
+          "supportedRefreshRates" to emptyList<Double>(),
           "width" to (metrics?.widthPixels ?: 0),
           "height" to (metrics?.heightPixels ?: 0)
         )
@@ -251,6 +267,19 @@ class DmzMigrationModule : Module() {
       Handler(Looper.getMainLooper()).post {
         try {
           val refreshRate = currentRefreshRate(context)
+          if (refreshRate <= 0.0) {
+            promise.resolve(mapOf(
+              "refreshRate" to 0.0,
+              "estimatedFps" to 0.0,
+              "averageFrameTimeMs" to 0.0,
+              "p95FrameTimeMs" to 0.0,
+              "jankPercent" to 0.0,
+              "missedFrames" to 0,
+              "sampleDurationMs" to sampleDurationMs,
+              "quality" to "Unavailable"
+            ))
+            return@post
+          }
           val targetFrameNs = 1_000_000_000.0 / refreshRate
           val frameIntervals = mutableListOf<Long>()
           val startedAtNs = System.nanoTime()
