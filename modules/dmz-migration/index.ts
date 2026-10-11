@@ -9,6 +9,8 @@ export type WebViewPackageInfo = {
 export type DisplayInfo = {
   currentRefreshRate: number;
   supportedRefreshRates: number[];
+  requestedRefreshRate: number;
+  powerSaveMode: boolean;
   width: number;
   height: number;
 };
@@ -35,6 +37,7 @@ type DmzMigrationNative = {
   getDefaultWebViewUserAgent(): string | null;
   getWebViewPackage(): Promise<WebViewPackageInfo | null>;
   getDisplayInfo(): Promise<DisplayInfo | null>;
+  setRefreshRatePreference(preference: 'system' | 'smooth' | 'battery'): Promise<number | null>;
   sampleUiPerformance(durationMs: number): Promise<UiPerformanceSample | null>;
   clearWebViewData(): Promise<boolean>;
   syncWidgetSettings(selectedOperator: string): Promise<boolean>;
@@ -71,6 +74,13 @@ export async function getWebViewPackage(): Promise<WebViewPackageInfo | null> {
 
 export async function getDisplayInfo(): Promise<DisplayInfo | null> {
   return nativeModule?.getDisplayInfo() ?? null;
+}
+
+/** Request a display frame-rate hint; Android retains final control of the rate. */
+export async function setRefreshRatePreference(
+  preference: 'system' | 'smooth' | 'battery'
+): Promise<number | null> {
+  return nativeModule?.setRefreshRatePreference(preference) ?? null;
 }
 
 export async function sampleUiPerformance(
