@@ -161,7 +161,7 @@ function AppContent() {
     if (!ready) return;
     const notice = buildWelcomeNotice({
       channel,
-      version: Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? 'unknown',
+      version: `${Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? 'unknown'}${channel === 'beta' ? '-beta' : ''}`,
       build: Application.nativeBuildVersion ??
         String(Constants.expoConfig?.android?.versionCode ?? 'unknown'),
       operatorName: settings.selectedOperator

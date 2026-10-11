@@ -1,10 +1,8 @@
 name: Sign stable React Native AAB with verified Play upload key
 
+# Manual fallback for signing a completed unsigned 1.1.1 (187) bundle.
+# The main stable AAB workflow already attempts upload-key signing.
 on:
-  push:
-    branches: [react-native-migration]
-    paths:
-      - '.github/workflows/sign-react-native-stable-aab.yml'
   workflow_dispatch:
 
 permissions:
@@ -26,10 +24,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download 37754819996 \
-            --repo "$GITHUB_REPOSITORY" \
-            --name DMZ-Ranked-React-Native-Stable-1.1.0-177-Unsigned-AAB \
-            --dir unsigned
+          set -euo pipefail
+          NAME=DMZ-Ranked-React-Native-Stable-1.1.1-187-Unsigned-AAB
+          RUN_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            --jq '.artifacts | map(select(.name == "DMZ-Ranked-React-Native-Stable-1.1.1-187-Unsigned-AAB" and .expired == false)) | sort_by(.created_at) | reverse | .[0].workflow_run.id // empty')"
+          if [ -z "$RUN_ID" ]; then
+            echo '::error::No unsigned 1.1.1 (187) AAB artifact is available to sign.'
+            exit 1
+          fi
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$NAME" --dir unsigned
 
       - name: Verify original upload signing certificate before signing
         run: |
@@ -47,8 +50,8 @@ jobs:
       - name: Sign production Android App Bundle
         run: |
           set -euo pipefail
-          ORIGINAL="unsigned/DMZ-Ranked-React-Native-Stable-1.1.0-177.aab"
-          SIGNED="DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed.aab"
+          ORIGINAL="unsigned/DMZ-Ranked-React-Native-Stable-1.1.1-187.aab"
+          SIGNED="DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed.aab"
           test -s "$ORIGINAL"
           jarsigner -keystore "$HOME/.android/debug.keystore" \
             -storepass android -keypass android \
@@ -66,7 +69,7 @@ jobs:
       - name: Publish signed non-beta AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed-AAB
-          path: DMZ-Ranked-React-Native-Stable-1.1.0-177-Signed.aab
+          name: DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed-AAB
+          path: DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed.aab
           if-no-files-found: error
           retention-days: 30

@@ -53,8 +53,9 @@ export function AppHeader({
   unreadMessages,
   onOpenMessages
 }: Props) {
-  const version = Application.nativeApplicationVersion ?? '1.1.0';
-  const build = Application.nativeBuildVersion ?? '176';
+  const nativeVersion = Application.nativeApplicationVersion ?? '1.1.1';
+  const version = channel === 'beta' ? `${nativeVersion}-beta` : nativeVersion;
+  const build = Application.nativeBuildVersion ?? '187';
   const titleOpacity = useRef(new Animated.Value(1)).current;
   const [editing, setEditing] = useState(false);
   const [draftUrl, setDraftUrl] = useState(currentUrl);

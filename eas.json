@@ -11,7 +11,7 @@
       "env": {"APP_VARIANT": "beta"}
     },
     "production": {
-      "autoIncrement": true,
+      "autoIncrement": false,
       "env": {"APP_VARIANT": "stable"}
     }
   }

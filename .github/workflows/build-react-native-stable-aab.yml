@@ -62,7 +62,7 @@ jobs:
               if (cfg.extra?.appChannel !== "stable" || cfg.name !== "DMZ Ranked") {
                 throw Error("Stable channel/name configuration is incorrect");
               }
-              if (cfg.android?.versionCode !== 186) {
+              if (cfg.android?.versionCode !== 187) {
                 throw Error("Unexpected Android versionCode");
               }
               console.log("Verified stable: " + cfg.android.package + ", versionCode " + cfg.android.versionCode);
@@ -137,7 +137,7 @@ jobs:
             SIGN_ALIAS=androiddebugkey
             echo 'Using cached original Play upload key; verifying certificate.'
           else
-            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-186-Unsigned-AAB' >> "$GITHUB_ENV"
+            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.1-187-Unsigned-AAB' >> "$GITHUB_ENV"
             echo '::warning::No verified Play upload key available; AAB will be unsigned, NOT Play upload ready.'
             exit 0
           fi
@@ -161,17 +161,17 @@ jobs:
             exit 1
           fi
           rm -f "$RUNNER_TEMP/dmz-upload.jks"
-          echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.0-186-Signed-AAB' >> "$GITHUB_ENV"
+          echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed-AAB' >> "$GITHUB_ENV"
           echo 'Stable AAB signed with pinned upload certificate.'
 
       - name: Rename stable AAB
         run: |
-          cp android/app/build/outputs/bundle/release/app-release.aab DMZ-Ranked-React-Native-Stable-1.1.0-186.aab
+          cp android/app/build/outputs/bundle/release/app-release.aab DMZ-Ranked-React-Native-Stable-1.1.1-187.aab
 
       - name: Upload non-beta AAB
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: DMZ-Ranked-React-Native-Stable-1.1.0-186.aab
+          path: DMZ-Ranked-React-Native-Stable-1.1.1-187.aab
           if-no-files-found: error
           retention-days: 30
