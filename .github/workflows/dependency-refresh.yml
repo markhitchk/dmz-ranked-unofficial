@@ -1,8 +1,8 @@
 name: Refresh compatible app dependencies
 
 on:
-  schedule:
-    - cron: '17 11 * * *'
+  push:
+    branches: [react-native-migration]
   workflow_dispatch:
 
 permissions:
@@ -42,6 +42,9 @@ jobs:
 
       - name: Refresh supported dependencies and npm lockfile
         run: |
+          # Refresh third-party packages within their compatible major releases.
+          # Expo owns the React / React Native / Expo version matrix.
+          npx --yes npm-check-updates@latest -u --target minor --reject 'expo,expo-*,react,react-native'
           npm install --no-audit --no-fund
           npm update --no-audit --no-fund
           npx expo install --fix --npm
