@@ -86,6 +86,13 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean
 
+      - name: Verify Android release does not enable known-broken R8 minification
+        run: |
+          if ! grep -q '^android.enableMinifyInReleaseBuilds=false' android/gradle.properties; then
+            echo "::error::Android release R8 must remain disabled until WorkManager/Room launch regression is fixed."
+            exit 1
+          fi
+
       - name: Build beta APK
         working-directory: android
         run: ./gradlew :app:assembleRelease
@@ -126,11 +133,9 @@ jobs:
             adb shell am start -W -n com.harleytg.dmzranked.beta/.MainActivity
             sleep 15
             adb logcat -d -v threadtime > android-launch-logcat.txt
-            if ! adb shell pidof com.harleytg.dmzranked.beta >/dev/null; then
-              echo "::error::DMZ Ranked beta process exited after startup; inspect android-launch-logcat artifact"
-              exit 1
-            fi
-            echo "Beta release APK stayed alive after startup."
+            adb shell pidof com.harleytg.dmzranked.beta >/dev/null || { echo "::error::DMZ Ranked beta process exited after startup"; exit 1; }
+            if grep -A 5 "FATAL EXCEPTION" android-launch-logcat.txt | grep -q "Process: com.harleytg.dmzranked.beta"; then echo "::error::Fatal native Android startup crash detected"; exit 1; fi
+            echo "Beta release APK stayed alive after startup without native fatal exceptions."
 
       - name: Upload Android launch diagnostics
         if: always()

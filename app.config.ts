@@ -10,7 +10,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: isBeta ? 'DMZ Ranked [Beta]' : 'DMZ Ranked',
     slug: 'dmz-ranked-unofficial',
-    version: '1.1.5',
+    version: '1.1.6',
     orientation: 'default',
     icon: './assets/dmz_launcher_icon.png',
     scheme: 'dmzranked',
@@ -23,7 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     ios: {
       bundleIdentifier: packageId,
-      buildNumber: '191',
+      buildNumber: '192',
       supportsTablet: true,
       infoPlist: {
         LSApplicationQueriesSchemes: ['itms-apps']
@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: packageId,
-      versionCode: 191,
+      versionCode: 192,
       allowBackup: true,
       adaptiveIcon: {
         foregroundImage: './assets/dmz_launcher_foreground.png',
@@ -65,7 +65,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           android: {
             minSdkVersion: 26,
             compileSdkVersion: 37,
-            targetSdkVersion: 36
+            targetSdkVersion: 36,
+            // Android 16 release smoke test (build 191) proved that R8
+            // breaks WorkManager's generated Room WorkDatabase initializer.
+            // Disable release shrinking/obfuscation until the native stack
+            // has verified keep rules; otherwise the app crashes before JS.
+            enableMinifyInReleaseBuilds: false,
+            enableShrinkResourcesInReleaseBuilds: false
           },
           ios: {
             deploymentTarget: '16.4'
