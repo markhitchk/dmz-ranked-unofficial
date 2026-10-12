@@ -15,16 +15,12 @@ import type { AppChannel } from '../types';
 type Props = {
   channel: AppChannel;
   progress: number;
-  status: string;
-  verbose: boolean;
   animations: boolean;
 };
 
 export function LoadingOverlay({
   channel,
   progress,
-  status,
-  verbose,
   animations
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
@@ -107,7 +103,6 @@ export function LoadingOverlay({
           />
         </View>
 
-        {verbose ? <Text style={styles.verbose}>{status}</Text> : null}
       </View>
     </LinearGradient>
   );
@@ -173,11 +168,4 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 3
   },
-  verbose: {
-    marginTop: 10,
-    color: colors.muted,
-    fontFamily: condensedFont,
-    fontSize: 13,
-    textAlign: 'center'
-  }
 });
