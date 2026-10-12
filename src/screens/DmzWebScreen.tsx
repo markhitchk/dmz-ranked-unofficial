@@ -953,7 +953,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             data?: unknown;
           };
           if (nativeMessage?.type === 'public-leaderboard-snapshot') {
-            if (!isInternal(page.current.url) || !page.current.loaded) return;
+            if (!isInternal(page.current.url) || !gate.isCurrent(page.current.id)) return;
             // WebView captures only DOM it has already rendered. Writes are
             // serialized so an older observation cannot win a storage race.
             cacheWrites.current = cacheWrites.current
