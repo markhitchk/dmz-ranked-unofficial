@@ -79,12 +79,18 @@ const ANDROID_PERFORMANCE_SCRIPT =
       window.__dmzScrollPerfInstalled=true;
       window.__dmzAppScrolling=false;
       var dmzScrollIdleTimer=0;
+      var dmzScrollLastArm=0;
       var markScrolling=function(){
         window.__dmzAppScrolling=true;
+        var now=Date.now();
+        // Avoid a clearTimeout + setTimeout allocation for every touch frame.
+        // The passive scroll flag stays set through the kinetic scroll tail.
+        if(now-dmzScrollLastArm<120)return;
+        dmzScrollLastArm=now;
         clearTimeout(dmzScrollIdleTimer);
         dmzScrollIdleTimer=setTimeout(function(){
           window.__dmzAppScrolling=false;
-        },180);
+        },270);
       };
       window.addEventListener('scroll',markScrolling,{passive:true});
       window.addEventListener('touchstart',markScrolling,{passive:true});
