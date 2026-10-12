@@ -40,6 +40,7 @@ function harness(hostname = 'dmzranked.com') {
     visibilityState: 'visible',
     body: {},
     getElementById(id) { return elements.get(id) || null; },
+    querySelectorAll() { return []; },
     querySelector(selector) {
       if (selector === '#playerCount') return elements.get('playerCount');
       if (selector === '#seasonBanner') return elements.get('seasonBanner');
