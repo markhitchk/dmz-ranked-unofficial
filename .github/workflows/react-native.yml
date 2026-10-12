@@ -14,12 +14,27 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22.13.0'
+          node-version: '24'
+          check-latest: true
       - name: Install
-        run: npm install
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            echo "::warning::No lockfile yet. Merge the automated dependency-refresh PR for reproducible builds."
+            npm install --no-audit --no-fund
+          fi
+      - name: Verify latest Expo-compatible dependencies
+        run: |
+          npx expo install --check
+          npx expo-doctor
+
+      - name: Report available dependency upgrades
+        run: npm outdated || true
+
       - name: TypeScript
         run: npm run typecheck
       - name: Loading regression tests

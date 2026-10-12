@@ -1,0 +1,74 @@
+name: Refresh compatible app dependencies
+
+on:
+  schedule:
+    - cron: '17 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependency-refresh-react-native-migration
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    env:
+      CI: '1'
+      APP_VARIANT: beta
+    steps:
+      - name: Checkout React Native branch
+        uses: actions/checkout@v7
+        with:
+          ref: react-native-migration
+
+      - name: Install latest Node 24 LTS patch
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          check-latest: true
+
+      - name: Install current JDK 17 patch
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Refresh supported dependencies and npm lockfile
+        run: |
+          npm install --no-audit --no-fund
+          npm update --no-audit --no-fund
+          npx expo install --fix --npm
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify compatibility and regressions
+        run: |
+          npx expo install --check
+          npx expo-doctor
+          npm run typecheck
+          npm test
+
+      - name: Propose tested dependency and lockfile updates
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: automation/compatible-dependencies
+          base: react-native-migration
+          delete-branch: true
+          commit-message: 'chore: refresh Expo-compatible dependencies and npm lockfile'
+          title: 'chore: update Expo-compatible dependencies and npm lockfile'
+          body: |
+            Automated dependency update for DMZ Ranked Unofficial React Native.
+            Aligns native packages with the installed Expo SDK, refreshes
+            resolved transitive versions, and adds/updates package-lock.json.
+
+            The workflow ran Expo compatibility checks, Expo Doctor,
+            TypeScript and unit tests. Review native/build behavior before merging.
+          add-paths: |
+            package.json
+            package-lock.json

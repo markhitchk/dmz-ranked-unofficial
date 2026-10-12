@@ -16,15 +16,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Node 22
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
-          node-version: '22.13.0'
+          node-version: '24'
+          check-latest: true
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -33,7 +34,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            echo "::warning::No lockfile yet. Merge the automated dependency-refresh PR for reproducible builds."
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Verify latest Expo-compatible dependencies
+        run: |
+          npx expo install --check
+          npx expo-doctor
+
+      - name: Report available dependency upgrades
+        run: npm outdated || true
 
       - name: TypeScript check
         run: npm run typecheck
@@ -79,7 +94,7 @@ jobs:
           "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/zipalign" -c -v 4 "$APK"
 
       - name: Upload beta APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BETA_APK_STEM }}-APK
           path: android/app/build/outputs/apk/release/app-release.apk

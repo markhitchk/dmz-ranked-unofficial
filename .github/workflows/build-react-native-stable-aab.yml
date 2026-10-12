@@ -11,6 +11,8 @@ on:
       - 'modules/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'scripts/**'
+      - '.github/dependabot.yml'
   workflow_dispatch:
 
 concurrency:
@@ -25,15 +27,16 @@ jobs:
       CI: '1'
     steps:
       - name: Checkout React Native migration
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
-          node-version: '22.13.0'
+          node-version: '24'
+          check-latest: true
 
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -42,7 +45,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            echo "::warning::No lockfile yet. Merge the automated dependency-refresh PR for reproducible builds."
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Verify latest Expo-compatible dependencies
+        run: |
+          npx expo install --check
+          npx expo-doctor
+
+      - name: Report available dependency upgrades
+        run: npm outdated || true
 
       - name: Verify TypeScript and tests
         run: |
@@ -172,7 +189,7 @@ jobs:
           cp android/app/build/outputs/bundle/release/app-release.aab "${STABLE_AAB_STEM}.aab"
 
       - name: Upload non-beta AAB
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.STABLE_AAB_STEM }}.aab

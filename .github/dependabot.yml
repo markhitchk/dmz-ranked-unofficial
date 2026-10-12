@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    target-branch: react-native-migration
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 15
+    groups:
+      expo-compatible-patches:
+        patterns:
+          - "expo"
+          - "expo-*"
+          - "@expo/*"
+          - "react-native*"
+          - "@react-native/*"
+        update-types:
+          - patch
+    ignore:
+      # Expo SDK 57 targets RN 0.86; upgrading RN alone can break native builds.
+      - dependency-name: react-native
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: react-native-migration
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
