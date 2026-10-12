@@ -32,7 +32,6 @@ export function buildLeaderboardHydrationScript(
   window.__dmzRnCacheRestoreInstalled = true;
   var cache = ${JSON.stringify(payload)};
   var expiry = Date.now() + 5000;
-  var watcher = null;
   function cleanSeason(text) {
     return String(text || '').replace(/\\s+/g, ' ').trim().toLowerCase();
   }
@@ -145,19 +144,17 @@ export function buildLeaderboardHydrationScript(
   }
   function finish() {
     if (restore() || Date.now() > expiry) {
-      if (watcher) watcher.disconnect();
       clearInterval(window.__dmzRnCacheRestorePoll);
     }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', finish, {once:true});
   }
-  if (!restore() && typeof MutationObserver !== 'undefined') {
-    watcher = new MutationObserver(finish);
-    watcher.observe(document.documentElement, {childList:true,subtree:true});
+  if (!restore()) {
+    // A full-document MutationObserver can wake up hundreds of times as
+    // leaderboard data streams in. A bounded 250ms startup poll is cheaper.
     window.__dmzRnCacheRestorePoll = setInterval(finish, 250);
     setTimeout(function () {
-      if (watcher) watcher.disconnect();
       clearInterval(window.__dmzRnCacheRestorePoll);
     }, 5200);
   }
