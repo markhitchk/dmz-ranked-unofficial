@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       APP_VARIANT: beta
+      CI: '1'
+      # RC peer ranges may reject prerelease React Native during npm resolution.
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
     steps:
       - name: Checkout
@@ -45,6 +48,9 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
+      - name: Align Expo 58 native packages
+        run: npx expo install --fix --npm
+
       - name: Verify latest Expo-compatible dependencies
         run: |
           npx expo install --check
@@ -52,6 +58,9 @@ jobs:
 
       - name: Report available dependency upgrades
         run: npm outdated || true
+
+      - name: TypeScript check
+        run: npm run typecheck
 
       - name: Loading regression tests
         run: npm test

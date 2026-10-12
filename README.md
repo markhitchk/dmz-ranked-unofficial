@@ -62,3 +62,7 @@ This branch is **an experiment only**, not the production release. As of October
 - Do not merge until these checks pass, exact resolved dependency versions are committed, and separate beta APK device testing succeeds.
 
 **Preview-only npm caveat:** Some peer version ranges reject pre-release React Native. This branch sets `NPM_CONFIG_LEGACY_PEER_DEPS=true` for the preview CI dependency resolver; Expo Doctor, TypeScript, native compilation, and actual device tests are still mandatory. This is not enabled in production workflows.
+
+## Expo SDK 58 beta upgrade merged into the migration branch
+
+This branch currently specifies React Native **0.88.0-rc.4** with Expo **SDK 58 prerelease**. The upgraded Expo packages are declared at their SDK 58-compatible versions; CI installs prerelease peer dependencies and runs Expo Doctor, TypeScript and unit tests. While preview toolchains are in use, the stable Google Play AAB workflow intentionally refuses to build distributable release artifacts. This is a safety gate, not confirmation that native compilation has passed. Testing requires a successful APK build and actual Android device verification before any Play release. No legacy Java V1 interface is part of the app.

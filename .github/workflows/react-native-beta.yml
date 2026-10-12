@@ -14,7 +14,7 @@ jobs:
       APP_VARIANT: beta
       CI: '1'
       # Npm stable-only peer ranges often exclude React Native release candidates.
-      # Preview branch only: native-build and Expo compatibility checks remain mandatory.
+      # RN 0.88 RC only: Expo compatibility and native build checks remain mandatory.
       NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
     steps:

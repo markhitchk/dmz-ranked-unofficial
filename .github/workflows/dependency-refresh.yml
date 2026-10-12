@@ -19,6 +19,7 @@ jobs:
     env:
       CI: '1'
       APP_VARIANT: beta
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
     steps:
       - name: Checkout React Native branch
         uses: actions/checkout@v7
@@ -58,6 +59,8 @@ jobs:
           npm test
 
       - name: Propose tested dependency and lockfile updates
+        id: propose
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v8
         with:
           branch: automation/compatible-dependencies
@@ -75,3 +78,18 @@ jobs:
           add-paths: |
             package.json
             package-lock.json
+
+      - name: Publish compatible dependency manifests for manual review
+        if: always() && steps.propose.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: expo-compatible-dependency-proposal
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
+
+      - name: Explain missing PR permissions
+        if: steps.propose.outcome == 'failure'
+        run: |
+          echo "::warning::GitHub Actions may not create pull requests. Enable Settings > Actions > General > Allow GitHub Actions to create and approve pull requests. Updated manifests are uploaded as an artifact for manual review."

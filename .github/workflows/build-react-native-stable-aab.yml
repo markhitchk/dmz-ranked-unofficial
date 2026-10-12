@@ -25,9 +25,24 @@ jobs:
     env:
       APP_VARIANT: stable
       CI: '1'
+      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
     steps:
       - name: Checkout React Native migration
         uses: actions/checkout@v7
+
+      # Stable Play AABs must not be signed or uploaded from an unvalidated
+      # React Native / Expo release candidate.
+      - name: Refuse prerelease framework for stable Play artifacts
+        run: |
+          node - <<'NODE'
+          const { dependencies } = require('./package.json');
+          const rn = dependencies['react-native'];
+          const expo = dependencies.expo;
+          if (/-((?:rc|beta|alpha|canary))(?:\.|-)/i.test(rn) || /^(next|beta|canary)$/i.test(expo) || /-((?:rc|beta|alpha|canary))(?:\.|-)/i.test(expo)) {
+            console.error('::error::Stable Google Play AAB blocked: React Native or Expo is a prerelease. Promote only after stable releases, full CI and Android device tests.');
+            process.exit(1);
+          }
+          NODE
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -52,6 +67,9 @@ jobs:
             echo "::warning::No lockfile yet. Merge the automated dependency-refresh PR for reproducible builds."
             npm install --no-audit --no-fund
           fi
+
+      - name: Align Expo native packages
+        run: npx expo install --fix --npm
 
       - name: Verify latest Expo-compatible dependencies
         run: |
