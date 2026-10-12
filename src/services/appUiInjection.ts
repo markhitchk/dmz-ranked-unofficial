@@ -148,19 +148,18 @@ export function buildRemoteUiInjection(
     // the page DOM during rapid touch and scroll events.
     var scheduled = false;
     function schedule() {
-      if (scheduled) return;
+      // Ignore high-volume DOM changes while dragging/scrolling. A slower
+      // watchdog and the foreground revalidator still repair missing CSS.
+      if (scheduled || window.__dmzAppScrolling || window.__dmzAppPaused) return;
       scheduled = true;
       clearTimeout(watchdogTimer);
       watchdogTimer = setTimeout(function () {
         scheduled = false;
-        if (window.__dmzAppScrolling || window.__dmzAppPaused) {
-          schedule();
-          return;
-        }
+        if (window.__dmzAppScrolling || window.__dmzAppPaused) return;
         try {
           if (needsRepair()) ensureActive(true);
         } catch (_) {}
-      }, 450);
+      }, 850);
     }
 
     try {
@@ -201,7 +200,9 @@ export function buildRemoteUiInjection(
   function check() {
     if (done) return;
     try {
-      var style = ensureActive(true);
+      // Do not run all of the expensive app DOM refresh functions on every
+      // 120ms readiness poll. Reattempt them only occasionally if incomplete.
+      var style = ensureActive(checks % 6 === 0);
       var ready = readyState(style);
       if (ready && stable) {
         done = true;
