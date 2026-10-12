@@ -1,12 +1,40 @@
 import { Platform } from 'react-native';
 import * as Application from 'expo-application';
-import SpInAppUpdates, {
-  IAUInstallStatus,
-  IAUUpdateKind,
-  type StatusUpdateEvent
-} from 'sp-react-native-in-app-updates';
+import type { StatusUpdateEvent } from 'sp-react-native-in-app-updates';
 
-const inAppUpdates = new SpInAppUpdates(false);
+// These numeric values are the public AndroidInstallStatus API from
+// sp-react-native-in-app-updates. Do not import its runtime module here:
+// it calls TurboModuleRegistry.getEnforcing during module evaluation.
+const IAUInstallStatus = {
+  PENDING: 1,
+  DOWNLOADING: 2,
+  INSTALLING: 3,
+  INSTALLED: 4,
+  FAILED: 5,
+  CANCELED: 6,
+  DOWNLOADED: 11
+} as const;
+
+type InAppUpdatesManager = InstanceType<
+  (typeof import('sp-react-native-in-app-updates'))['default']
+>;
+
+let managerPromise: Promise<InAppUpdatesManager> | null = null;
+
+function getInAppUpdates(): Promise<InAppUpdatesManager> {
+  if (!managerPromise) {
+    // Lazily initialize the Play update integration. A missing/incompatible
+    // native TurboModule must reject this feature, not crash the whole app
+    // before AppErrorBoundary is mounted.
+    managerPromise = import('sp-react-native-in-app-updates')
+      .then(({ default: SpInAppUpdates }) => new SpInAppUpdates(false))
+      .catch(error => {
+        managerPromise = null;
+        throw error;
+      });
+  }
+  return managerPromise;
+}
 
 export type AppUpdateCheck = {
   available: boolean;
@@ -59,12 +87,14 @@ export async function checkForAppUpdate(
       ? Application.nativeBuildVersion ?? '0'
       : Application.nativeApplicationVersion ?? '0.0.0';
 
+  const inAppUpdates = await getInAppUpdates();
   const result = await inAppUpdates.checkNeedsUpdate({
     curVersion: current
   });
 
   if (result.shouldUpdate && startWhenAvailable) {
     if (Platform.OS === 'android') {
+      const { IAUUpdateKind } = await import('sp-react-native-in-app-updates');
       await inAppUpdates.startUpdate({
         updateType: IAUUpdateKind.FLEXIBLE
       });
@@ -90,8 +120,26 @@ export function listenForAppUpdateStatus(
   callback: (event: StatusUpdateEvent) => void
 ): () => void {
   if (Platform.OS !== 'android') return () => undefined;
-  inAppUpdates.addStatusUpdateListener(callback);
-  return () => inAppUpdates.removeStatusUpdateListener(callback);
+  let active = true;
+  let subscribed: InAppUpdatesManager | null = null;
+  void getInAppUpdates()
+    .then(manager => {
+      if (!active) return;
+      manager.addStatusUpdateListener(callback);
+      subscribed = manager;
+    })
+    .catch(error => {
+      console.warn('DMZ Ranked: Play update listener unavailable', error);
+    });
+
+  return () => {
+    active = false;
+    try {
+      subscribed?.removeStatusUpdateListener(callback);
+    } catch (error) {
+      console.warn('DMZ Ranked: could not remove Play update listener', error);
+    }
+  };
 }
 
 export function isDownloadedUpdate(event: StatusUpdateEvent): boolean {
@@ -99,7 +147,10 @@ export function isDownloadedUpdate(event: StatusUpdateEvent): boolean {
 }
 
 export function installDownloadedUpdate(): void {
-  if (Platform.OS === 'android') {
-    inAppUpdates.installUpdate();
-  }
+  if (Platform.OS !== 'android') return;
+  void getInAppUpdates()
+    .then(manager => manager.installUpdate())
+    .catch(error => {
+      console.warn('DMZ Ranked: Play update install unavailable', error);
+    });
 }
