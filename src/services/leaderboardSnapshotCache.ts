@@ -148,22 +148,23 @@ export async function saveLeaderboardSnapshot(
   if (!snapshot) return null;
   // Do not discard a populated board when a different page only renders its
   // leaders panel. Treat a season transition as a fresh snapshot instead.
-  if (lastWritten && snapshot.season === lastWritten.season &&
-      snapshot.sourceUrl === lastWritten.sourceUrl) {
+  const previous = lastWritten;
+  if (previous && snapshot.season === previous.season &&
+      snapshot.sourceUrl === previous.sourceUrl) {
     // Individual website tabs render at different times. Do not erase an
     // already captured panel because that tab has not been mounted yet.
     if (!snapshot.standings.length) {
-      snapshot.standings = lastWritten.standings;
-      snapshot.boardRows = lastWritten.boardRows;
+      snapshot.standings = previous.standings;
+      snapshot.boardRows = previous.boardRows;
     }
     if (!snapshot.boardRows.length && snapshot.standings.length ===
-        lastWritten.standings.length && snapshot.standings.every(
-          (row, i) => row === lastWritten.standings[i]
-        )) snapshot.boardRows = lastWritten.boardRows;
-    if (!snapshot.hallOfFame.length) snapshot.hallOfFame = lastWritten.hallOfFame;
-    if (!snapshot.leaders.length) snapshot.leaders = lastWritten.leaders;
-    if (!snapshot.awardStandings.length) snapshot.awardStandings = lastWritten.awardStandings;
-    if (!snapshot.medals.length) snapshot.medals = lastWritten.medals;
+        previous.standings.length && snapshot.standings.every(
+          (row, i) => row === previous.standings[i]
+        )) snapshot.boardRows = previous.boardRows;
+    if (!snapshot.hallOfFame.length) snapshot.hallOfFame = previous.hallOfFame;
+    if (!snapshot.leaders.length) snapshot.leaders = previous.leaders;
+    if (!snapshot.awardStandings.length) snapshot.awardStandings = previous.awardStandings;
+    if (!snapshot.medals.length) snapshot.medals = previous.medals;
   }
 
   // Ignore identical observations except for a periodic freshness renewal.
