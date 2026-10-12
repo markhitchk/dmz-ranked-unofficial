@@ -18,7 +18,6 @@ type Props = {
   status: string;
   verbose: boolean;
   animations: boolean;
-  cachedPreview?: { summary: string; rows: string[] } | null;
 };
 
 export function LoadingOverlay({
@@ -26,8 +25,7 @@ export function LoadingOverlay({
   progress,
   status,
   verbose,
-  animations,
-  cachedPreview
+  animations
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
   const nativeVersion = Application.nativeApplicationVersion ?? '1.1.3';
@@ -110,23 +108,6 @@ export function LoadingOverlay({
         </View>
 
         {verbose ? <Text style={styles.verbose}>{status}</Text> : null}
-        {cachedPreview ? (
-          <View style={styles.cachedCard}>
-            <Text style={styles.cachedLabel}>{cachedPreview.summary}</Text>
-            {cachedPreview.rows.map((row, index) => (
-              <Text
-                key={index}
-                style={styles.cachedRow}
-                numberOfLines={1}
-              >
-                {row}
-              </Text>
-            ))}
-            <Text style={styles.cachedNote}>
-              Previous device snapshot • refreshing live website
-            </Text>
-          </View>
-        ) : null}
       </View>
     </LinearGradient>
   );
@@ -191,36 +172,6 @@ const styles = StyleSheet.create({
   fill: {
     height: 4,
     borderRadius: 3
-  },
-  cachedCard: {
-    width: '100%',
-    maxWidth: 310,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#38423A',
-    borderRadius: 9,
-    backgroundColor: '#131B16',
-    paddingVertical: 10,
-    paddingHorizontal: 12
-  },
-  cachedLabel: {
-    color: colors.gold,
-    fontFamily: condensedFont,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 6
-  },
-  cachedRow: {
-    color: colors.white,
-    fontFamily: condensedFont,
-    fontSize: 11,
-    marginBottom: 3
-  },
-  cachedNote: {
-    color: colors.muted,
-    fontFamily: condensedFont,
-    fontSize: 10,
-    marginTop: 5
   },
   verbose: {
     marginTop: 10,
