@@ -3064,3 +3064,27 @@ html.hs-android-webview #unofficial-app{
     transition:none;
   }
 }
+
+/* Native WebView cached standings: provisional content while the website's
+   authoritative live board renders. Never hide/restrict real leaderboard rows. */
+html.hs-android-webview .dmz-cached-board-notice,
+html.hs-android-webview .dmz-cached-list .dmz-cached-board-notice{
+  margin:8px 0 12px;
+  padding:8px 12px;
+  border-left:3px solid var(--gold-b,#e7b447);
+  background:rgba(231,180,71,.08);
+  color:var(--muted,#aeb4ad);
+  font-size:12px;
+}
+html.hs-android-webview .dmz-cached-row,
+html.hs-android-webview .dmz-cached-list{
+  opacity:.84;
+}
+html.hs-android-webview .dmz-cached-row{cursor:default}
+html.hs-android-webview .dmz-cached-list .ldr-card,
+html.hs-android-webview .dmz-cached-list .hof-item,
+html.hs-android-webview .dmz-cached-list .ag-item,
+html.hs-android-webview .dmz-cached-list .medal-row{
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
