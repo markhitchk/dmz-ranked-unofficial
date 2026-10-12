@@ -32,7 +32,7 @@ test('Fast Android fling disables expensive glows temporarily and restores after
   assert.match(src, /root\.classList\.remove\('hs-rapid-scroll'\)/);
   assert.match(css, /\.hs-android-webview\.hs-rapid-scroll/);
   assert.match(css, /animation-play-state:paused!important/);
-  assert.doesNotMatch(css, /content-visibility:\s*auto/i);
+  assert.doesNotMatch(css.replace(/\/\*[\s\S]*?\*\//g, ''), /content-visibility:\s*auto/i);
 });
 
 test('The optimized remote CSS and JS match the offline fallback byte-for-byte', () => {
