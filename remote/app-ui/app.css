@@ -3088,3 +3088,30 @@ html.hs-android-webview .dmz-cached-list .medal-row{
   white-space:normal;
   overflow-wrap:anywhere;
 }
+
+/* Fast-fling rendering budget (Android app only).
+   Animated streak decorations and multilayer drop shadows compete with
+   WebView tile rasterization. Preserve artwork/animation when scrolling ends.
+   Do not use content-visibility:auto: it can cause more blank frames on flings. */
+html.hs-android-webview.hs-rapid-scroll table.lb tbody tr,
+html.hs-android-webview.hs-rapid-scroll .ldr-row,
+html.hs-android-webview.hs-rapid-scroll .medal-row{
+  transition:none!important;
+}
+html.hs-android-webview.hs-rapid-scroll .streak .s-flame,
+html.hs-android-webview.hs-rapid-scroll .streak .s-snow,
+html.hs-android-webview.hs-rapid-scroll .streak .s-icic,
+html.hs-android-webview.hs-rapid-scroll .stk-plate,
+html.hs-android-webview.hs-rapid-scroll .stk-scrim{
+  animation-play-state:paused!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+}
+html.hs-android-webview.hs-rapid-scroll table.lb .rankbadge,
+html.hs-android-webview.hs-rapid-scroll table.lb .elite-badge,
+html.hs-android-webview.hs-rapid-scroll .rank-icon,
+html.hs-android-webview.hs-rapid-scroll .operator-badge,
+html.hs-android-webview.hs-rapid-scroll .ldr-card .ldr-medal{
+  filter:none!important;
+  -webkit-filter:none!important;
+}
