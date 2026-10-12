@@ -12,21 +12,21 @@ concurrency:
 
 jobs:
   build-beta-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       APP_VARIANT: beta
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22.13.0'
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -41,10 +41,25 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --clean --platform android --non-interactive
 
-      - name: Verify beta package
+      - name: Verify beta package and resolve APK filename
         run: |
-          grep -R "com.harleytg.dmzranked.beta" android/app/build.gradle android/app/src/main/AndroidManifest.xml || true
-          npx expo config --type public | grep -F "com.harleytg.dmzranked.beta"
+          set -euo pipefail
+          npx expo config --json --type public | node -e '
+            const fs = require("node:fs");
+            let data = "";
+            process.stdin.on("data", chunk => data += chunk);
+            process.stdin.on("end", () => {
+              const cfg = JSON.parse(data);
+              if (cfg.android?.package !== "com.harleytg.dmzranked.beta" || cfg.extra?.appChannel !== "beta")
+                throw Error("Beta package/channel mismatch");
+              const code = cfg.android?.versionCode;
+              if (!/^[0-9]+(?:\\.[0-9]+){2,3}$/.test(String(cfg.version)) || !Number.isInteger(code) || code < 1)
+                throw Error("Invalid beta version/build");
+              const stem = "DMZ-Ranked-React-Native-Beta-" + cfg.version + "-" + code;
+              fs.appendFileSync(process.env.GITHUB_ENV, "BETA_APK_STEM=" + stem + "\\n");
+              console.log("Verified beta artifact: " + stem);
+            });
+          '
 
       - name: Compile native migration bridge
         working-directory: android
@@ -56,12 +71,12 @@ jobs:
 
       - name: Rename APK
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk DMZ-Ranked-React-Native-Beta-1.1.1-187.apk
+          cp android/app/build/outputs/apk/release/app-release.apk "${BETA_APK_STEM}.apk"
 
       - name: Upload beta APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: DMZ-Ranked-React-Native-Beta-1.1.1-187
-          path: DMZ-Ranked-React-Native-Beta-1.1.1-187.apk
+          name: ${{ env.BETA_APK_STEM }}
+          path: ${{ env.BETA_APK_STEM }}.apk
           if-no-files-found: error
           retention-days: 30

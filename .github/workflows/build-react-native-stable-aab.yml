@@ -19,27 +19,27 @@ concurrency:
 
 jobs:
   build-stable-aab:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       APP_VARIANT: stable
       CI: '1'
     steps:
       - name: Checkout React Native migration
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22.13.0'
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -62,10 +62,13 @@ jobs:
               if (cfg.extra?.appChannel !== "stable" || cfg.name !== "DMZ Ranked") {
                 throw Error("Stable channel/name configuration is incorrect");
               }
-              if (cfg.android?.versionCode !== 187) {
-                throw Error("Unexpected Android versionCode");
+              const code = cfg.android?.versionCode;
+              if (!/^[0-9]+(?:\\.[0-9]+){2,3}$/.test(String(cfg.version)) || !Number.isInteger(code) || code < 1) {
+                throw Error("Invalid stable version/build");
               }
-              console.log("Verified stable: " + cfg.android.package + ", versionCode " + cfg.android.versionCode);
+              const stem = "DMZ-Ranked-React-Native-Stable-" + cfg.version + "-" + code;
+              require("node:fs").appendFileSync(process.env.GITHUB_ENV, "STABLE_AAB_STEM=" + stem + "\\n");
+              console.log("Verified stable: " + cfg.android.package + ", versionCode " + code);
             });'
 
       - name: Generate native Android project
@@ -107,7 +110,7 @@ jobs:
       # Actions cache. Check for this verified key if repository signing
       # secrets are not set; never distribute a debug-signed bundle.
       - name: Restore existing Play upload keystore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.android/debug.keystore
           key: dmz-ranked-apk-signing-v1
@@ -137,7 +140,7 @@ jobs:
             SIGN_ALIAS=androiddebugkey
             echo 'Using cached original Play upload key; verifying certificate.'
           else
-            echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.1-187-Unsigned-AAB' >> "$GITHUB_ENV"
+            echo "ARTIFACT_NAME=${STABLE_AAB_STEM}-Unsigned-AAB" >> "$GITHUB_ENV"
             echo '::warning::No verified Play upload key available; AAB will be unsigned, NOT Play upload ready.'
             exit 0
           fi
@@ -161,17 +164,17 @@ jobs:
             exit 1
           fi
           rm -f "$RUNNER_TEMP/dmz-upload.jks"
-          echo 'ARTIFACT_NAME=DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed-AAB' >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${STABLE_AAB_STEM}-Signed-AAB" >> "$GITHUB_ENV"
           echo 'Stable AAB signed with pinned upload certificate.'
 
       - name: Rename stable AAB
         run: |
-          cp android/app/build/outputs/bundle/release/app-release.aab DMZ-Ranked-React-Native-Stable-1.1.1-187.aab
+          cp android/app/build/outputs/bundle/release/app-release.aab "${STABLE_AAB_STEM}.aab"
 
       - name: Upload non-beta AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: DMZ-Ranked-React-Native-Stable-1.1.1-187.aab
+          path: ${{ env.STABLE_AAB_STEM }}.aab
           if-no-files-found: error
           retention-days: 30

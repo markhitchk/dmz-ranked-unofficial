@@ -1,6 +1,6 @@
 name: Sign stable React Native AAB with verified Play upload key
 
-# Manual fallback for signing a completed unsigned 1.1.1 (187) bundle.
+# Manual fallback for signing a historical unsigned 1.1.1 (187) bundle.
 # The main stable AAB workflow already attempts upload-key signing.
 on:
   workflow_dispatch:
@@ -11,10 +11,10 @@ permissions:
 
 jobs:
   sign-stable-aab:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Restore original stable Google Play upload key from main CI cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.android/debug.keystore
           key: dmz-ranked-apk-signing-v1
@@ -67,7 +67,7 @@ jobs:
           echo "Signed bundle matches expected Play upload certificate."
 
       - name: Publish signed non-beta AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed-AAB
           path: DMZ-Ranked-React-Native-Stable-1.1.1-187-Signed.aab
