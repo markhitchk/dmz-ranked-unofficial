@@ -60,3 +60,5 @@ This branch is **an experiment only**, not the production release. As of October
 - Each CI run executes `npx expo install --fix --npm` before type checking and native builds to align Expo packages with the preview SDK. Versions are not yet fully pinned in a lockfile; **do not distribute these builds** until alignment and actual device tests pass.
 - Confirm: WebView behavior, DMZ messages, operator protected autofill, notifications, Android widgets, background tasks, performance settings, both package IDs, signing, and Google Play compatibility.
 - Do not merge until these checks pass, exact resolved dependency versions are committed, and separate beta APK device testing succeeds.
+
+**Preview-only npm caveat:** Some peer version ranges reject pre-release React Native. This branch sets `NPM_CONFIG_LEGACY_PEER_DEPS=true` for the preview CI dependency resolver; Expo Doctor, TypeScript, native compilation, and actual device tests are still mandatory. This is not enabled in production workflows.
