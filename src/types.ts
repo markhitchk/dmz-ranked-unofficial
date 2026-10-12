@@ -1,6 +1,7 @@
 export type AppChannel = 'stable' | 'beta';
 export type ContentSize = 'compact' | 'standard' | 'large';
 export type RefreshRatePreference = 'system' | 'smooth' | 'battery';
+export type WebViewRenderMode = 'system' | 'hardware' | 'software';
 
 export type AppSettings = {
   desktopSite: boolean;
@@ -12,6 +13,7 @@ export type AppSettings = {
   appUiOverrides: boolean;
   appAnimations: boolean;
   refreshRatePreference: RefreshRatePreference;
+  webViewRenderMode: WebViewRenderMode;
   contentSize: ContentSize;
   developerMode: boolean;
   operatorAutoSave: boolean;
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   appUiOverrides: true,
   appAnimations: true,
   refreshRatePreference: 'system',
+  webViewRenderMode: 'system',
   contentSize: 'standard',
   developerMode: false,
   operatorAutoSave: true,
