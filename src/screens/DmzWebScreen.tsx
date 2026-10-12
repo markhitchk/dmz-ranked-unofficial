@@ -1378,9 +1378,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           source={{ uri: initialUrl.current }}
           originWhitelist={['http://*', 'https://*', 'dmzranked-support://*']}
           style={styles.webview}
-          // A dedicated GPU layer can avoid expensive native view recomposition
-          // during kinetic flings. Keep software layers disabled.
-          androidLayerType="hardware"
+          // System/default avoids forcing a large extra GPU texture. Diagnostic
+          // software mode may work around device-specific WebView GPU bugs but
+          // can be slower; do not impose it on other devices.
+          androidLayerType={
+            settings.webViewRenderMode === 'software'
+              ? 'software'
+              : settings.webViewRenderMode === 'hardware'
+                ? 'hardware'
+                : 'none'
+          }
           overScrollMode="never"
           javaScriptEnabled
           javaScriptCanOpenWindowsAutomatically={false}
