@@ -5,106 +5,139 @@ import { LEADERBOARD_SNAPSHOT_SCRIPT } from '../src/services/leaderboardSnapshot
 
 function harness(hostname = 'dmzranked.com') {
   const messages = [];
-  const timeouts = [];
   const intervals = [];
+  const mutations = [];
   const rows = [{ textContent: '1 Bravo 2,850 SR 14 Raids', closest: () => null }];
-  const standing = {
+  const board = {
+    querySelector(selector) {
+      if (selector.includes('tbody tr')) return rows.length ? rows[0] : null;
+      return null;
+    },
     querySelectorAll(selector) {
-      if (selector.includes('tbody tr')) return rows;
-      return [];
+      return selector.includes('tbody tr[data-profile]') ? rows : [];
     }
   };
+  const leaders = {
+    querySelectorAll(selector) {
+      if (selector !== '.ldr-card') return [];
+      return [{
+        textContent: 'Operator kills per raid avg 3.0',
+        closest: () => null,
+        querySelector(s) {
+          return s === '.ldr-title' ? {textContent: 'Operator kills per raid'} :
+            s === '.ldr-avg' ? {textContent: 'avg 3.0'} : null;
+        }
+      }];
+    }
+  };
+  const elements = new Map([
+    ['boardBody', board], ['leadersBody', leaders],
+    ['playerCount', {textContent:'682 players'}],
+    ['seasonBanner', {textContent:'Season 4 Confirmed Kills'}]
+  ]);
   const page = {
     readyState: 'complete',
     visibilityState: 'visible',
     body: {},
+    getElementById(id) { return elements.get(id) || null; },
     querySelector(selector) {
-      return selector === '#standings' ? standing : null;
+      if (selector === '#playerCount') return elements.get('playerCount');
+      if (selector === '#seasonBanner') return elements.get('seasonBanner');
+      return null;
     },
-    querySelectorAll() { return []; },
-    getElementById() { return null; },
     addEventListener() {}
   };
   const context = vm.createContext({
     document: page,
     location: { hostname, href: 'https://' + hostname + '/' },
     Date,
-    setTimeout(fn) { timeouts.push(fn); },
-    setInterval(fn) { intervals.push(fn); return 1; },
-    clearInterval() {},
+    setTimeout(fn) { return fn(); },
+    clearTimeout() {},
+    MutationObserver: class {
+      constructor(callback) { this.callback = callback; mutations.push(this); }
+      observe() {}
+    },
     ReactNativeWebView: {
       postMessage(raw) { messages.push(JSON.parse(raw)); }
     }
   });
   context.window = context;
   return {
-    context, page, rows, messages, timeouts, intervals,
+    context, page, rows, board, leaders, messages, elements, mutations,
     capture() { context.__dmzRnCaptureLeaderboardSnapshot(); }
   };
 }
 
-test('the WebView snapshot is passive and sends bounded public standings', () => {
+test('captures the site real interactive #boardBody standings without cloning DOM', () => {
   const app = harness();
-  new vm.Script(LEADERBOARD_SNAPSHOT_SCRIPT);
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
-  assert.equal(app.intervals.length, 1);
   app.capture();
-  assert.equal(app.messages.length, 1);
-  assert.equal(app.messages[0].type, 'public-leaderboard-snapshot');
-  assert.equal(app.messages[0].data.standings[0], '1 Bravo 2,850 SR 14 Raids');
-  assert.equal(app.messages[0].data.sourceUrl, 'https://dmzranked.com/');
-  assert.ok(app.messages[0].data.counters);
+  assert.equal(app.messages[0].type, 'public-standings-ready');
+  assert.equal(app.messages[1].type, 'public-leaderboard-snapshot');
+  assert.equal(app.messages[1].data.standings[0], '1 Bravo 2,850 SR 14 Raids');
+  assert.equal(app.messages[1].data.leaders[0], 'Operator kills per raid avg 3.0');
+  assert.equal(app.messages[1].data.counters.Players, '682 players');
+  assert.equal(app.messages[1].data.counters['Leader: Operator kills per raid'], 'avg 3.0');
+  assert.ok(!('innerHTML' in app.board), 'WebView retains the real click handlers and DOM');
 });
 
-test('unchanged snapshots are deduplicated; changes are observed without fetching', () => {
+test('identical snapshots are deduplicated but updated standings are captured', () => {
   const app = harness();
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
   app.capture();
   app.capture();
-  assert.equal(app.messages.length, 1);
+  assert.equal(app.messages.filter(x => x.type === 'public-leaderboard-snapshot').length, 1);
   app.rows[0].textContent = '1 Bravo 3,000 SR 15 Raids';
   app.capture();
-  assert.equal(app.messages.length, 2);
-  assert.equal(app.messages[1].data.standings[0], '1 Bravo 3,000 SR 15 Raids');
+  assert.equal(app.messages.at(-1).data.standings[0], '1 Bravo 3,000 SR 15 Raids');
 });
 
-test('capture pauses when WebView is hidden or the user is scrolling', () => {
+test('capture does no work while scrolling or in a hidden WebView', () => {
   const app = harness();
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
+  const baseline = app.messages.length;
   app.page.visibilityState = 'hidden';
   app.capture();
   app.page.visibilityState = 'visible';
   app.context.__dmzAppScrolling = true;
   app.capture();
-  assert.equal(app.messages.length, 0);
+  assert.equal(app.messages.length, baseline);
   app.context.__dmzAppScrolling = false;
   app.capture();
-  assert.equal(app.messages.length, 1);
+  assert.ok(app.messages.length > baseline);
 });
 
-test('injection is idempotent and does not run on external websites', () => {
+test('injects only once per document and ignores external websites', () => {
   const app = harness();
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
+  const length = app.mutations.length;
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
-  assert.equal(app.intervals.length, 1);
-  const outside = harness('example.org');
-  vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, outside.context);
-  assert.equal(outside.intervals.length, 0);
-  assert.equal(outside.context.__dmzRnLeaderboardSnapshotInstalled, undefined);
+  assert.equal(app.mutations.length, length);
+  const external = harness('example.org');
+  vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, external.context);
+  assert.equal(external.context.__dmzRnCaptureLeaderboardSnapshot, undefined);
 });
 
-test('captured public rows are capped and never include form contents', () => {
+test('caps public rows and never collects text from form controls', () => {
   const app = harness();
   app.rows.length = 0;
   for (let i = 0; i < 120; i++) {
     app.rows.push({
       textContent: 'Rank ' + i + ' '.repeat(500) + '12 SR',
-      closest() { return i === 1 ? {} : null; }
+      closest: () => i === 1 ? {} : null
     });
   }
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
-  app.capture();
-  assert.ok(app.messages[0].data.standings.length <= 100);
-  assert.ok(app.messages[0].data.standings.every(x => x.length <= 220));
-  assert.ok(!app.messages[0].data.standings.some(x => x.startsWith('Rank 1 ')));
+  const message = app.messages.find(x => x.type === 'public-leaderboard-snapshot');
+  assert.ok(message.data.standings.length <= 70);
+  assert.ok(message.data.standings.every(x => x.length <= 220));
+  assert.ok(!message.data.standings.some(x => x.startsWith('Rank 1 ')));
+});
+
+test('empty board with only player count never produces misleading cached standings', () => {
+  const app = harness();
+  app.rows.length = 0;
+  app.elements.delete('leadersBody');
+  vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
+  assert.equal(app.messages.length, 0);
 });
