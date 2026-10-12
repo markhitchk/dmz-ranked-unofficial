@@ -1,5 +1,5 @@
 import type { PublicLeaderboardSnapshot } from './leaderboardSnapshotCache';
-import { MAX_HYDRATION_AGE_MS } from './leaderboardSnapshotCache';
+const MAX_HYDRATION_AGE_MS = 12 * 60 * 60 * 1000;
 
 /**
  * Restore a PREVIEW of previously rendered public standings into the real
