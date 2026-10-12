@@ -41,6 +41,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       predictiveBackGestureEnabled: false
     },
     plugins: [
+      'expo-asset',
+      'expo-background-task',
       [
         'expo-splash-screen',
         {
