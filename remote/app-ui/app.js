@@ -1279,10 +1279,19 @@
   // Do NOT observe style/class attributes here: syncCompactSeasonHeader() updates
   // its own style/class values, and observing those attributes can create a
   // self-triggering MutationObserver loop that starves WebView rendering.
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
+  // Limit App-tab repair to its navigation/section anchors. The site's
+  // leaderboard and community panels redraw regularly and must not wake it.
+  const appNav = findSiteNav();
+  const appSection = document.getElementById(TAB);
+  if (appNav) observer.observe(appNav, {childList:true});
+  if (appNav && appNav.parentElement) {
+    observer.observe(appNav.parentElement, {childList:true});
+  }
+  if (appSection) observer.observe(appSection, {childList:true});
+  if (appSection && appSection.parentElement) {
+    observer.observe(appSection.parentElement, {childList:true});
+  }
+  // The existing 5-second watchdog repairs a replaced outer page shell.
 
   window.setInterval(() => {
     if (window.__dmzAppScrolling||window.__dmzAppPaused) return;
@@ -2155,7 +2164,18 @@
         break;
       }
     });
-    observer.observe(document.documentElement,{childList:true,subtree:true});
+    // The PIN/raid preview lives in #log, and App tools in #unofficial-app.
+    // Don't observe the leaderboard's full DOM on every 20-second sync.
+    var logSection=q("#log");
+    if(logSection)observer.observe(logSection,{childList:true,subtree:true});
+    if(logSection&&logSection.parentElement){
+      observer.observe(logSection.parentElement,{childList:true});
+    }
+    var appSection=q("#unofficial-app");
+    if(appSection)observer.observe(appSection,{childList:true});
+    if(appSection&&appSection.parentElement){
+      observer.observe(appSection.parentElement,{childList:true});
+    }
     setInterval(function(){
       if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
       refresh();
