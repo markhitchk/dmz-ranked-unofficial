@@ -30,7 +30,7 @@ import {
   operatorNames
 } from '../services/operatorBackup';
 import { getLastNotificationSync } from '../services/backgroundNotificationSync';
-import type { AppSettings, ContentSize, RefreshRatePreference } from '../types';
+import type { AppSettings, ContentSize, RefreshRatePreference, WebViewRenderMode } from '../types';
 import { colors, condensedFont, contentScaleFactor } from '../theme';
 import { AppSafeArea } from './AppSafeArea';
 import { getDisplayInfo, getWebViewPackage, sampleUiPerformance } from '../../modules/dmz-migration';
@@ -785,6 +785,23 @@ export function SettingsPanel({
     );
   };
 
+  const webViewModeButton = (mode: WebViewRenderMode, label: string) => {
+    const active = (settings.webViewRenderMode ?? 'system') === mode;
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`WebView renderer: ${label}`}
+        accessibilityState={{ selected: active }}
+        onPress={() => onUpdate('webViewRenderMode', mode)}
+        style={[styles.sizeButton, active && styles.sizeButtonActive]}
+      >
+        <Text style={[styles.sizeButtonText, active && styles.sizeButtonTextActive]}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+
   const sizeButton = (size: ContentSize, label: string) => {
     const active = settings.contentSize === size;
     return (
@@ -813,6 +830,7 @@ export function SettingsPanel({
       `${platformName}: ${Device.osVersion ?? String(Platform.Version)}${Platform.OS === 'android' ? ` (API ${Device.platformApiLevel ?? String(Platform.Version)})` : ''}`,
       `Device: ${[Device.manufacturer, Device.modelName].filter(Boolean).join(' ') || 'Unknown'}`,
       `WebView: ${webViewPackageText}`,
+      `WebView renderer: ${settings.webViewRenderMode ?? 'system'}`,
       `Display: ${displayInfoText}`,
       `Performance: ${performanceInfoText}`,
       `Notification permission: ${notificationStatus}`,
@@ -854,7 +872,7 @@ export function SettingsPanel({
     Platform.OS === 'android' &&
     matches(
       q,
-      'performance display refresh rate hz fps frame time jank stutter smooth scrolling scroll missed frames resolution system battery 60 90'
+      'performance display refresh rate hz fps frame time jank stutter smooth scrolling scroll blank painted unpainted gpu graphics webview renderer render mode software hardware system battery 60 90'
     );
   const showWidgets =
     channel === 'beta' &&
@@ -1180,6 +1198,30 @@ export function SettingsPanel({
                   </View>
                 </SettingsCard>
               </View>
+
+              <SettingsCard>
+                <View style={styles.diagnosticsCard}>
+                  <Text style={styles.actionTitle}>Website rendering mode</Text>
+                  <Text style={styles.cardSummary}>
+                    Tests blank areas and delayed painting during fast scrolling.
+                    SYSTEM follows Android's normal WebView compositor (recommended).
+                    HARDWARE forces an extra GPU layer. SOFTWARE bypasses GPU
+                    layer rendering on some devices, but can be slower.
+                    Changing this mode does not alter website data or refresh rate.
+                  </Text>
+                  <View style={styles.sizeRow}>
+                    {webViewModeButton('system', 'SYSTEM')}
+                    <View style={styles.sizeSpacer} />
+                    {webViewModeButton('hardware', 'GPU')}
+                    <View style={styles.sizeSpacer} />
+                    {webViewModeButton('software', 'SOFTWARE')}
+                  </View>
+                  <Text style={[styles.cardSummary, styles.refreshRateHint]}>
+                    Current: {(settings.webViewRenderMode ?? 'system').toUpperCase()} •
+                    {webViewPackageText}
+                  </Text>
+                </View>
+              </SettingsCard>
 
               <SettingsCard>
                 <View style={styles.diagnosticsCard}>
