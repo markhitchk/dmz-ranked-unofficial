@@ -2941,3 +2941,126 @@ html.hs-android-webview #unofficial-app{
   transform:none!important;
   will-change:auto!important;
 }
+
+/* DMZ Ranked Unified Notification Card — App WebView override
+   Styles the unified notification card supplied by dmzranked.com's HTML/JS.
+   App-only: do not hide #banner/.msg until the website has switched to the
+   compatibility wrappers; CSS does not create or trigger notifications. */
+#dmzNotice.dmz-notice{
+  --dmz-notice-accent:#22c55e;
+  --dmz-notice-tint:rgba(34,197,94,.10);
+  position:fixed;
+  z-index:2147483647;
+  top:calc(12px + env(safe-area-inset-top, 0px));
+  left:50%;
+  box-sizing:border-box;
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  width:min(560px, calc(100vw - 24px));
+  max-height:calc(100dvh - 32px - env(safe-area-inset-top, 0px));
+  overflow-y:auto;
+  padding:15px 14px;
+  color:#f4f5f7;
+  background:
+    linear-gradient(110deg,var(--dmz-notice-tint),transparent 65%),
+    #171a20;
+  border:1px solid var(--dmz-notice-accent);
+  border-left:4px solid var(--dmz-notice-accent);
+  border-radius:13px;
+  box-shadow:0 14px 40px rgba(0,0,0,.50),0 3px 12px rgba(0,0,0,.25);
+  font-family:var(--f-ui,inherit);
+  font-size:13px;
+  line-height:1.6;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translate(-50%, -15px);
+  transition:opacity .22s ease,transform .22s ease,visibility .22s ease;
+}
+#dmzNotice.dmz-notice.is-visible{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:translate(-50%,0);
+}
+#dmzNotice.dmz-notice[data-type="ok"]{
+  --dmz-notice-accent:#22c55e;
+  --dmz-notice-tint:rgba(34,197,94,.10);
+}
+#dmzNotice.dmz-notice[data-type="warn"]{
+  --dmz-notice-accent:#f5b942;
+  --dmz-notice-tint:rgba(245,185,66,.10);
+}
+#dmzNotice.dmz-notice[data-type="err"]{
+  --dmz-notice-accent:#ef4444;
+  --dmz-notice-tint:rgba(239,68,68,.11);
+}
+#dmzNotice .dmz-notice-icon{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  width:25px;
+  height:25px;
+  border-radius:50%;
+  background:var(--dmz-notice-tint);
+  color:var(--dmz-notice-accent);
+  font-size:15px;
+  font-weight:800;
+}
+#dmzNotice .dmz-notice-text{
+  flex:1 1 auto;
+  min-width:0;
+  padding-top:2px;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+#dmzNotice .dmz-notice-text b,
+#dmzNotice .dmz-notice-text strong{
+  color:#fff;
+  font-weight:750;
+}
+#dmzNotice .dmz-notice-text a{
+  color:var(--dmz-notice-accent);
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+#dmzNotice .dmz-notice-close{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  padding:0;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:#b6bbc6;
+  font-size:15px;
+  cursor:pointer;
+  transition:background .15s ease,color .15s ease;
+}
+#dmzNotice .dmz-notice-close:hover,
+#dmzNotice .dmz-notice-close:focus-visible{
+  background:rgba(255,255,255,.10);
+  color:#fff;
+}
+#dmzNotice .dmz-notice-close:focus-visible{
+  outline:2px solid var(--dmz-notice-accent);
+  outline-offset:2px;
+}
+@media(max-width:600px){
+  #dmzNotice.dmz-notice{
+    width:calc(100vw - 20px);
+    padding:12px;
+    gap:10px;
+    border-radius:11px;
+    font-size:12.5px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #dmzNotice.dmz-notice,
+  #dmzNotice .dmz-notice-close{
+    transition:none;
+  }
+}
