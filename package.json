@@ -33,16 +33,16 @@
     "expo-keep-awake": "~57.0.2",
     "expo-linear-gradient": "~57.0.2",
     "expo-notifications": "~57.0.22",
+    "expo-splash-screen": "~57.0.9",
     "expo-task-manager": "~57.0.21",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-android-widget": "0.22.1",
     "react-native-device-info": "15.0.2",
+    "react-native-safe-area-context": "~5.7.0",
     "react-native-svg": "15.15.4",
     "react-native-webview": "13.16.1",
-    "sp-react-native-in-app-updates": "2.0.0",
-    "react-native-safe-area-context": "~5.7.0",
-    "expo-splash-screen": "~57.0.9"
+    "sp-react-native-in-app-updates": "2.0.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
