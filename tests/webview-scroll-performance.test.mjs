@@ -4,10 +4,17 @@ import { readFileSync } from 'node:fs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 
-test('Android uses an explicit hardware WebView layer, not a software bitmap', () => {
+test('Android uses system compositor by default, with opt-in GPU/software diagnostics', () => {
   const src = read('src/screens/DmzWebScreen.tsx');
-  assert.match(src, /androidLayerType="hardware"/);
-  assert.doesNotMatch(src, /androidLayerType="software"/);
+  const types = read('src/types.ts');
+  const settings = read('src/components/SettingsPanel.tsx');
+  assert.match(src, /androidLayerType=\{/);
+  assert.match(src, /settings\.webViewRenderMode === 'hardware'/);
+  assert.match(src, /settings\.webViewRenderMode === 'software'/);
+  assert.match(types, /webViewRenderMode: 'system'/);
+  assert.match(settings, /webViewModeButton\('system', 'SYSTEM'\)/);
+  assert.match(settings, /webViewModeButton\('hardware', 'GPU'\)/);
+  assert.match(settings, /webViewModeButton\('software', 'SOFTWARE'\)/);
 });
 
 test('App UI repair avoids whole-document mutation monitoring during scroll', () => {
@@ -25,13 +32,11 @@ test('Previous snapshot hydration no longer observes the whole document', () => 
   assert.match(src, /setInterval\(finish, 250\)/);
 });
 
-test('Fast Android fling disables expensive glows temporarily and restores after idle', () => {
+test('Android flings do not toggle root CSS classes or create forced lazy painting', () => {
   const src = read('src/screens/DmzWebScreen.tsx');
   const css = read('remote/app-ui/app.css');
-  assert.match(src, /root\.classList\.add\('hs-rapid-scroll'\)/);
-  assert.match(src, /root\.classList\.remove\('hs-rapid-scroll'\)/);
-  assert.match(css, /\.hs-android-webview\.hs-rapid-scroll/);
-  assert.match(css, /animation-play-state:paused!important/);
+  assert.doesNotMatch(src, /classList\.(?:add|remove)\('hs-rapid-scroll'\)/);
+  assert.doesNotMatch(css, /\.hs-android-webview\.hs-rapid-scroll/);
   assert.doesNotMatch(css.replace(/\/\*[\s\S]*?\*\//g, ''), /content-visibility:\s*auto/i);
 });
 
