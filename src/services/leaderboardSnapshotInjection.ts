@@ -9,6 +9,7 @@ export const LEADERBOARD_SNAPSHOT_SCRIPT = `
   if (!/^([a-z0-9-]+\\.)*dmzranked\\.com$/i.test(location.hostname)) return true;
   window.__dmzRnLeaderboardSnapshotInstalled = true;
   var lastPayload = '';
+  var lastSentAt = 0;
   function clean(value, limit) {
     return String(value || '').replace(/\\s+/g, ' ').trim().slice(0, limit || 220);
   }
@@ -51,7 +52,7 @@ export const LEADERBOARD_SNAPSHOT_SCRIPT = `
     for (var n = 0; n < nodes.length && picked < 36; n++) {
       if (!nodes[n]) continue;
       var list = nodes[n].querySelectorAll(
-        '.stat-card,.stat-tile,.stat,.metric,.kpi,[data-stat],[id*="total"],[id*="count"]'
+        '.stat-card,.stat-tile,.stat,.metric,.metric-card,.kpi,.stat-pill,.count-card,[data-stat],[id*="total"],[id*="count"]'
       );
       for (var i = 0; i < Math.min(list.length, 80) && picked < 36; i++) {
         var entry = list[i];
@@ -85,6 +86,7 @@ export const LEADERBOARD_SNAPSHOT_SCRIPT = `
       );
       var seasonBanner = document.getElementById('seasonBanner');
       var appStats = document.getElementById('dmz-hs-active-user-stats');
+      var headerStats = document.querySelector('header.top .statusbar');
       var season = clean(seasonBanner && seasonBanner.textContent, 120);
       var result = {
         sourceUrl: location.href,
@@ -92,16 +94,17 @@ export const LEADERBOARD_SNAPSHOT_SCRIPT = `
         standings: readRows(standings),
         hallOfFame: readRows(hall),
         leaders: readRows(leaders),
-        counters: collectCounters([standings, hall, leaders, appStats, seasonBanner])
+        counters: collectCounters([standings, hall, leaders, appStats, seasonBanner, headerStats])
       };
       if (!result.standings.length && !result.hallOfFame.length &&
           !result.leaders.length && !Object.keys(result.counters).length) return;
       var fingerprint = JSON.stringify(result);
-      if (fingerprint === lastPayload) return;
-      lastPayload = fingerprint;
+      if (fingerprint === lastPayload && Date.now() - lastSentAt < 5 * 60 * 1000) return;
       window.ReactNativeWebView.postMessage(JSON.stringify({
         type: 'public-leaderboard-snapshot', data: result
       }));
+      lastPayload = fingerprint;
+      lastSentAt = Date.now();
     } catch (_) { /* Snapshot is optional and must never block the website. */ }
   }
   function start() {
