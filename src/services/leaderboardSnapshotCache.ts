@@ -12,6 +12,8 @@ export type PublicLeaderboardSnapshot = {
   standings: string[];
   hallOfFame: string[];
   leaders: string[];
+  awardStandings: string[];
+  medals: string[];
   counters: Record<string, string>;
 };
 
@@ -68,8 +70,11 @@ function normalize(value: unknown, useStoredTimestamp: boolean): PublicLeaderboa
   const standings = rows(raw.standings);
   const hallOfFame = rows(raw.hallOfFame);
   const leaders = rows(raw.leaders);
+  const awardStandings = rows(raw.awardStandings);
+  const medals = rows(raw.medals);
+  // A bare count during website hydration is not a usable leaderboard.
   if (!standings.length && !hallOfFame.length && !leaders.length &&
-      !Object.keys(counters).length) return null;
+      !awardStandings.length && !medals.length) return null;
 
   const now = Date.now();
   const stamp = useStoredTimestamp ? Number(raw.capturedAt) : now;
@@ -79,14 +84,15 @@ function normalize(value: unknown, useStoredTimestamp: boolean): PublicLeaderboa
   return {
     version: 1, capturedAt: stamp, sourceUrl,
     season: cleanText(raw.season, 120),
-    standings, hallOfFame, leaders, counters
+    standings, hallOfFame, leaders, awardStandings, medals, counters
   };
 }
 
 function contentKey(snapshot: PublicLeaderboardSnapshot): string {
   return JSON.stringify([
     snapshot.sourceUrl, snapshot.season, snapshot.standings,
-    snapshot.hallOfFame, snapshot.leaders, snapshot.counters
+    snapshot.hallOfFame, snapshot.leaders, snapshot.awardStandings,
+    snapshot.medals, snapshot.counters
   ]);
 }
 
@@ -109,6 +115,13 @@ export async function saveLeaderboardSnapshot(
 ): Promise<PublicLeaderboardSnapshot | null> {
   const snapshot = normalize(value, false);
   if (!snapshot) return null;
+  // Do not discard a populated board when a different page only renders its
+  // leaders panel. Treat a season transition as a fresh snapshot instead.
+  if (lastWritten && snapshot.season === lastWritten.season &&
+      snapshot.sourceUrl === lastWritten.sourceUrl &&
+      !snapshot.standings.length && lastWritten.standings.length) {
+    snapshot.standings = lastWritten.standings;
+  }
 
   // Ignore identical observations except for a periodic freshness renewal.
   if (lastWritten && contentKey(lastWritten) === contentKey(snapshot) &&
@@ -126,7 +139,8 @@ export async function clearLeaderboardSnapshot(): Promise<void> {
 }
 
 export function describeCachedSnapshot(snapshot: PublicLeaderboardSnapshot): string {
-  const sections = snapshot.standings.length + snapshot.hallOfFame.length + snapshot.leaders.length;
+  const sections = snapshot.standings.length + snapshot.hallOfFame.length +
+    snapshot.leaders.length + snapshot.awardStandings.length + snapshot.medals.length;
   const saved = Math.max(0, Math.floor((Date.now() - snapshot.capturedAt) / 60_000));
   return `Saved snapshot • ${sections} rows • ${saved < 1 ? 'just now' : saved + 'm ago'}`;
 }
