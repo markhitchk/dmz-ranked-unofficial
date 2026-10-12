@@ -7,7 +7,16 @@ function harness(hostname = 'dmzranked.com') {
   const messages = [];
   const intervals = [];
   const mutations = [];
-  const rows = [{ textContent: '1 Bravo 2,850 SR 14 Raids', closest: () => null }];
+  const rows = [{
+    textContent: '1 Bravo 2,850 SR 14 Raids',
+    closest: () => null,
+    getAttribute(name) { return name === 'data-profile' ? 'operator-bravo' : null; },
+    querySelector(selector) {
+      const values = {'.pname':'Bravo','td.num':'2,850',
+        '.place':'1','.divlabel,.divmini':'Diamond II','.raids-mini':'14 raids'};
+      return values[selector] ? {textContent:values[selector]} : null;
+    }
+  }];
   const board = {
     querySelector(selector) {
       if (selector.includes('tbody tr')) return rows.length ? rows[0] : null;
@@ -76,6 +85,10 @@ test('captures the site real interactive #boardBody standings without cloning DO
   assert.equal(app.messages[0].type, 'public-standings-ready');
   assert.equal(app.messages[1].type, 'public-leaderboard-snapshot');
   assert.equal(app.messages[1].data.standings[0], '1 Bravo 2,850 SR 14 Raids');
+  assert.deepEqual(JSON.parse(JSON.stringify(app.messages[1].data.boardRows[0])), {
+    id: 'operator-bravo', name: 'Bravo', sr: '2,850',
+    position: '1', rank: 'Diamond II', raids: '14 raids'
+  });
   assert.equal(app.messages[1].data.leaders[0], 'Operator kills per raid avg 3.0');
   assert.equal(app.messages[1].data.counters.Players, '682 players');
   assert.equal(app.messages[1].data.counters['Leader: Operator kills per raid'], 'avg 3.0');
