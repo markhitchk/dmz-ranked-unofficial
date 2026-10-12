@@ -305,7 +305,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    const handleSettingsUrl = (url: string | null) => {
+    const handleSettingsUrl = (url: string | null | undefined) => {
       if (!url) return;
       try {
         const parsed = new URL(url);

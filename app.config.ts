@@ -41,6 +41,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       predictiveBackGestureEnabled: false
     },
     plugins: [
+      'expo-asset',
+      'expo-background-task',
       [
         'expo-splash-screen',
         {
@@ -62,7 +64,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           android: {
             minSdkVersion: 26,
-            compileSdkVersion: 36,
+            compileSdkVersion: 37,
             targetSdkVersion: 36
           },
           ios: {

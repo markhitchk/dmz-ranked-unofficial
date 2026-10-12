@@ -51,3 +51,14 @@ The old Java Android implementation is intentionally not part of this branch. Sh
 - Updates to a newer React Native/Expo SDK generation **must be tested together**. Never silently install incompatible newest-major releases or change a release's signing certificate.
 
 **GitHub platform note:** Scheduled Actions and Dependabot configuration run from the repository's default branch. This change deliberately does not modify the Java `main` branch. The push-triggered refresh works on `react-native-migration`; for unattended daily updates, separately add the scheduler/Dependabot configuration to the default branch. Automated pull-request creation also requires the repository Actions setting that permits GitHub Actions to create PRs.
+
+## Experimental React Native upgrade (isolated branch)
+
+This branch is **an experiment only**, not the production release. As of October 11, 2026, the latest stable React Native is **0.87.1**. Expo SDK 57 is designed for RN 0.86. Expo SDK 58 beta moves ahead to the RN **0.88 release candidate**, so we are testing the officially paired preview stack here rather than forcing RN 0.87 into the incompatible SDK 57 build system.
+
+- Proposed stack: **Expo SDK 58 beta** (`expo@next`), **React Native 0.88.0-rc.4**, **React 19.3.0**. This is NOT a stable React Native release.
+- Each CI run executes `npx expo install --fix --npm` before type checking and native builds to align Expo packages with the preview SDK. Versions are not yet fully pinned in a lockfile; **do not distribute these builds** until alignment and actual device tests pass.
+- Confirm: WebView behavior, DMZ messages, operator protected autofill, notifications, Android widgets, background tasks, performance settings, both package IDs, signing, and Google Play compatibility.
+- Do not merge until these checks pass, exact resolved dependency versions are committed, and separate beta APK device testing succeeds.
+
+**Preview-only npm caveat:** Some peer version ranges reject pre-release React Native. This branch sets `NPM_CONFIG_LEGACY_PEER_DEPS=true` for the preview CI dependency resolver; Expo Doctor, TypeScript, native compilation, and actual device tests are still mandatory. This is not enabled in production workflows.
