@@ -50,6 +50,11 @@ jobs:
       - name: Report available dependency upgrades
         run: npm outdated || true
 
+      - name: Align dependencies to the Expo SDK 58 preview
+        run: |
+          npx expo install --fix --npm
+          npx expo install --check
+
       - name: TypeScript check
         run: npm run typecheck
 

@@ -62,7 +62,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           android: {
             minSdkVersion: 26,
-            compileSdkVersion: 36,
+            compileSdkVersion: 37,
             targetSdkVersion: 36
           },
           ios: {
