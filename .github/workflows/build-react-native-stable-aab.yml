@@ -63,11 +63,11 @@ jobs:
                 throw Error("Stable channel/name configuration is incorrect");
               }
               const code = cfg.android?.versionCode;
-              if (!/^[0-9]+(?:\\.[0-9]+){2,3}$/.test(String(cfg.version)) || !Number.isInteger(code) || code < 1) {
+              if (!/^[0-9]+(?:\.[0-9]+){2,3}$/.test(String(cfg.version)) || !Number.isInteger(code) || code < 1) {
                 throw Error("Invalid stable version/build");
               }
               const stem = "DMZ-Ranked-React-Native-Stable-" + cfg.version + "-" + code;
-              require("node:fs").appendFileSync(process.env.GITHUB_ENV, "STABLE_AAB_STEM=" + stem + "\\n");
+              require("node:fs").appendFileSync(process.env.GITHUB_ENV, "STABLE_AAB_STEM=" + stem + "\n");
               console.log("Verified stable: " + cfg.android.package + ", versionCode " + code);
             });'
 
