@@ -389,7 +389,7 @@ export function SettingsPanel({
     visible && (!q || q.includes('operator') || q.includes('developer'));
   const needsNotificationMetadata =
     visible && (q.includes('notification') || q.includes('developer'));
-  const needsWebViewMetadata = visible && q.includes('developer');
+  const needsWebViewMetadata = visible && (!q || /developer|performance|webview|render|gpu|software|hardware|blank|scroll/.test(q));
   const needsDisplayMetadata =
     visible &&
     (
