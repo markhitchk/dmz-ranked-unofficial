@@ -45,18 +45,14 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
-      - name: Verify latest Expo-compatible dependencies
+      - name: Align Expo SDK 58 preview and verify compatibility
         run: |
+          npx expo install --fix --npm
           npx expo install --check
           npx expo-doctor
 
       - name: Report available dependency upgrades
         run: npm outdated || true
-
-      - name: Align dependencies to the Expo SDK 58 preview
-        run: |
-          npx expo install --fix --npm
-          npx expo install --check
 
       - name: TypeScript check
         run: npm run typecheck
