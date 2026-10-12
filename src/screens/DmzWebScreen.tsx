@@ -331,6 +331,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const cacheWrites = useRef<Promise<unknown>>(Promise.resolve());
     const [navProgress, setNavProgress] = useState(0);
     const [navProgressVisible, setNavProgressVisible] = useState(false);
+    const lastNavPercent = useRef(-1);
+    const lastLoaderPercent = useRef(-1);
+    const standingsReady = useRef(false);
+    const pendingStandingsRelease = useRef<{ id: number; release: () => void } | null>(null);
     const [failed, setFailed] = useState(false);
     const [failureKind, setFailureKind] = useState<'network' | 'interface'>('network');
     const overlayOpacity = useRef(new Animated.Value(1)).current;
@@ -439,6 +443,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
 
     useEffect(() => () => {
       gate.cancel();
+      pendingStandingsRelease.current = null;
       clearLoadTimers();
       overlayOpacity.stopAnimation();
       navProgressOpacity.stopAnimation();
@@ -738,8 +743,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const hideOverlay = useCallback((id: number) => {
       if (!gate.claimReady(id)) return;
       if (readyTimer.current) clearTimeout(readyTimer.current);
-      setProgress(100);
-      setStatus('Ready.');
       const finish = () => {
         if (!gate.isCurrent(id)) return;
         setOverlayVisible(false);
@@ -753,23 +756,40 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
       };
 
-      finishTimer.current = setTimeout(() => {
+      const reveal = () => {
         if (!gate.isCurrent(id)) return;
-        if (!settings.appAnimations) {
-          finish();
-          return;
-        }
-        Animated.timing(overlayOpacity, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true
-        }).start(({ finished }) => { if (finished) finish(); });
-      }, 120);
+        if (readyTimer.current) clearTimeout(readyTimer.current);
+        pendingStandingsRelease.current = null;
+        setProgress(100);
+        setStatus('Ready.');
+        finishTimer.current = setTimeout(() => {
+          if (!gate.isCurrent(id)) return;
+          if (!settings.appAnimations) {
+            finish();
+            return;
+          }
+          Animated.timing(overlayOpacity, {
+            toValue: 0,
+            duration: 180,
+            useNativeDriver: true
+          }).start(({ finished }) => { if (finished) finish(); });
+        }, 120);
+      };
+      // On a cold launch allow the real website's board rows a brief chance
+      // to populate behind the native overlay. Never hold navigation hostage.
+      if (!startupComplete.current && !standingsReady.current &&
+          isInternal(page.current.url)) {
+        setProgress(value => Math.max(value, 96));
+        setStatus('Preparing interactive standings…');
+        pendingStandingsRelease.current = {id, release: reveal};
+        readyTimer.current = setTimeout(reveal, 1200);
+      } else reveal();
     }, [captureOperatorBackup, gate, overlayOpacity, refreshOperator, setLoadingState, settings.appAnimations, settings.operatorAutoSave]);
 
     const failLoad = useCallback((id: number, kind: 'network' | 'interface') => {
       if (!gate.isCurrent(id)) return;
       gate.fail(id);
+      pendingStandingsRelease.current = null;
       clearLoadTimers();
       overlayOpacity.stopAnimation();
       setLoadingState(false);
@@ -832,6 +852,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const handleLoadStart = useCallback((url: string) => {
       clearLoadTimers();
       const id = gate.begin(settings.appUiOverrides);
+      standingsReady.current = false;
+      pendingStandingsRelease.current = null;
+      lastNavPercent.current = -1;
+      lastLoaderPercent.current = -1;
       page.current = {
         id,
         url,
@@ -958,6 +982,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             url?: string;
             data?: unknown;
           };
+          if (nativeMessage?.type === 'public-standings-ready') {
+            standingsReady.current = true;
+            const pending = pendingStandingsRelease.current;
+            if (pending && gate.isCurrent(pending.id)) pending.release();
+            return;
+          }
           if (nativeMessage?.type === 'public-leaderboard-snapshot') {
             if (!isInternal(page.current.url) || !gate.isCurrent(page.current.id)) return;
             // WebView captures only DOM it has already rendered. Writes are
@@ -966,7 +996,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               .catch(() => undefined)
               .then(async () => {
                 const snapshot = await saveLeaderboardSnapshot(nativeMessage.data);
-                if (snapshot) {
+                if (snapshot && !startupComplete.current) {
                   setCachedPreview({
                     summary: describeCachedSnapshot(snapshot),
                     rows: snapshot.standings.slice(0, 2)
@@ -1313,6 +1343,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           javaScriptEnabled
           javaScriptCanOpenWindowsAutomatically={false}
           domStorageEnabled
+          cacheEnabled
+          cacheMode="LOAD_DEFAULT"
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
           allowFileAccess={false}
@@ -1349,8 +1381,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               0,
               Math.min(100, Math.round(event.nativeEvent.progress * 100))
             );
-            setNavProgress(raw);
-            if (raw >= 100) hideNavigationProgress();
+            // Avoid dozens of React rerenders while the WebView loads and
+            // while the site's own JS calculates its initial standings.
+            const bucket = raw >= 100 ? 100 : Math.floor(raw / 5) * 5;
+            if (bucket !== lastNavPercent.current) {
+              lastNavPercent.current = bucket;
+              setNavProgress(bucket);
+              if (raw >= 100) hideNavigationProgress();
+            }
 
             if (page.current.loaded || !gate.isCurrent(page.current.id)) return;
             if (
@@ -1362,8 +1400,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             }
             if (!page.current.uiStarted) {
               const next = Math.min(89, raw);
-              setProgress(next);
-              setStatus(progressStatus(next));
+              const loaderBucket = Math.floor(next / 5) * 5;
+              if (loaderBucket !== lastLoaderPercent.current) {
+                lastLoaderPercent.current = loaderBucket;
+                setProgress(loaderBucket);
+                setStatus(progressStatus(loaderBucket));
+              }
             }
           }}
           onLoad={event => {
