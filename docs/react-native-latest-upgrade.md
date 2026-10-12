@@ -21,3 +21,6 @@ Do not use stable RN 0.87.1 with the unmodified Expo 57 native build system.
 - [ ] Explicit decision to wait for SDK 58 stable / RN 0.88 stable before releasing
 
 **Production and react-native-migration remain unchanged until this is verified.**
+
+## Latest preview CI run
+- First test found npm peer dependency rejection of the RN 0.88 release candidate. The preview-only workflow now enables prerelease-aware dependency resolution; runtime and native build verification remain required.
