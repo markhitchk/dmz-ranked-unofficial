@@ -4,12 +4,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * Read-only, on-device snapshot of public content the existing WebView has
  * already rendered. This module NEVER contacts the website or its backend.
  */
+export type CachedStandingRow = {
+  id: string;
+  name: string;
+  position: string;
+  rank: string;
+  sr: string;
+  raids: string;
+};
+
 export type PublicLeaderboardSnapshot = {
   version: 1;
   capturedAt: number;
   sourceUrl: string;
   season: string;
   standings: string[];
+  boardRows: CachedStandingRow[];
   hallOfFame: string[];
   leaders: string[];
   awardStandings: string[];
@@ -19,6 +29,8 @@ export type PublicLeaderboardSnapshot = {
 
 const CACHE_KEY = 'dmz_public_leaderboard_snapshot_v1';
 const MAX_ROWS = 100;
+const MAX_BOARD_ROWS = 70;
+export const MAX_HYDRATION_AGE_MS = 12 * 60 * 60 * 1000;
 const MAX_COUNTERS = 36;
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 let lastWritten: PublicLeaderboardSnapshot | null = null;
@@ -49,6 +61,24 @@ function rows(value: unknown): string[] {
     .filter(row => row.length > 0 && !/^(loading|connecting|syncing|—|-)\b/i.test(row));
 }
 
+function parseBoardRows(value: unknown): CachedStandingRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_BOARD_ROWS).flatMap((raw): CachedStandingRow[] => {
+    if (!raw || typeof raw !== 'object') return [];
+    const row = raw as Record<string, unknown>;
+    const id = cleanText(row.id, 120);
+    const name = cleanText(row.name, 90);
+    const sr = cleanText(row.sr, 35);
+    if (!id || !name || !sr) return [];
+    return [{
+      id, name, sr,
+      position: cleanText(row.position, 10),
+      rank: cleanText(row.rank, 75),
+      raids: cleanText(row.raids, 90)
+    }];
+  });
+}
+
 function normalize(value: unknown, useStoredTimestamp: boolean): PublicLeaderboardSnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const raw = value as Record<string, unknown>;
@@ -68,6 +98,7 @@ function normalize(value: unknown, useStoredTimestamp: boolean): PublicLeaderboa
   }
 
   const standings = rows(raw.standings);
+  const boardRows = parseBoardRows(raw.boardRows);
   const hallOfFame = rows(raw.hallOfFame);
   const leaders = rows(raw.leaders);
   const awardStandings = rows(raw.awardStandings);
@@ -84,13 +115,13 @@ function normalize(value: unknown, useStoredTimestamp: boolean): PublicLeaderboa
   return {
     version: 1, capturedAt: stamp, sourceUrl,
     season: cleanText(raw.season, 120),
-    standings, hallOfFame, leaders, awardStandings, medals, counters
+    standings, boardRows, hallOfFame, leaders, awardStandings, medals, counters
   };
 }
 
 function contentKey(snapshot: PublicLeaderboardSnapshot): string {
   return JSON.stringify([
-    snapshot.sourceUrl, snapshot.season, snapshot.standings,
+    snapshot.sourceUrl, snapshot.season, snapshot.standings, snapshot.boardRows,
     snapshot.hallOfFame, snapshot.leaders, snapshot.awardStandings,
     snapshot.medals, snapshot.counters
   ]);
@@ -121,6 +152,7 @@ export async function saveLeaderboardSnapshot(
       snapshot.sourceUrl === lastWritten.sourceUrl &&
       !snapshot.standings.length && lastWritten.standings.length) {
     snapshot.standings = lastWritten.standings;
+    snapshot.boardRows = lastWritten.boardRows;
   }
 
   // Ignore identical observations except for a periodic freshness renewal.
