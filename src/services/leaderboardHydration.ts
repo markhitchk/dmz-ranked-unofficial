@@ -19,7 +19,11 @@ export function buildLeaderboardHydrationScript(
   const payload = {
     capturedAt: snapshot.capturedAt,
     season: snapshot.season,
-    rows: snapshot.boardRows.slice(0, 70)
+    rows: snapshot.boardRows.slice(0, 70),
+    leaders: snapshot.leaders.slice(0, 12),
+    hallOfFame: snapshot.hallOfFame.slice(0, 16),
+    awardStandings: snapshot.awardStandings.slice(0, 12),
+    medals: snapshot.medals.slice(0, 12)
   };
   return `
 (function () {
@@ -31,6 +35,26 @@ export function buildLeaderboardHydrationScript(
   var watcher = null;
   function cleanSeason(text) {
     return String(text || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+  }
+  function restoreList(containerId, values, itemClass) {
+    var holder = document.getElementById(containerId);
+    if (!holder || !Array.isArray(values) || !values.length) return false;
+    if (holder.childNodes.length || holder.querySelector('[data-dmz-cached]')) return false;
+    var block = document.createElement('div');
+    block.setAttribute('data-dmz-cached', 'true');
+    block.className = 'dmz-cached-list';
+    var label = document.createElement('div');
+    label.className = 'dmz-cached-board-notice';
+    label.textContent = 'Saved results · syncing live data…';
+    block.appendChild(label);
+    values.forEach(function(value) {
+      var item = document.createElement('div');
+      item.className = itemClass;
+      item.textContent = String(value).slice(0, 220);
+      block.appendChild(item);
+    });
+    holder.appendChild(block);
+    return true;
   }
   function restore() {
     if (Date.now() > expiry) return true;
@@ -107,6 +131,10 @@ export function buildLeaderboardHydrationScript(
     shell.appendChild(table);
     if (!board.childNodes.length) board.appendChild(shell);
     else return true;
+    restoreList('leadersBody', cache.leaders, 'ldr-card');
+    restoreList('hofBody', cache.hallOfFame, 'hof-item');
+    restoreList('raceBody', cache.awardStandings, 'ag-item');
+    restoreList('medalsBody', cache.medals, 'medal-row');
     // Optional visual cue on snapshots; live website overwrites the body.
     try {
       window.ReactNativeWebView.postMessage(JSON.stringify({
