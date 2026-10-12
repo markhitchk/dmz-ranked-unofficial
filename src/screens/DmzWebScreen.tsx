@@ -331,7 +331,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const [loading, setLoading] = useState(true);
     const [overlayVisible, setOverlayVisible] = useState(true);
     const [progress, setProgress] = useState(0);
-    const [status, setStatus] = useState('Starting DMZ Ranked…');
     const cacheWrites = useRef<Promise<unknown>>(Promise.resolve());
     const cachedBoard = useRef<PublicLeaderboardSnapshot | null>(null);
     const cacheRestorePageId = useRef(-1);
@@ -743,11 +742,10 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     );
 
     const showOverlay = useCallback(
-      (nextStatus: string, nextProgress: number) => {
+      (_nextStatus: string, nextProgress: number) => {
         overlayOpacity.stopAnimation();
         overlayOpacity.setValue(1);
         setOverlayVisible(true);
-        setStatus(nextStatus);
         setProgress(nextProgress);
         setLoadingState(true);
       },
@@ -775,7 +773,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (readyTimer.current) clearTimeout(readyTimer.current);
         pendingStandingsRelease.current = null;
         setProgress(100);
-        setStatus('Ready.');
         finishTimer.current = setTimeout(() => {
           if (!gate.isCurrent(id)) return;
           if (!settings.appAnimations) {
@@ -794,7 +791,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       if (!startupComplete.current && !standingsReady.current &&
           isInternal(page.current.url)) {
         setProgress(value => Math.max(value, 96));
-        setStatus('Preparing interactive standings…');
         pendingStandingsRelease.current = {id, release: reveal};
         readyTimer.current = setTimeout(reveal, 1200);
       } else reveal();
@@ -895,7 +891,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         overlayOpacity.setValue(0);
         setOverlayVisible(false);
         setProgress(5);
-        setStatus('Connecting to dmzranked.com…');
         setLoadingState(true);
       }
     }, [
@@ -929,7 +924,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
 
         current.uiStarted = true;
         setProgress(value => Math.max(value, 90));
-        setStatus('Verifying the DMZ Ranked app interface…');
         if (readyTimer.current) clearTimeout(readyTimer.current);
         readyTimer.current = setTimeout(() => failLoad(id, 'interface'), 20000);
 
@@ -937,20 +931,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           const ui = await (payload.current ?? loadRemoteAppUi());
           if (!gate.isCurrent(id)) return;
           setProgress(value => Math.max(value, 94));
-          setStatus(
-            ui.source === 'remote'
-              ? 'Applying the latest app interface…'
-              : ui.source === 'cache'
-                ? 'Applying the last verified app interface…'
-                : 'Applying the bundled app interface…'
-          );
           webRef.current?.injectJavaScript(
             bridge +
               '\n' +
               buildRemoteUiInjection(ui.css, ui.js, id, ui.revision)
           );
           setProgress(value => Math.max(value, 98));
-          setStatus('Checking app styles and the App tab…');
         } catch {
           failLoad(id, 'interface');
         }
@@ -1340,14 +1326,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       showOverlay
     ]);
 
-    const progressStatus = useCallback((value: number) => {
-      if (value < 20) return `Connecting… ${value}%`;
-      if (value < 65) return `Loading DMZ Ranked… ${value}%`;
-      if (value < 95) return `Loading page assets… ${value}%`;
-      if (value < 100) return `Finishing up… ${value}%`;
-      return 'Page loaded • waiting for live sync…';
-    }, []);
-
     return (
       <View style={styles.container}>
         <View ref={webHostRef} style={styles.webHost}>
@@ -1433,7 +1411,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               if (loaderBucket !== lastLoaderPercent.current) {
                 lastLoaderPercent.current = loaderBucket;
                 setProgress(loaderBucket);
-                setStatus(progressStatus(loaderBucket));
               }
             }
           }}
@@ -1486,8 +1463,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             <LoadingOverlay
               channel={channel}
               progress={progress}
-              status={status}
-              verbose={settings.verboseLoading}
               animations={settings.appAnimations}
             />
           </Animated.View>
