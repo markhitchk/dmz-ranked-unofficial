@@ -310,8 +310,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     },
     ref
   ) {
-    const webRef = useRef<WebView>(null);
-    const webHostRef = useRef<View>(null);
+    const webRef = useRef<WebView<{}>>(null);
+    const webHostRef = useRef<React.ComponentRef<typeof View>>(null);
     const userAgent = useMemo(
       () =>
         Platform.OS === 'android'
@@ -709,7 +709,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           webRef.current?.reload();
         },
         clearCache: () => {
-          const view = webRef.current as (WebView & {
+          const view = webRef.current as (WebView<{}> & {
             clearCache?: (includeDiskFiles?: boolean) => void;
           }) | null;
           view?.clearCache?.(true);
@@ -1329,7 +1329,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     return (
       <View style={styles.container}>
         <View ref={webHostRef} style={styles.webHost}>
-          <WebView
+          <WebView<{}>
           ref={webRef}
           source={{ uri: initialUrl.current }}
           originWhitelist={['http://*', 'https://*', 'dmzranked-support://*']}

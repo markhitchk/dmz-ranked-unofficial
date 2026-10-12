@@ -106,8 +106,6 @@ export function AppSafeArea({
       <StatusBar
         hidden={false}
         barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
       />
       <SafeAreaFrame contentScale={contentScale}>
         {children}
