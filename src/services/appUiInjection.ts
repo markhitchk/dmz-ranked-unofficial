@@ -163,11 +163,26 @@ export function buildRemoteUiInjection(
     }
 
     try {
+      // Only watch App UI anchors. Watching the complete page causes a
+      // MutationObserver callback for every live leaderboard redraw and
+      // competes with WebView's raster/compositor work on fast flings.
       window.__dmzRnUiObserver = new MutationObserver(schedule);
-      window.__dmzRnUiObserver.observe(
-        document.documentElement || document.body,
-        { subtree: true, childList: true }
-      );
+      var observer = window.__dmzRnUiObserver;
+      if (document.head) {
+        observer.observe(document.head, { childList: true });
+      }
+      var nav = document.querySelector('nav.tabs');
+      if (nav) observer.observe(nav, { childList: true });
+      if (nav && nav.parentElement) {
+        observer.observe(nav.parentElement, { childList: true });
+      }
+      var app = document.getElementById('unofficial-app');
+      if (app) observer.observe(app, { childList: true });
+      if (app && app.parentElement && app.parentElement !== nav?.parentElement) {
+        observer.observe(app.parentElement, { childList: true });
+      }
+      // If the site's top-level page shell is replaced, the 8-second
+      // watchdog (and foreground revalidation) will restore the App UI.
     } catch (_) {}
 
     // Recovery watchdog is intentionally slow and only repairs broken UI.
