@@ -37,7 +37,6 @@ import { LEADERBOARD_SNAPSHOT_SCRIPT } from '../services/leaderboardSnapshotInje
 import { buildLeaderboardHydrationScript } from '../services/leaderboardHydration';
 import {
   clearLeaderboardSnapshot,
-  describeCachedSnapshot,
   loadLeaderboardSnapshot,
   saveLeaderboardSnapshot,
   type PublicLeaderboardSnapshot
@@ -333,10 +332,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const [overlayVisible, setOverlayVisible] = useState(true);
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('Starting DMZ Ranked…');
-    const [cachedPreview, setCachedPreview] = useState<{
-      summary: string;
-      rows: string[];
-    } | null>(null);
     const cacheWrites = useRef<Promise<unknown>>(Promise.resolve());
     const cachedBoard = useRef<PublicLeaderboardSnapshot | null>(null);
     const cacheRestorePageId = useRef(-1);
@@ -413,10 +408,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         if (!active || !snapshot) return;
         cachedBoard.current = snapshot;
         injectCachedBoard(page.current.id);
-        setCachedPreview({
-          summary: describeCachedSnapshot(snapshot),
-          rows: snapshot.standings.slice(0, 2)
-        });
       });
       return () => { active = false; };
     }, [injectCachedBoard]);
@@ -724,14 +715,12 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           }) | null;
           view?.clearCache?.(true);
           cachedBoard.current = null;
-          setCachedPreview(null);
           cacheWrites.current = cacheWrites.current
             .catch(() => undefined)
             .then(() => clearLeaderboardSnapshot());
         },
         clearWebsiteData: () => {
           cachedBoard.current = null;
-          setCachedPreview(null);
           cacheWrites.current = cacheWrites.current
             .catch(() => undefined)
             .then(() => clearLeaderboardSnapshot());
@@ -1030,12 +1019,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               .then(async () => {
                 const snapshot = await saveLeaderboardSnapshot(nativeMessage.data);
                 if (snapshot) cachedBoard.current = snapshot;
-                if (snapshot && !startupComplete.current) {
-                  setCachedPreview({
-                    summary: describeCachedSnapshot(snapshot),
-                    rows: snapshot.standings.slice(0, 2)
-                  });
-                }
               });
             return;
           }
@@ -1506,7 +1489,6 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               status={status}
               verbose={settings.verboseLoading}
               animations={settings.appAnimations}
-              cachedPreview={cachedPreview}
             />
           </Animated.View>
         ) : null}
