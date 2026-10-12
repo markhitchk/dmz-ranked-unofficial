@@ -1299,12 +1299,6 @@ export function SettingsPanel({
                 value={settings.rememberLastPage}
                 onChange={value => onUpdate('rememberLastPage', value)}
               />
-              <ToggleCard
-                title="Detailed loading status"
-                summary="Show live loading status and percentage underneath the loading bar."
-                value={settings.verboseLoading}
-                onChange={value => onUpdate('verboseLoading', value)}
-              />
             </>
             </>
           )
