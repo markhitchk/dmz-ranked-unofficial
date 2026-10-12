@@ -80,14 +80,10 @@ const ANDROID_PERFORMANCE_SCRIPT =
       window.__dmzAppScrolling=false;
       var dmzScrollIdleTimer=0;
       var dmzScrollLastArm=0;
-      var markScrolling=function(ev){
+      var markScrolling=function(){
         window.__dmzAppScrolling=true;
-        // One class transition per fling pauses expensive leaderboard
-        // animations/glows, without running layout reads on scroll frames.
-        if(root && ev && (ev.type==='scroll'||ev.type==='touchmove') &&
-           !root.classList.contains('hs-rapid-scroll')){
-          root.classList.add('hs-rapid-scroll');
-        }
+        // Do not mutate classes on <html> during a fling: that invalidates
+        // CSS matching for the entire long leaderboard.
         var now=Date.now();
         // Avoid allocating a timer for each touch/scroll animation frame.
         if(now-dmzScrollLastArm<120)return;
@@ -95,7 +91,6 @@ const ANDROID_PERFORMANCE_SCRIPT =
         clearTimeout(dmzScrollIdleTimer);
         dmzScrollIdleTimer=setTimeout(function(){
           window.__dmzAppScrolling=false;
-          if(root)root.classList.remove('hs-rapid-scroll');
         },270);
       };
       window.addEventListener('scroll',markScrolling,{passive:true});
