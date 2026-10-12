@@ -34,11 +34,13 @@ import {
 import { buildRemoteUiInjection } from '../services/appUiInjection';
 import { AppUiLoadGate } from '../services/appUiLoadGate';
 import { LEADERBOARD_SNAPSHOT_SCRIPT } from '../services/leaderboardSnapshotInjection';
+import { buildLeaderboardHydrationScript } from '../services/leaderboardHydration';
 import {
   clearLeaderboardSnapshot,
   describeCachedSnapshot,
   loadLeaderboardSnapshot,
-  saveLeaderboardSnapshot
+  saveLeaderboardSnapshot,
+  type PublicLeaderboardSnapshot
 } from '../services/leaderboardSnapshotCache';
 import {
   createBridgeBootstrap,
@@ -329,6 +331,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       rows: string[];
     } | null>(null);
     const cacheWrites = useRef<Promise<unknown>>(Promise.resolve());
+    const cachedBoard = useRef<PublicLeaderboardSnapshot | null>(null);
+    const cacheRestorePageId = useRef(-1);
+    const webProgress = useRef(0);
     const [navProgress, setNavProgress] = useState(0);
     const [navProgressVisible, setNavProgressVisible] = useState(false);
     const lastNavPercent = useRef(-1);
@@ -384,19 +389,30 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       >()
     );
 
+    const injectCachedBoard = useCallback((id: number) => {
+      if (!gate.isCurrent(id) || !isInternal(page.current.url) ||
+          cacheRestorePageId.current === id || webProgress.current < 20) return;
+      const script = buildLeaderboardHydrationScript(cachedBoard.current);
+      if (!script || !webRef.current) return;
+      cacheRestorePageId.current = id;
+      webRef.current.injectJavaScript(script);
+    }, [gate]);
+
     useEffect(() => {
       let active = true;
       // Restore a previously observed public snapshot in parallel with WebView
       // warmup. Never delay the website while reading device storage.
       void loadLeaderboardSnapshot().then(snapshot => {
         if (!active || !snapshot) return;
+        cachedBoard.current = snapshot;
+        injectCachedBoard(page.current.id);
         setCachedPreview({
           summary: describeCachedSnapshot(snapshot),
           rows: snapshot.standings.slice(0, 2)
         });
       });
       return () => { active = false; };
-    }, []);
+    }, [injectCachedBoard]);
 
     useEffect(() => {
       if (Platform.OS !== 'android') return;
@@ -700,12 +716,14 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             clearCache?: (includeDiskFiles?: boolean) => void;
           }) | null;
           view?.clearCache?.(true);
+          cachedBoard.current = null;
           setCachedPreview(null);
           cacheWrites.current = cacheWrites.current
             .catch(() => undefined)
             .then(() => clearLeaderboardSnapshot());
         },
         clearWebsiteData: () => {
+          cachedBoard.current = null;
           setCachedPreview(null);
           cacheWrites.current = cacheWrites.current
             .catch(() => undefined)
@@ -852,6 +870,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const handleLoadStart = useCallback((url: string) => {
       clearLoadTimers();
       const id = gate.begin(settings.appUiOverrides);
+      cacheRestorePageId.current = -1;
+      webProgress.current = 0;
       standingsReady.current = false;
       pendingStandingsRelease.current = null;
       lastNavPercent.current = -1;
@@ -949,6 +969,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       current.loaded = true;
       gate.loaded(id);
       applyDesktopViewport();
+      // Fallback for devices that do not execute JavaScript until onLoad.
+      webProgress.current = 100;
+      injectCachedBoard(id);
       // Ask the already-loaded document for a public-data snapshot before
       // releasing the native loading overlay; never wait on the capture.
       webRef.current?.injectJavaScript(
@@ -963,7 +986,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         return;
       }
       await installAppUi(id);
-    }, [applyDesktopViewport, gate, hideOverlay, installAppUi]);
+    }, [applyDesktopViewport, gate, hideOverlay, injectCachedBoard, installAppUi]);
 
     const handleMessage = useCallback(
       (event: { nativeEvent: { data: string; url?: string } }) => {
@@ -982,6 +1005,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             url?: string;
             data?: unknown;
           };
+          if (nativeMessage?.type === 'public-standings-cache-restored') {
+            return;
+          }
           if (nativeMessage?.type === 'public-standings-ready') {
             standingsReady.current = true;
             const pending = pendingStandingsRelease.current;
@@ -996,6 +1022,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               .catch(() => undefined)
               .then(async () => {
                 const snapshot = await saveLeaderboardSnapshot(nativeMessage.data);
+                if (snapshot) cachedBoard.current = snapshot;
                 if (snapshot && !startupComplete.current) {
                   setCachedPreview({
                     summary: describeCachedSnapshot(snapshot),
@@ -1381,6 +1408,8 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               0,
               Math.min(100, Math.round(event.nativeEvent.progress * 100))
             );
+            webProgress.current = raw;
+            if (raw >= 20) injectCachedBoard(page.current.id);
             // Avoid dozens of React rerenders while the WebView loads and
             // while the site's own JS calculates its initial standings.
             const bucket = raw >= 100 ? 100 : Math.floor(raw / 5) * 5;
