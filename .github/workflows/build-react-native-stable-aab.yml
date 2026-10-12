@@ -25,7 +25,6 @@ jobs:
     env:
       APP_VARIANT: stable
       CI: '1'
-      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
     steps:
       - name: Checkout React Native migration
         uses: actions/checkout@v7
@@ -68,7 +67,7 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
-      - name: Align Expo native packages
+      - name: Align stable Expo 57 native packages
         run: npx expo install --fix --npm
 
       - name: Verify latest Expo-compatible dependencies
@@ -78,6 +77,9 @@ jobs:
 
       - name: Report available dependency upgrades
         run: npm outdated || true
+
+      - name: Verify stable Expo, React Native, and TypeScript
+        run: npm run check:framework
 
       - name: Verify TypeScript and tests
         run: |

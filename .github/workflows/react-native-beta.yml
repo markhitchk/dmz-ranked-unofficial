@@ -13,9 +13,6 @@ jobs:
     env:
       APP_VARIANT: beta
       CI: '1'
-      # Npm stable-only peer ranges often exclude React Native release candidates.
-      # RN 0.88 RC only: Expo compatibility and native build checks remain mandatory.
-      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
     steps:
       - name: Checkout
@@ -45,7 +42,7 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
-      - name: Align Expo SDK 58 preview and verify compatibility
+      - name: Align stable Expo 57 and verify compatibility
         run: |
           npx expo install --fix --npm
           npx expo install --check
@@ -53,6 +50,9 @@ jobs:
 
       - name: Report available dependency upgrades
         run: npm outdated || true
+
+      - name: Verify stable Expo, React Native, and TypeScript
+        run: npm run check:framework
 
       - name: TypeScript check
         run: npm run typecheck

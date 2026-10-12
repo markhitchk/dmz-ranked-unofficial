@@ -63,7 +63,7 @@ export function AppMessagesPanel({
 }: Props) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<Filter>('all');
-  const listRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const listRef = useRef<ScrollView>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const toggleExpanded = (id: string) => {

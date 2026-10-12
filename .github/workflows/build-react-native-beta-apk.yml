@@ -16,8 +16,6 @@ jobs:
     env:
       APP_VARIANT: beta
       CI: '1'
-      # RC peer ranges may reject prerelease React Native during npm resolution.
-      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
 
     steps:
       - name: Checkout
@@ -48,7 +46,7 @@ jobs:
             npm install --no-audit --no-fund
           fi
 
-      - name: Align Expo 58 native packages
+      - name: Align stable Expo 57 native packages
         run: npx expo install --fix --npm
 
       - name: Verify latest Expo-compatible dependencies
@@ -58,6 +56,9 @@ jobs:
 
       - name: Report available dependency upgrades
         run: npm outdated || true
+
+      - name: Verify stable Expo, React Native, and TypeScript
+        run: npm run check:framework
 
       - name: TypeScript check
         run: npm run typecheck

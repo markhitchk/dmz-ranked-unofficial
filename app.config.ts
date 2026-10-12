@@ -10,7 +10,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: isBeta ? 'DMZ Ranked [Beta]' : 'DMZ Ranked',
     slug: 'dmz-ranked-unofficial',
-    version: '1.1.6',
+    version: '1.1.8',
     orientation: 'default',
     icon: './assets/dmz_launcher_icon.png',
     scheme: 'dmzranked',
@@ -23,7 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     ios: {
       bundleIdentifier: packageId,
-      buildNumber: '192',
+      buildNumber: '194',
       supportsTablet: true,
       infoPlist: {
         LSApplicationQueriesSchemes: ['itms-apps']
@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: packageId,
-      versionCode: 192,
+      versionCode: 194,
       allowBackup: true,
       adaptiveIcon: {
         foregroundImage: './assets/dmz_launcher_foreground.png',
@@ -41,8 +41,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       predictiveBackGestureEnabled: false
     },
     plugins: [
-      'expo-asset',
-      'expo-background-task',
       [
         'expo-splash-screen',
         {
@@ -64,12 +62,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           android: {
             minSdkVersion: 26,
-            compileSdkVersion: 37,
+            compileSdkVersion: 36,
             targetSdkVersion: 36,
-            // Android 16 release smoke test (build 191) proved that R8
-            // breaks WorkManager's generated Room WorkDatabase initializer.
-            // Disable release shrinking/obfuscation until the native stack
-            // has verified keep rules; otherwise the app crashes before JS.
+            // The release-minified Android 16 build crashed during
+            // WorkManager/Room startup. Keep R8 disabled until validated.
             enableMinifyInReleaseBuilds: false,
             enableShrinkResourcesInReleaseBuilds: false
           },

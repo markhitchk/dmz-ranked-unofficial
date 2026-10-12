@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       CI: '1'
-      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -30,7 +29,7 @@ jobs:
             echo "::warning::No lockfile yet. Merge the automated dependency-refresh PR for reproducible builds."
             npm install --no-audit --no-fund
           fi
-      - name: Align Expo native packages
+      - name: Align stable Expo 57 native packages
         run: npx expo install --fix --npm
 
       - name: Verify latest Expo-compatible dependencies
@@ -40,6 +39,9 @@ jobs:
 
       - name: Report available dependency upgrades
         run: npm outdated || true
+
+      - name: Verify stable Expo, React Native, and TypeScript
+        run: npm run check:framework
 
       - name: TypeScript
         run: npm run typecheck

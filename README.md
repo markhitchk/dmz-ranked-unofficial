@@ -52,17 +52,10 @@ The old Java Android implementation is intentionally not part of this branch. Sh
 
 **GitHub platform note:** Scheduled Actions and Dependabot configuration run from the repository's default branch. This change deliberately does not modify the Java `main` branch. The push-triggered refresh works on `react-native-migration`; for unattended daily updates, separately add the scheduler/Dependabot configuration to the default branch. Automated pull-request creation also requires the repository Actions setting that permits GitHub Actions to create PRs.
 
-## Experimental React Native upgrade (isolated branch)
+## Stable toolchain rollback — October 12, 2026
 
-This branch is **an experiment only**, not the production release. As of October 11, 2026, the latest stable React Native is **0.87.1**. Expo SDK 57 is designed for RN 0.86. Expo SDK 58 beta moves ahead to the RN **0.88 release candidate**, so we are testing the officially paired preview stack here rather than forcing RN 0.87 into the incompatible SDK 57 build system.
+This branch now uses the last Expo-supported stable toolchain: Expo `~57.0.23`, React Native `0.86.3`, React `19.2.3`, and TypeScript `~6.0.3` (strict mode). Android compile SDK is 36 and target SDK is 36; CI uses Node 24, JDK 17, and Expo-generated Gradle. The Android 16 WorkManager/Room crash workaround remains: release R8 minification and shrinking are disabled pending validated keep rules.
 
-- Proposed stack: **Expo SDK 58 beta** (`expo@next`), **React Native 0.88.0-rc.4**, **React 19.3.0**. This is NOT a stable React Native release.
-- Each CI run executes `npx expo install --fix --npm` before type checking and native builds to align Expo packages with the preview SDK. Versions are not yet fully pinned in a lockfile; **do not distribute these builds** until alignment and actual device tests pass.
-- Confirm: WebView behavior, DMZ messages, operator protected autofill, notifications, Android widgets, background tasks, performance settings, both package IDs, signing, and Google Play compatibility.
-- Do not merge until these checks pass, exact resolved dependency versions are committed, and separate beta APK device testing succeeds.
+Each build checks the framework versions, TypeScript, Expo Doctor, unit tests, and Android native build; the Beta verification workflow also launches the **release APK** on an Android 16 emulator. A passing build does not guarantee a successful physical-device launch.
 
-**Preview-only npm caveat:** Some peer version ranges reject pre-release React Native. This branch sets `NPM_CONFIG_LEGACY_PEER_DEPS=true` for the preview CI dependency resolver; Expo Doctor, TypeScript, native compilation, and actual device tests are still mandatory. This is not enabled in production workflows.
-
-## Expo SDK 58 beta upgrade merged into the migration branch
-
-This branch currently specifies React Native **0.88.0-rc.4** with Expo **SDK 58 prerelease**. The upgraded Expo packages are declared at their SDK 58-compatible versions; CI installs prerelease peer dependencies and runs Expo Doctor, TypeScript and unit tests. While preview toolchains are in use, the stable Google Play AAB workflow intentionally refuses to build distributable release artifacts. This is a safety gate, not confirmation that native compilation has passed. Testing requires a successful APK build and actual Android device verification before any Play release. No legacy Java V1 interface is part of the app.
+Experimental React Native 0.87 / 0.88 changes are retained in separate branches or Git history, not used for this branch. Do not mix the Expo 57 native modules with Expo 58 prereleases.

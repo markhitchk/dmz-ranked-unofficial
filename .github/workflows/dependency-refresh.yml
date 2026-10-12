@@ -19,7 +19,6 @@ jobs:
     env:
       CI: '1'
       APP_VARIANT: beta
-      NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
     steps:
       - name: Checkout React Native branch
         uses: actions/checkout@v7
@@ -53,6 +52,7 @@ jobs:
 
       - name: Verify compatibility and regressions
         run: |
+          npm run check:framework
           npx expo install --check
           npx expo-doctor
           npm run typecheck
