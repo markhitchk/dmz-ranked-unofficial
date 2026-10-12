@@ -97,6 +97,8 @@ test('capture does no work while scrolling or in a hidden WebView', () => {
   const app = harness();
   vm.runInContext(LEADERBOARD_SNAPSHOT_SCRIPT, app.context);
   const baseline = app.messages.length;
+  // A changed leaderboard should be deferred until scrolling/visibility ends.
+  app.rows[0].textContent = '1 Bravo 3,200 SR 16 Raids';
   app.page.visibilityState = 'hidden';
   app.capture();
   app.page.visibilityState = 'visible';
