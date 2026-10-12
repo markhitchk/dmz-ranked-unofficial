@@ -33,6 +33,13 @@ import {
 } from '../services/remoteAppUi';
 import { buildRemoteUiInjection } from '../services/appUiInjection';
 import { AppUiLoadGate } from '../services/appUiLoadGate';
+import { LEADERBOARD_SNAPSHOT_SCRIPT } from '../services/leaderboardSnapshotInjection';
+import {
+  clearLeaderboardSnapshot,
+  describeCachedSnapshot,
+  loadLeaderboardSnapshot,
+  saveLeaderboardSnapshot
+} from '../services/leaderboardSnapshotCache';
 import {
   createBridgeBootstrap,
   parseBridgeMessage
@@ -317,6 +324,11 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
     const [overlayVisible, setOverlayVisible] = useState(true);
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState('Starting DMZ Ranked…');
+    const [cachedPreview, setCachedPreview] = useState<{
+      summary: string;
+      rows: string[];
+    } | null>(null);
+    const cacheWrites = useRef<Promise<unknown>>(Promise.resolve());
     const [navProgress, setNavProgress] = useState(0);
     const [navProgressVisible, setNavProgressVisible] = useState(false);
     const [failed, setFailed] = useState(false);
@@ -367,6 +379,20 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
         }
       >()
     );
+
+    useEffect(() => {
+      let active = true;
+      // Restore a previously observed public snapshot in parallel with WebView
+      // warmup. Never delay the website while reading device storage.
+      void loadLeaderboardSnapshot().then(snapshot => {
+        if (!active || !snapshot) return;
+        setCachedPreview({
+          summary: describeCachedSnapshot(snapshot),
+          rows: snapshot.standings.slice(0, 2)
+        });
+      });
+      return () => { active = false; };
+    }, []);
 
     useEffect(() => {
       if (Platform.OS !== 'android') return;
@@ -668,8 +694,16 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
             clearCache?: (includeDiskFiles?: boolean) => void;
           }) | null;
           view?.clearCache?.(true);
+          setCachedPreview(null);
+          cacheWrites.current = cacheWrites.current
+            .catch(() => undefined)
+            .then(() => clearLeaderboardSnapshot());
         },
         clearWebsiteData: () => {
+          setCachedPreview(null);
+          cacheWrites.current = cacheWrites.current
+            .catch(() => undefined)
+            .then(() => clearLeaderboardSnapshot());
           webRef.current?.injectJavaScript(
             '(function(){try{localStorage.clear();sessionStorage.clear();document.cookie.split(";").forEach(function(c){document.cookie=c.replace(/^ +/,"").replace(/=.*/,"=;expires="+new Date(0).toUTCString()+";path=/");});location.reload();}catch(e){location.reload();}})();true;'
           );
@@ -916,7 +950,25 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           const nativeMessage = JSON.parse(event.nativeEvent.data) as {
             type?: string;
             url?: string;
+            data?: unknown;
           };
+          if (nativeMessage?.type === 'public-leaderboard-snapshot') {
+            if (!isInternal(page.current.url) || !page.current.loaded) return;
+            // WebView captures only DOM it has already rendered. Writes are
+            // serialized so an older observation cannot win a storage race.
+            cacheWrites.current = cacheWrites.current
+              .catch(() => undefined)
+              .then(async () => {
+                const snapshot = await saveLeaderboardSnapshot(nativeMessage.data);
+                if (snapshot) {
+                  setCachedPreview({
+                    summary: describeCachedSnapshot(snapshot),
+                    rows: snapshot.standings.slice(0, 2)
+                  });
+                }
+              });
+            return;
+          }
           if (nativeMessage?.type === 'native-pull-refresh') {
             if (Platform.OS === 'android' && settings.pullToRefresh) {
               ToastAndroid.show(
@@ -1281,7 +1333,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           }
           // Android may skip before-content injection on some navigations.
           // Reinstall the idempotent operator bridge after the DOM exists.
-          injectedJavaScript={bridge}
+          injectedJavaScript={bridge + '\n' + LEADERBOARD_SNAPSHOT_SCRIPT}
           onLoadStart={event => {
             installBrowserDialogParity();
             handleLoadStart(event.nativeEvent.url);
@@ -1360,6 +1412,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
               status={status}
               verbose={settings.verboseLoading}
               animations={settings.appAnimations}
+              cachedPreview={cachedPreview}
             />
           </Animated.View>
         ) : null}
