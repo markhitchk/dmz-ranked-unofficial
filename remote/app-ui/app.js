@@ -2022,6 +2022,10 @@
     function markRaidSrSummary(){
       var log=q("#log");
       if(!log)return;
+      // The summary labels are stable; rescan only when the website rebuilt
+      // them. Traversing all descendant elements on every render caused jank.
+      if(log.querySelector(".hs-app-raid-sr-summary") &&
+         q("#pv-cur .hs-app-sr-number") && q("#pv-new .hs-app-sr-number"))return;
 
       var labels=[
         {key:"current",text:"current sr / rank"},
@@ -2132,13 +2136,15 @@
         refreshQueued=false;
         if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
         refresh();
-      },250);
+      },850);
     }
     var observer=new MutationObserver(function(mutations){
       for(var i=0;i<mutations.length;i++){
         var target=mutations[i]&&mutations[i].target;
         var el=target&&target.nodeType===1?target:target&&target.parentElement;
         if(el&&el.closest&&(
+          // Site data/standings changes must not rebuild app controls.
+          el.closest("#boardBody,#hofBody,#leadersBody,#raceBody,#medalsBody")||
           el.closest("#hs-app-pin-cover")||
           el.closest("#hs-app-operator-tools")||
           el.closest("#hs-app-support-card")||
@@ -2153,7 +2159,7 @@
     setInterval(function(){
       if(window.__dmzAppScrolling||window.__dmzAppPaused)return;
       refresh();
-    },6000);
+    },16000);
     refresh();
   }catch(e){}
 })();
