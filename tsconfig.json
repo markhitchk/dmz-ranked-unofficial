@@ -6,5 +6,10 @@
     "noImplicitOverride": true,
     "resolveJsonModule": true
   },
-  "include": ["index.ts", "app.config.ts", "src/**/*.ts", "src/**/*.tsx"]
+  "include": [
+    "index.ts",
+    "app.config.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
 }
