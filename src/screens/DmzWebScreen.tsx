@@ -484,6 +484,7 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           window.__DMZ_RN_PREFERRED_OPERATOR=${JSON.stringify(preferred)};
           if(window.__dmzRnRefreshOperatorLifecycle){window.__dmzRnRefreshOperatorLifecycle();}
           if(window.__dmzRnRevalidateAppUi){window.__dmzRnRevalidateAppUi();}
+          if(window.__dmzRnCaptureLeaderboardSnapshot){window.__dmzRnCaptureLeaderboardSnapshot();}
         }catch(e){}})();true;`
       );
     }, [settings.selectedOperator]);
@@ -924,6 +925,11 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
       current.loaded = true;
       gate.loaded(id);
       applyDesktopViewport();
+      // Ask the already-loaded document for a public-data snapshot before
+      // releasing the native loading overlay; never wait on the capture.
+      webRef.current?.injectJavaScript(
+        'if(window.__dmzRnCaptureLeaderboardSnapshot){window.__dmzRnCaptureLeaderboardSnapshot();}true;'
+      );
       if (!current.requiresOverrides) {
         hideOverlay(id);
         return;
