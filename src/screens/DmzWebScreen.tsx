@@ -80,16 +80,22 @@ const ANDROID_PERFORMANCE_SCRIPT =
       window.__dmzAppScrolling=false;
       var dmzScrollIdleTimer=0;
       var dmzScrollLastArm=0;
-      var markScrolling=function(){
+      var markScrolling=function(ev){
         window.__dmzAppScrolling=true;
+        // One class transition per fling pauses expensive leaderboard
+        // animations/glows, without running layout reads on scroll frames.
+        if(root && ev && (ev.type==='scroll'||ev.type==='touchmove') &&
+           !root.classList.contains('hs-rapid-scroll')){
+          root.classList.add('hs-rapid-scroll');
+        }
         var now=Date.now();
-        // Avoid a clearTimeout + setTimeout allocation for every touch frame.
-        // The passive scroll flag stays set through the kinetic scroll tail.
+        // Avoid allocating a timer for each touch/scroll animation frame.
         if(now-dmzScrollLastArm<120)return;
         dmzScrollLastArm=now;
         clearTimeout(dmzScrollIdleTimer);
         dmzScrollIdleTimer=setTimeout(function(){
           window.__dmzAppScrolling=false;
+          if(root)root.classList.remove('hs-rapid-scroll');
         },270);
       };
       window.addEventListener('scroll',markScrolling,{passive:true});
