@@ -1372,6 +1372,9 @@ export const DmzWebScreen = forwardRef<DmzWebHandle, Props>(
           source={{ uri: initialUrl.current }}
           originWhitelist={['http://*', 'https://*', 'dmzranked-support://*']}
           style={styles.webview}
+          // A dedicated GPU layer can avoid expensive native view recomposition
+          // during kinetic flings. Keep software layers disabled.
+          androidLayerType="hardware"
           overScrollMode="never"
           javaScriptEnabled
           javaScriptCanOpenWindowsAutomatically={false}
