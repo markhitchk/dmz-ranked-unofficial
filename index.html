@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DMZ Ranked — Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/leaderboard.css?v=responsive-20260916">
+</head>
+<body>
+<header class="top">
+  <button class="gear" data-tab="settings" title="Admin settings" aria-label="Admin settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:block;margin:auto"><path d="M19.4 13a7.8 7.8 0 000-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 00-1.7-1l-.4-2.5H10.9l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.4-1-2 3.4L4.6 11a7.8 7.8 0 000 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.8 1.7 1l.4 2.5h4.2l.4-2.5c.6-.2 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/></svg></button>
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="brand-logo" role="img" aria-label="DMZ"></div>
+      <h1>RANKED <span>LEADERBOARD</span></h1>
+      <div class="sub">Al Mazrah • Season Standings</div>
+      <div class="rule-line"></div>
+      <div class="statusbar">
+        <span class="pill"><span id="dot" class="dot"></span><span id="statusText">Connecting…</span></span>
+        <span class="pill" id="syncInfo">—</span>
+        <span class="pill" id="playerCount">0 players</span>
+        <a class="pill support-btn" id="supportBtn" href="#" target="_blank" rel="noopener noreferrer" style="display:none">☕ <span id="supportLabel">Support</span></a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="banner" class="banner"></div>
+  <nav class="tabs">
+    <button data-tab="board" class="active">Leaderboard</button>
+    <button data-tab="howto">How to Play</button>
+    <button data-tab="log">Log a Raid</button>
+    <button data-tab="community">Community<span class="tab-dot" id="communityDot" style="display:none"></span></button>
+    <button data-tab="champ">Championship</button>
+    <button data-tab="history">History</button>
+    <button data-tab="rules">Rules</button>
+    <button data-tab="updates">Updates<span class="tab-dot" id="updatesDot" style="display:none"></span></button>
+    <button data-tab="overlays">Overlays</button>
+    <button data-tab="contact">Contact</button>
+  </nav>
+
+  <!-- LEADERBOARD -->
+  <section id="board" class="active">
+    <div id="seasonBanner"></div>
+    <div id="seasonBar"></div>
+    <div class="card">
+      <div class="board-head">
+        <h2 class="section-title" style="margin:0">Standings</h2>
+        <input id="boardSearch" class="board-search" type="search" placeholder="Search operator…" autocomplete="off" aria-label="Search operator">
+      </div>
+      <div id="boardBody"></div>
+    </div>
+    <div class="card" id="hofCard" style="display:none">
+      <h2 class="section-title">Hall of Fame</h2>
+      <div id="hofBody"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="history">
+    <div class="card">
+      <h2 class="section-title">Raid History</h2>
+      <div id="historyBody"></div>
+    </div>
+  </section>
+
+  <!-- LOG A RAID -->
+  <section id="log">
+    <div class="sect-hero temple"><h2>Log a Raid<small>Report your run · SR auto-calculated</small></h2></div>
+    <div class="card">
+      <div id="logMsg" class="msg"></div>
+
+      <div class="field" id="pickWrap" style="display:none">
+        <label for="playerPick">Returning operator? Pick your name</label>
+        <select id="playerPick"><option value="">— select existing operator —</option></select>
+      </div>
+
+      <div class="field">
+        <label for="playerName">Your operator name</label>
+        <input id="playerName" type="text" list="playerList" placeholder="Type your name (new or existing)" autocomplete="off">
+        <datalist id="playerList"></datalist>
+        <div class="note">Saved on this device — no need to retype next time. A new name adds you to the board.</div>
+        <!-- Per-player PIN protection -->
+        <div id="nameSec" class="namesec" style="display:none"></div>
+        <div id="unlockRow" class="pinrow" style="display:none">
+          <input id="namePin" type="password" inputmode="numeric" placeholder="Enter your PIN" autocomplete="off">
+          <button type="button" class="btn" id="unlockBtn">Unlock</button>
+        </div>
+        <div id="setPinRow" class="pinrow" style="display:none">
+          <input id="curPin" type="password" inputmode="numeric" placeholder="Current PIN" autocomplete="off" style="display:none">
+          <input id="newPin" type="password" inputmode="numeric" placeholder="New PIN" autocomplete="off">
+          <input id="newPin2" type="password" inputmode="numeric" placeholder="Confirm PIN" autocomplete="off">
+          <button type="button" class="btn" id="savePinBtn">Save</button>
+          <button type="button" class="btn ghost" id="cancelPinBtn">Cancel</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="operatorKills">Operator kills <span style="color:var(--gold-b)">(+15 each)</span> <span class="muted" style="font-weight:400">— tap your count</span></label>
+        <div class="killchips" data-target="operatorKills" data-max="15" data-more="1"></div>
+        <input id="operatorKills" type="number" min="0" step="1" value="0" inputmode="numeric" class="kill-type hide" placeholder="Type kills">
+      </div>
+      <div class="field squad-group" id="squadGroup">
+        <label class="chk squad-chk" style="text-transform:none">
+          <input type="checkbox" id="ranSquad">
+          <span>I ran with a squad this raid <small>(vs solo) — powers squad-vs-community context on the Leaders board</small></span>
+        </label>
+        <div class="sq-sub">
+          <label for="squadKills" style="display:block;margin-top:12px">Squadmate kills <span style="color:var(--gold-b)">(+3 each · max 10)</span> <span class="muted" style="font-weight:400">— tap your count</span></label>
+          <div class="killchips" data-target="squadKills" data-max="10"></div>
+          <input id="squadKills" type="number" min="0" max="10" step="1" value="0" inputmode="numeric" class="kill-type hide">
+        </div>
+      </div>
+      <div class="field" id="bossField" style="display:none">
+        <label for="bossKills">Boss kills <span style="color:var(--gold-b)">(+10 each · max 2)</span> <span class="s2tag">Season 2</span></label>
+        <div class="killchips" data-target="bossKills" data-max="2"></div>
+        <input id="bossKills" type="number" min="0" max="2" step="1" value="0" inputmode="numeric" class="kill-type hide">
+      </div>
+
+      <div class="field">
+        <label for="contract">Scoring contract (only one counts per raid)</label>
+        <select id="contract">
+          <option value="none">None</option>
+          <option value="regular">Regular Contract (+10)</option>
+          <option value="hunt">Hunt Squad Contract (+20) — replaces regular</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="exfilSeg">Did you get out?</label>
+        <div class="seg" id="exfilSeg">
+          <button type="button" class="seg-btn" data-exfil="yes">✓ Extracted <small>+20 SR</small></button>
+          <button type="button" class="seg-btn seg-no" data-exfil="no">✕ Killed / no exfil</button>
+        </div>
+        <input type="checkbox" id="extracted" style="display:none">
+        <div class="note" id="exfilHint">Every raid needs an answer — you either got out or you didn't.</div>
+        <div class="checks" id="exfilBonuses" style="margin-top:10px">
+          <label class="chk" style="text-transform:none" id="wc-wrap">
+            <input type="checkbox" id="weaponCase">
+            <span>Weapon Case extracted <small>+20 SR</small></span>
+          </label>
+          <label class="chk" style="text-transform:none" id="fs-wrap">
+            <input type="checkbox" id="fullSquad">
+            <span>Full original squad extracted <small>+10 SR</small></span>
+          </label>
+          <label class="chk" style="text-transform:none" id="fe-wrap">
+            <input type="checkbox" id="finalExfil">
+            <span>Final Exfil <small>+15 SR</small></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field" id="proofField">
+        <label>Proof of a big run? <span style="color:var(--muted)">(optional — earns a ✓ Verified)</span></label>
+        <input id="proofUrl" type="url" placeholder="Paste a clip / screenshot link — Medal, YouTube, Discord, Streamable…" autocomplete="off">
+        <div class="proof-or"><span>or</span></div>
+        <label for="proofImg" class="proof-upload" id="proofUploadLabel">📎 Attach a screenshot (or take a photo)</label>
+        <input id="proofImg" type="file" accept="image/*" style="display:none">
+        <div id="proofPreview" class="proof-prev" style="display:none"></div>
+        <div class="note" id="proofNote">Paste a clip link or attach an end-of-raid screenshot to earn a <b>✓ Verified</b> on a big run. Uploaded images are admin-only and <b>deleted the moment the raid is approved</b>; a pasted link stays as an audit trail.</div>
+      </div>
+
+      <!-- Live preview -->
+      <div class="preview" id="preview">
+        <div class="rowline"><span>Current SR / rank</span><b id="pv-cur">—</b></div>
+        <div class="rowline"><span>Deployment fee <span class="muted" id="pv-feenote"></span></span><b class="neg" id="pv-fee">0</b></div>
+        <div class="rowline"><span>SR earned this raid</span><b class="pos" id="pv-earn">+0</b></div>
+        <hr>
+        <div class="rowline"><span>Net change</span><b class="net" id="pv-net">+0</b></div>
+        <div class="rowline"><span>New SR / rank</span><b id="pv-new">—</b></div>
+      </div>
+
+      <div class="btnrow" style="margin-top:14px">
+        <button class="btn" id="submitRaid">Submit raid</button>
+        <button class="btn ghost" id="resetForm">Clear form</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RULES -->
+  <section id="howto">
+    <div class="sect-hero camp"><h2>How to Play<small>New here? Start with this.</small></h2></div>
+
+    <div class="card">
+      <h2 class="section-title">What this is</h2>
+      <p class="howto-lead">A live, shared <b>Ranked leaderboard</b> for our DMZ crew. You log what you did after each raid, and the board instantly works out your <b>SR</b> (skill rating), your rank, and where you sit against everyone else. It runs in <b>two-week seasons</b> all the way to MW4 — climb the ranks, chase trophies, and try not to end up on the Hall of Shame. It's an <b>honor system</b>, so everything you enter is trusted — and everything is out in the open so the crew can keep each other honest.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Getting started</h2>
+      <div class="howto-steps">
+        <div class="hstep"><div class="num">1</div><div>
+          <h3>Finish a raid, then open “Log a Raid”</h3>
+          <p>Pick your operator name from the list (or add it if you're new). Works great on your <b>phone</b> — no app to install, just open the link.</p></div></div>
+        <div class="hstep"><div class="num">2</div><div>
+          <h3>Enter what you did</h3>
+          <p>Operator kills, whether you <b>exfil'd</b>, weapon case, contract, boss kills — and tick <b>“ran with a squad”</b> if you weren't solo. The scoreboard shows your SR change live as you type, so you can double-check before submitting.</p></div></div>
+        <div class="hstep"><div class="num">3</div><div>
+          <h3>Hit Log — that's it</h3>
+          <p>Your SR, rank and placement update <b>instantly for everyone</b>. A quick recap popup shows what you earned and any rank-up. Got a big run? Attach a screenshot as <b>proof</b> to earn a ✓ Verified stamp.</p></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Your PIN <span class="s2tag">Protects your name</span></h2>
+      <p class="howto-lead" style="margin-bottom:12px">The first time you log, you'll set a <b>4-digit PIN</b>. That locks your operator name to you, so nobody else can log raids (or mess with your score) under your name. Punch it in each time you log from that device.</p>
+      <div class="howto-two">
+        <div class="htile"><h3>New season = re-enter it</h3><p>When a fresh season starts you'll get a popup and be asked to set/enter your PIN again — it just re-links your name on the new board.</p></div>
+        <div class="htile"><h3>Forgot it?</h3><p>No stress — an admin can reset your PIN so you can set a new one. Just ask in the chat.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">How your score works</h2>
+      <p class="howto-lead">You earn SR for <b>operator kills, exfils, weapon cases, contracts, final exfils</b> and (in Season 2) <b>boss kills</b>, plus one-time <b>milestone bonuses</b>. Every raid also charges a small <b>deployment fee</b> based on your current rank — the higher you climb, the more it costs to deploy, so staying on top takes real runs. Your SR never drops below zero, and your rank always follows your current SR (yes, you can get demoted). The exact numbers for everything live in the <b>Field Manual</b> tab.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">The honor system — and how we keep it clean</h2>
+      <p class="howto-lead" style="margin-bottom:12px">Every stat is self-reported, so the board is built to make padding obvious. Play it straight and you've got nothing to worry about.</p>
+      <div class="howto-two">
+        <div class="htile"><h3>Everything is compared</h3><p>Your stats show next to the <b>squad and community average</b> in the Leaders tab, so a genuine standout is easy to tell from someone inflating numbers.</p></div>
+        <div class="htile"><h3>Big-raid holds</h3><p>There's a <b>max SR (and max op kills) per raid</b>. Go over it and your raid waits for a <b>quick admin check</b> before it counts — you'll get a clear notice saying so, and you can watch its status in <b>Community → Under Review</b>. Normal runs post instantly; approved big runs get a <b>✓ Verified</b> badge.</p></div>
+        <div class="htile"><h3>Community Watch</h3><p>See a stat that looks bogus? Open that operator and hit <b>⚑ Report</b>. Reports are public but <b>anonymous</b> — just a count so the crew can judge for itself.</p></div>
+        <div class="htile"><h3>Proof &amp; ✓ Verified</h3><p>A raid an admin approves — or one you back with a screenshot/clip — earns a <b>✓ Verified</b> badge on your profile and the raid History (uploaded images are discarded once reviewed). Skip proof on big runs too often and you'll land on the <b>Liar, Liar</b> board.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Earn your place</h2>
+      <p class="howto-lead" style="margin-bottom:12px">Climbing SR is just the start. The <b>Community</b> tab is where the bragging rights live:</p>
+      <div class="howto-two">
+        <div class="htile"><h3>🏆 Trophies</h3><p>28 hand-made season badges. They stack across seasons in your <b>Trophy Case</b> — pin your favorite 3 to your profile.</p></div>
+        <div class="htile"><h3>⭐ Achievements</h3><p>Ten tracks climbing 1★ → 2★ → 3★ → <b>Diamond</b>. The Medals board ranks who's stacked the most this season.</p></div>
+        <div class="htile"><h3>🗳️ Polls</h3><p>Vote for the honors stats can't measure — one vote each, winner takes the trophy when the season ends.</p></div>
+        <div class="htile"><h3>💀 Hall of Shame</h3><p>The board nobody wants to top. All in good fun — the only way off is to actually play better.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Seasons</h2>
+      <p class="howto-lead">Seasons run <b>two weeks each</b> and roll over on their own, right up to MW4: <b>Weapon Case Warfare → Hunt Club → Confirmed Kills → Apex Predator → The Finals</b>. When a new one starts, standings reset to zero and the race is back on — but your <b>trophies are forever</b>. You'll get a heads-up popup each time (and a nudge to set your PIN).</p>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Quick FAQ</h2>
+      <div class="faq">
+        <div><div class="q">I logged a raid wrong — can it be fixed?</div><div class="a">Yep. An admin can edit or remove any raid in <b>Settings</b>. Flag it in the chat and it'll get sorted — the board recalculates automatically.</div></div>
+        <div><div class="q">Can I log from my phone?</div><div class="a">Absolutely. The whole thing runs in your phone's browser — a lot of the crew logs right after they back out of a raid.</div></div>
+        <div><div class="q">Why was my raid “held”?</div><div class="a">It went over the board's <b>max SR (or max op kills) per raid</b>, so it's parked for a <b>quick admin review</b> before it counts — that's how we keep anyone from padding the board. You'll see a notice when it happens, and you can track it in <b>Community → Under Review</b>. Once approved it lands on your raid history with a <b>✓ Verified</b> badge. No need to re-log it — logging it again won't speed things up.</div></div>
+        <div><div class="q">Do my stats carry between seasons?</div><div class="a">SR and standings <b>reset</b> each season, but your <b>trophies and achievements history</b> stick with you.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="sect-hero camp"><h2>Field Manual<small>Official scoring &amp; ranks</small></h2></div>
+    <div class="card">
+      <h2 class="section-title">How to earn SR</h2>
+      <div class="rules-grid">
+        <div class="rule"><span>Operator kill</span><b>+15</b></div>
+        <div class="rule"><span>Successful extraction</span><b>+20</b></div>
+        <div class="rule"><span>Squadmate kill (max +30)</span><b>+3</b></div>
+        <div class="rule"><span>Full original squad extracts</span><b>+10</b></div>
+        <div class="rule"><span>Regular contract</span><b>+10</b></div>
+        <div class="rule"><span>Weapon case extract</span><b>+20</b></div>
+        <div class="rule"><span>Hunt squad contract</span><b>+20</b></div>
+        <div class="rule"><span>Final exfil</span><b>+15</b></div>
+        <div class="rule" id="bossRuleRow" style="display:none"><span>Boss kill <span class="s2tag">S2</span> (max +20)</span><b>+10</b></div>
+      </div>
+      <ul class="notes">
+        <li>Only <b>one scoring contract</b> per raid (Regular or Hunt Squad). Hunt Squad replaces the regular contract score.</li>
+        <li>Assists, money, and normal loot do <b>not</b> award SR.</li>
+        <li>Extraction bonuses (weapon case, full squad, final exfil, the +20 extraction) only count <b>if you extract</b>.</li>
+        <li>Deployment fee is based on your rank at the <b>start</b> of the raid — the app applies it automatically from your current SR.</li>
+        <li>SR cannot fall below <b>0</b>. Your rank follows your current SR, so demotion is possible.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2 class="section-title">Ranks &amp; deployment fee</h2>
+      <p class="note" style="margin-top:0">Every rank below Iridescent splits into three <b>divisions</b> — <b>I</b> when you first climb in, up through <b>III</b> just before promotion. The deployment fee steps up a little with each division, so the higher you sit inside a rank, the more it costs to deploy. <b>Iridescent</b> is the apex live-ranked ladder — no divisions, one flat fee.</p>
+      <table class="tiers">
+        <thead><tr><th>Rank</th><th>SR range</th><th class="num">Div I</th><th class="num">Div II</th><th class="num">Div III</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge b-Bronze">Bronze</span></td><td>0 – 999</td><td class="num">Free</td><td class="num">−5</td><td class="num">−10</td></tr>
+          <tr><td><span class="badge b-Silver">Silver</span></td><td>1,000 – 1,999</td><td class="num">−15</td><td class="num">−20</td><td class="num">−25</td></tr>
+          <tr><td><span class="badge b-Gold">Gold</span></td><td>2,000 – 2,999</td><td class="num">−30</td><td class="num">−35</td><td class="num">−40</td></tr>
+          <tr><td><span class="badge b-Platinum">Platinum</span></td><td>3,000 – 3,999</td><td class="num">−45</td><td class="num">−50</td><td class="num">−55</td></tr>
+          <tr><td><span class="badge b-Diamond">Diamond</span></td><td>4,000 – 4,999</td><td class="num">−60</td><td class="num">−65</td><td class="num">−70</td></tr>
+          <tr><td><span class="badge b-Crimson">Crimson</span></td><td>5,000 – 5,999</td><td class="num">−75</td><td class="num">−80</td><td class="num">−85</td></tr>
+          <tr><td><span class="badge b-Iridescent">Iridescent</span></td><td>6,000+</td><td class="num" colspan="3">−100 · apex, no divisions</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2 class="section-title">Hot &amp; Cold Streaks <span class="s2tag">New</span></h2>
+      <p class="note" style="margin-top:0">The flames and frost next to operators on the leaderboard track your <b>recent exfil form</b> — a live read on whether you're on a heater or in a slump. It counts your most recent raids in a row and <b>breaks the instant you flip</b>: one clean exfil ends an ice streak, one death ends a flame. It's purely for bragging rights (and shame) — streaks <b>don't change your SR</b>.</p>
+      <div class="howto-two" style="margin-top:12px">
+        <div class="htile"><h3>🔥 On Fire — exfils in a row</h3><p>Extract (get out alive) on back-to-back raids and you heat up: <b>2 in a row</b> is a small flame, <b>4</b> a bigger flame, and <b>6+</b> a full inferno with fire sweeping across your row. Exfil is the hardest thing to do in DMZ, so a big flame is a genuine flex.</p></div>
+        <div class="htile"><h3>❄️ Ice Cold — no-exfils in a row</h3><p>Die or leave empty-handed on back-to-back raids and you freeze over: <b>2</b> is a snowflake, <b>4</b> heavier frost, and <b>6+</b> hanging icicles with an icy glow on your row. Land a single exfil and you thaw right back out.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="section-title">Awards &amp; trophies</h2>
+      <p class="note" style="margin-top:0">Every medal you can earn, and how. Trophies are handed out when a season ends and live forever in your profile's <b>Trophy Case</b> — pin up to 3 to your profile.</p>
+      <div id="awardsBody"></div>
+    </div>
+  </section>
+
+  <!-- UPDATES / CHANGE LOG -->
+  <section id="updates">
+    <div class="sect-hero temple"><h2>Change Log<small>What's new in the app</small></h2></div>
+    <div class="card">
+      <div id="updatesBody"></div>
+    </div>
+  </section>
+
+  <!-- OVERLAYS -->
+  <section id="overlays">
+    <div class="sect-hero temple"><h2>Stream Overlays<small>Put your rank on stream</small></h2></div>
+    <div class="card">
+      <p class="note" style="margin:0 0 4px">Streaming your DMZ runs? Drop a live overlay on your broadcast that shows your rank, SR and standing — it updates itself as you climb. <b>No account, no admin needed</b> — build your own link in a few clicks and paste it into OBS (or Streamlabs, or any broadcaster with a browser source).</p>
+    </div>
+
+    <div class="card ovl-card-feat">
+      <div class="ovl-feat-head">
+        <div>
+          <div class="ovl-kick">Overlay 1</div>
+          <h2 class="section-title" style="margin:2px 0 0">Live Ticker</h2>
+        </div>
+        <span class="ovl-live">● Hosted</span>
+      </div>
+      <div class="ovl-prevwrap"><img class="ovl-prev" alt="Live Ticker preview" src="/assets/legacy/leaderboard-013-2d6fdf2e791b.webp"></div>
+      <p class="note" style="margin:10px 0 14px">A sleek personal bar or card showing your <b>rank, SR, division and last-raid change</b>, with your own colors and logo. Pick <b>bar</b> (a slim strip along the top/bottom) or <b>card</b> (a compact corner panel).</p>
+      <div class="ovl-steps">
+        <div class="ovl-step"><span class="ovl-num">1</span><div><b>Open the builder</b><p>Click below — it opens the setup page.</p></div></div>
+        <div class="ovl-step"><span class="ovl-num">2</span><div><b>Enter your operator name</b><p>Exactly as it appears on the leaderboard. Pick your layout, colors &amp; logo.</p></div></div>
+        <div class="ovl-step"><span class="ovl-num">3</span><div><b>Copy your link</b><p>Hit the copy button — that link is yours, ready for OBS.</p></div></div>
+      </div>
+      <a class="ovl-btn" href="https://dmz-ticker.netlify.app/" target="_blank" rel="noopener noreferrer">⚙ Open the Ticker Builder</a>
+      <div class="ovl-foot">Opens <code>dmz-ticker.netlify.app</code> in a new tab</div>
+    </div>
+
+    <div class="card ovl-card-feat">
+      <div class="ovl-feat-head">
+        <div>
+          <div class="ovl-kick">Overlay 2 <span class="s2tag">New</span></div>
+          <h2 class="section-title" style="margin:2px 0 0">Rank Card</h2>
+        </div>
+        <span class="ovl-live">● Hosted</span>
+      </div>
+      <div class="ovl-prevwrap"><img class="ovl-prev" alt="Rank Card preview" src="/assets/legacy/leaderboard-014-56aae8732b3c.webp"></div>
+      <p class="note" style="margin:10px 0 14px">A big vertical <b>rank badge</b> for your stream — your division's official card art with your <b>position, SR and peak SR</b> stamped into the plates. The whole card <b>changes its look the moment your rank changes</b>, and the Top 3 of Iridescent get the exclusive <b>crowned Reaper</b> card.</p>
+      <div class="ovl-steps">
+        <div class="ovl-step"><span class="ovl-num">1</span><div><b>Open the builder</b><p>Click below — it opens the setup page.</p></div></div>
+        <div class="ovl-step"><span class="ovl-num">2</span><div><b>Enter your operator name</b><p>Exactly as it appears on the leaderboard. It previews your real card and sizes it.</p></div></div>
+        <div class="ovl-step"><span class="ovl-num">3</span><div><b>Copy your link</b><p>Hit the copy button — that link is yours, ready for OBS.</p></div></div>
+      </div>
+      <a class="ovl-btn" href="https://dmz-themed-obs.netlify.app/" target="_blank" rel="noopener noreferrer">⚙ Open the Rank Card Builder</a>
+      <div class="ovl-foot">Opens <code>dmz-themed-obs.netlify.app</code> in a new tab</div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Add it to OBS <span class="pill">Browser Source</span></h2>
+      <div class="ovl-obs">
+        <div class="ovl-ostep"><span class="ovl-onum">1</span><div>In <b>Sources</b>, click <b>+</b> → <b>Browser</b> → name it (e.g. "DMZ Ticker") → <b>OK</b>.</div></div>
+        <div class="ovl-ostep"><span class="ovl-onum">2</span><div>Paste <b>your copied link</b> into the <b>URL</b> field. Leave "Local file" unchecked.</div></div>
+        <div class="ovl-ostep"><span class="ovl-onum">3</span><div>Set <b>Width 1920</b> and <b>Height 1080</b>. The overlay positions itself.</div></div>
+        <div class="ovl-ostep"><span class="ovl-onum">4</span><div><b>Uncheck</b> "Shutdown source when not visible" and <b>check</b> "Refresh browser when scene becomes active" — this prevents a blank screen.</div></div>
+        <div class="ovl-ostep"><span class="ovl-onum">5</span><div>Click <b>OK</b>. If it's ever blank, right-click the source → <b>Properties</b> → <b>Refresh cache of current page</b>.</div></div>
+      </div>
+      <p class="note" style="margin:14px 0 0"><b>Important:</b> use the <b>copied web link</b> (starts with <code>https://</code>) — not a downloaded file. Broadcasters can't load live stats from a local file.</p>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="sect-hero temple"><h2>Contact<small>Get in · stay in the loop</small></h2></div>
+    <div class="card discord-card">
+      <div class="dc-glow"></div>
+      <div class="dc-inner">
+        <div class="dc-badge">
+          <svg viewBox="0 0 127.14 96.36" width="52" height="40" aria-hidden="true"><path fill="#fff" d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
+        </div>
+        <div class="dc-body">
+          <div class="dc-tag">Community Hub</div>
+          <h3 class="dc-title">Join the Discord</h3>
+          <p class="dc-desc">The board is where you climb — <b>Discord is where it all happens.</b> Log-a-raid chatter, clutch clips, squad-ups, season drops and every announcement lands there first. If you're serious about the crown, this is where you plug in.</p>
+          <ul class="dc-perks">
+            <li><span>🎬</span> Drop your clips &amp; verify big raids</li>
+            <li><span>🤝</span> Find a squad &amp; run with the community</li>
+            <li><span>📣</span> Season starts, rule changes &amp; app updates</li>
+            <li><span>👑</span> Championship talk &amp; live standings</li>
+          </ul>
+          <a class="dc-btn" id="discordJoin" href="https://discord.gg/jTaTHqw45F" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 127.14 96.36" width="22" height="17" aria-hidden="true"><path fill="currentColor" d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
+            Join the Discord
+          </a>
+          <div class="dc-foot">Free to join · takes ten seconds</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNITY (Leaders · Watch · Hall of Shame) -->
+  <section id="community">
+    <div class="sect-hero temple"><h2>Community<small>Leaders · Watch · Hall of Shame</small></h2></div>
+    <div class="subnav">
+      <button data-sub="leaders" class="active">Leaders</button>
+      <button data-sub="race">Awards</button>
+      <button data-sub="medals">Medals</button>
+      <button data-sub="polls">Polls</button>
+      <button data-sub="watch">Watch<span class="tab-dot" id="watchDot" style="display:none"></span></button>
+      <button data-sub="suggest">Suggestions</button>
+      <button data-sub="shame">Hall of Shame</button>
+      <button data-sub="review">Under Review<span id="reviewCount" class="sub-badge" style="display:none"></span></button>
+    </div>
+
+    <div id="sub-leaders" class="subpanel active">
+      <div class="sub-head"><h2 class="sub-title">Leaders</h2><span class="sub-desc">Who's on top in every category · this season</span></div>
+      <div class="card" id="leadersIntro"><div id="leadersIntroBody"></div></div>
+      <div id="leadersBody"></div>
+    </div>
+
+    <div id="sub-race" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Award Standings</h2><span class="sub-desc">Who's leading every trophy · right now</span></div>
+      <div class="card"><div id="raceIntro"></div></div>
+      <div class="card"><div id="raceBody"></div></div>
+    </div>
+
+    <div id="sub-medals" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Medals</h2><span class="sub-desc">Most achievements collected · this season</span></div>
+      <div class="card"><div id="medalsIntro"></div></div>
+      <div id="medalsBody"></div>
+    </div>
+
+    <div id="sub-polls" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Polls</h2><span class="sub-desc">Community-voted honors · winner takes the trophy at season's end</span></div>
+      <div class="card"><div id="pollsIntro"></div></div>
+      <div id="pollsBody"></div>
+    </div>
+
+    <div id="sub-watch" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Community Watch</h2><span class="sub-desc">Flagged by the crew · you decide who's legit</span></div>
+      <div class="card"><div id="watchIntro"></div></div>
+      <div id="watchBody"></div>
+    </div>
+
+    <div id="sub-suggest" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Suggestions</h2><span class="sub-desc">Ideas for the board · upvote the ones you want · most-wanted rise to the top</span></div>
+      <div class="card sugg-compose">
+        <label for="suggInput" class="sugg-label">Got an idea to make the board better?</label>
+        <textarea id="suggInput" class="sugg-input" maxlength="280" rows="2" placeholder="e.g. add a monthly MVP shout-out, or a K/D column…"></textarea>
+        <div class="sugg-compose-foot">
+          <span class="sugg-count" id="suggCount">280 left</span>
+          <button class="btn" id="suggPost">Post suggestion</button>
+        </div>
+        <div id="suggMsg" class="msg" style="margin-top:8px"></div>
+      </div>
+      <div id="suggBody"></div>
+      <div id="suggArchive"></div>
+    </div>
+
+    <div id="sub-shame" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Hall of Shame</h2><span class="sub-desc">The board you don't want to top · 10+ raids to qualify</span></div>
+      <div class="card"><div id="shameIntro"></div></div>
+      <div id="shameBody"></div>
+    </div>
+
+    <div id="sub-review" class="subpanel">
+      <div class="sub-head"><h2 class="sub-title">Under Review</h2><span class="sub-desc">Big raids waiting for an admin's OK before they count</span></div>
+      <div class="card"><div id="reviewIntro"></div></div>
+      <div id="reviewBody"></div>
+    </div>
+  </section>
+
+  <!-- CHAMPIONSHIP -->
+  <section id="champ">
+    <div id="champHero"></div>
+    <div id="champTrophy"></div>
+    <div class="btnrow" style="margin:-4px 0 14px"><button class="btn" id="prBtn">⬇ Download Power Rankings (PNG)</button></div>
+    <div class="card" id="challengeCard" style="display:none">
+      <h2 class="section-title">Season Challenge <span id="challengeName" class="pill"></span></h2>
+      <div id="challengeBody"></div>
+    </div>
+    <div class="card">
+      <h2 class="section-title">How the Championship Works</h2>
+      <div id="champNote"></div>
+    </div>
+    <div class="card">
+      <h2 class="section-title">Championship Standings</h2>
+      <div id="champBody"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings">
+    <div class="card" id="settingsLock" style="display:none">
+      <h2 class="section-title">Settings locked</h2>
+      <p class="note" style="margin-top:0">Enter the admin PIN to manage the board.</p>
+      <div id="pinErr" class="msg"></div>
+      <div class="field" style="max-width:220px">
+        <label for="pinEntry">Admin PIN</label>
+        <input id="pinEntry" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
+      </div>
+      <div class="btnrow"><button class="btn" id="pinUnlock">Unlock</button></div>
+    </div>
+
+    <div id="settingsInner">
+    <div class="subnav" id="setnav">
+      <button data-settab="everyday" class="active">Everyday</button>
+      <button data-settab="setup">Setup</button>
+      <button data-settab="danger">Danger</button>
+    </div>
+    <div class="card" data-settab="setup">
+      <h2 class="section-title">Admin PIN</h2>
+      <div id="pinMsg" class="msg"></div>
+      <div id="pinManage"></div>
+    </div>
+
+    <div class="card" data-settab="setup">
+      <h2 class="section-title">Moderation rules</h2>
+      <div id="modMsg" class="msg"></div>
+      <div id="pinWarn" class="note" style="display:none;background:rgba(220,90,90,.12);border-left:3px solid #d45a5a;border-radius:0 7px 7px 0;padding:9px 12px;margin-top:0">No admin PIN is set, so anyone can approve held raids. Set a PIN above to lock approvals to you.</div>
+      <p class="note" style="margin-top:0">Keep trolls off the board. Offensive names are blocked outright, and unusually high raids wait here for your approval before they count.</p>
+      <label class="chk" style="text-transform:none;margin:2px 0 12px">
+        <input type="checkbox" id="filterEnabled"><span>Block offensive names <small style="color:var(--muted)">— rejects slurs/profanity (leetspeak too) as players type their name</small></span>
+      </label>
+      <div class="field">
+        <label for="filterWords">Blocked words <span style="color:var(--muted);font-weight:600">(comma or line separated)</span></label>
+        <textarea id="filterWords" rows="4" spellcheck="false" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:7px;font-family:var(--f-ui);font-size:14px;font-weight:600;background:rgba(0,0,0,.34);color:var(--txt);resize:vertical"></textarea>
+        <div class="note">Matching ignores spaces, symbols and number-swaps, so one entry covers most spellings.</div>
+      </div>
+      <div class="datecfg">
+        <div class="field"><label for="filterOpk">Max operator kills per raid</label><input id="filterOpk" type="number" min="0" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="filterEarn">Max SR per raid</label><input id="filterEarn" type="number" min="0" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="note" style="margin-top:-4px">Any raid <b>over</b> these caps is held for your approval instead of hitting the board — the player is told it's under review and can track it in <b>Community → Under Review</b>. Real raids top out around <b>30 op kills</b> / <b>~565 SR</b>, so the defaults catch fakes without snagging legit games. These are absolute limits, so they work fairly even at the start of a season when there aren't many raids yet.</div>
+      <label class="chk" style="text-transform:none;margin:14px 0 8px">
+        <input type="checkbox" id="filterVelo"><span>Speed check <small style="color:var(--muted)">— hold raids logged impossibly fast (a real raid takes 20+ min), the #1 sign of bulk-faked entries</small></span>
+      </label>
+      <div class="datecfg">
+        <div class="field"><label for="filterVeloMin">Hold if two raids are within (minutes)</label><input id="filterVeloMin" type="number" min="0" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="filterVeloMax">Hold if raids in one hour reach</label><input id="filterVeloMax" type="number" min="0" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label for="filterMinGap">Minimum minutes between a player's raids <span style="color:var(--gold-b)">(hard block)</span></label>
+        <input id="filterMinGap" type="number" min="0" step="1" inputmode="numeric" style="max-width:120px">
+        <div class="note">Stops <b>mass data entry</b> at the source: a player simply can't log another raid until this many minutes have passed since their last one — so nobody can sit down and dump a whole session at once. A real raid takes far longer than this, so it never trips up someone logging as they play. Unlike the speed check above (which <i>holds</i> fast raids for review), this is a <b>hard block</b> — the raid isn't created at all, and the player is told when they can log again. Set to 0 to turn off. Admins are exempt.</div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label for="filterProbFactor">New-operator outlier hold — flag a newcomer's raid at this many × the community norm</label>
+        <input id="filterProbFactor" type="number" min="0" max="20" step="0.5" inputmode="decimal" style="max-width:120px">
+        <div class="note">A brand-new name's raid only waits for review if it's a wide outlier against your own data — e.g. at <b>3×</b> the typical raid, an 18-kill debut holds while a normal first game sails through. No busywork approving every newcomer. Set to 0 to turn off; kicks in once you have 10+ real raids to compare against. Approving a held raid (or 10 clean raids) trusts that operator from then on.</div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label for="filterProofMin">Proof upload unlocks at (operator kills)</label>
+        <input id="filterProofMin" type="number" min="0" step="1" inputmode="numeric" style="max-width:120px">
+        <div class="note">The "attach proof" option only appears on the Log form once a raid reaches this many operator kills — so nobody uploads a screenshot of a 1- or 2-kill run. Set to 0 to always show it.</div>
+      </div>
+      <div class="btnrow"><button class="btn" id="saveFilter">Save moderation settings</button></div>
+    </div>
+
+    <div class="card" data-settab="everyday">
+      <h2 class="section-title">Moderation queues</h2>
+      <h3 style="font-family:var(--f-ui);font-size:15px;margin:0 0 8px;color:var(--gold-b)">Pending approval <span id="pendCount" style="color:var(--muted)"></span></h3>
+      <div id="pendingBody"></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <h3 style="font-family:var(--f-ui);font-size:15px;margin:0 0 8px;color:var(--gold-b)">Proof to verify <span id="proofCount" style="color:var(--muted)"></span></h3>
+      <div id="proofBody"></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <h3 style="font-family:var(--f-ui);font-size:15px;margin:0 0 8px;color:#e79">Community reports <span id="reportCount" style="color:var(--muted)"></span></h3>
+      <div id="reportBody"></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <h3 style="font-family:var(--f-ui);font-size:15px;margin:0 0 8px;color:var(--gold-b)">Integrity radar <span id="anomalyCount" style="color:var(--muted)"></span></h3>
+      <p class="note" style="margin-top:0">Ranks operators whose <b>logged</b> raids are statistically hard to explain — stacking rare objectives (weapon case + boss + final exfil + big kills) far more often than the map realistically allows, or logging raids impossibly fast. A high score is a <b>prompt to check footage</b>, not proof of cheating. Only counts operators with 8+ raids, so a couple of hot games won't flag anyone.</p>
+      <div id="anomalyBody"></div>
+    </div>
+
+    <div class="card" data-settab="setup">
+      <h2 class="section-title">Support / Donations</h2>
+      <div id="donateMsg" class="msg"></div>
+      <p class="note" style="margin-top:0">Paste a donation link (PayPal, Ko-fi, etc.) and a <b>☕ Support</b> button appears up in the header for everyone. Leave it blank to hide the button.</p>
+      <div class="field"><label for="donateUrl">Donation link (https://…)</label><input id="donateUrl" type="url" placeholder="https://paypal.me/yourname" autocomplete="off"></div>
+      <div class="field" style="max-width:220px"><label for="donateLabel">Button label</label><input id="donateLabel" type="text" maxlength="32" placeholder="Support"></div>
+      <div class="btnrow"><button class="btn" id="saveDonate">Save</button></div>
+    </div>
+
+    <div class="card" data-settab="setup">
+      <h2 class="section-title">Community polls</h2>
+      <div id="pollAdminMsg" class="msg"></div>
+      <p class="note" style="margin-top:0">These are the vote-based joke awards under <b>Community &rarr; Polls</b>. Edit the name, blurb, medal and color, add your own, or remove ones you don't want. Winners are crowned when a season is archived, then votes reset.</p>
+      <div id="pollAdminBody"></div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn ghost" id="addPollBtn">+ Add poll</button>
+        <button class="btn" id="savePollsBtn">Save polls</button>
+        <button class="btn ghost" id="resetPollsBtn" title="Restore the original four polls">Reset to defaults</button>
+      </div>
+    </div>
+
+    <div class="card" data-settab="setup">
+      <h2 class="section-title">Season</h2>
+      <div id="seasonMsg" class="msg"></div>
+      <p class="note" style="margin-top:0">Set the current season's name and dates. Standings count only raids logged within the season window (leave dates blank for all-time).</p>
+      <div class="field">
+        <label for="seasonName">Season name</label>
+        <input id="seasonName" type="text" placeholder="e.g. Weapon Case Warfare">
+      </div>
+      <div class="field" style="max-width:220px">
+        <label for="seasonNum">Season number <span style="color:var(--muted);font-weight:600">(blank = auto)</span></label>
+        <input id="seasonNum" type="number" min="1" step="1" inputmode="numeric" placeholder="auto">
+        <div class="note">Shows as an <b>S#</b> badge everywhere. Leave blank and it counts up on its own each time you end a season.</div>
+      </div>
+      <div class="datecfg">
+        <div class="field"><label for="seasonStart">Start date</label><input id="seasonStart" type="date"></div>
+        <div class="field"><label for="seasonEnd">End date</label><input id="seasonEnd" type="date"></div>
+      </div>
+      <div class="autoseason" style="border:1px solid var(--line);border-radius:9px;padding:12px 13px;margin:10px 0 4px;background:rgba(255,255,255,.02)">
+        <label class="chk" style="text-transform:none;margin:0 0 8px">
+          <input type="checkbox" id="seasonAuto"><span>Automatic seasons <small style="color:var(--muted)">— seasons start &amp; end on their own on the schedule below. You can still end one early with the button.</small></span>
+        </label>
+        <div class="datecfg">
+          <div class="field"><label for="seasonLen">Length (days)</label><input id="seasonLen" type="number" min="1" max="90" step="1" inputmode="numeric" style="max-width:120px"></div>
+          <div class="field"><label for="seasonFinal">Series ends (last day)</label><input id="seasonFinal" type="date"></div>
+        </div>
+        <div class="note" id="seasonSchedNote" style="margin-top:2px"></div>
+        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="saveSeasonCfg">Save schedule</button></div>
+      </div>
+      <label class="chk" style="text-transform:none;margin:4px 0 10px">
+        <input type="checkbox" id="seasonS2">
+        <span>Enable <b>Season 2</b> features <span class="s2tag">Boss Kills</span><br>
+          <small style="color:var(--muted)">Turn this on when Season 2 begins. Boss kills (+10, max 2/raid) start counting for this season, and the ten achievement tracks pay out SR. Leave off to keep classic scoring.</small></span>
+      </label>
+      <div class="field">
+        <label for="seasonChallenge">Season challenge <span style="color:var(--muted);font-weight:600">(featured stat)</span></label>
+        <select id="seasonChallenge" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:7px;font-family:var(--f-ui);font-size:15px;font-weight:600;background:rgba(0,0,0,.34);color:var(--txt)">
+          <option value="">None</option>
+          <option value="weaponCase">Weapon Case Exfils — “Weapon Case Warfare”</option>
+          <option value="hunt">Hunt Contracts — “Hunt Club”</option>
+          <option value="operatorKills">Operator Kills — “Confirmed Kills”</option>
+          <option value="bossKills">Boss Kills — “Apex Predator”</option>
+        </select>
+        <div class="note">Adds a side-leaderboard for that stat. Its podium earns bonus championship points (<b>+5 / +3 / +1</b>).</div>
+      </div>
+      <label class="chk" style="text-transform:none;margin:4px 0 10px">
+        <input type="checkbox" id="seasonFinale">
+        <span>Finals — <b>double championship points</b> <small style="color:var(--muted)">— turn on for the last season before 1.0 so the title stays contested to the end.</small></span>
+      </label>
+      <div class="btnrow">
+        <button class="btn" id="saveSeason">Save season</button>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <p class="note" style="margin-top:0">Ending a season crowns its top 3 into the Hall of Fame and starts a fresh season (scores reset; all raids are kept in the data).</p>
+      <div class="btnrow">
+        <button class="btn ghost" id="archiveSeason">End season &amp; start new</button>
+      </div>
+      <div id="pastSeasonsAdmin" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card" data-settab="setup">
+      <h2 class="section-title">Sync &amp; backend</h2>
+      <div id="setMsg" class="msg"></div>
+      <div class="helpbox">
+        <b>✓ Synced through your own Supabase database.</b> Every raid is saved as its own record, so two people submitting at the same time can't overwrite each other — the disappearing-raid problem is fixed. Live sync works in any normal browser tab or hosted link.
+      </div>
+      <p class="note" id="backendDesc"></p>
+      <div class="field">
+        <label>One-time: bring over your old data</label>
+        <div class="note">Copies every player, raid and season from the old shared store into this database. Run it <b>once</b> right after switching over. It's safe if you click it again — it just re-syncs the same records and never makes duplicates.</div>
+      </div>
+      <div class="btnrow">
+        <button class="btn" id="migrateBtn">⬇ Import current data (one time)</button>
+        <button class="btn ghost" id="refreshNow">Refresh now</button>
+      </div>
+    </div>
+
+    <div class="card" data-settab="danger">
+      <h2 class="section-title">Import from Google Sheets</h2>
+      <div id="importMsg" class="msg"></div>
+      <p class="note" style="margin-top:0">Moving players over from a spreadsheet? Paste their <b>name and current SR</b> below — one player per line. In your sheet, select the two columns (name + SR) and copy; it pastes as one player per line. Each gets a "carryover" starting entry so their total shows immediately, then they just keep logging new raids.</p>
+      <div class="field">
+        <label for="importText">Paste players (Name, SR)</label>
+        <textarea id="importText" rows="6" spellcheck="false" placeholder="Ghost, 1250&#10;Reaper, 3400&#10;Viper	820" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:7px;font-family:var(--f-ui);font-size:15px;font-weight:600;background:rgba(0,0,0,.34);color:var(--txt);resize:vertical"></textarea>
+        <div class="note">Accepts comma- or tab-separated. Header rows and blank lines are ignored. Example: <code>Ghost, 1250</code></div>
+      </div>
+      <div class="btnrow">
+        <button class="btn" id="importPlayersBtn">Preview &amp; import</button>
+      </div>
+    </div>
+
+    <div class="card" data-settab="danger">
+      <h2 class="section-title">Backup &amp; restore</h2>
+      <p class="note">Your data lives in the cloud store above. Download a backup anytime; restore re-uploads it for everyone.</p>
+      <div class="btnrow">
+        <button class="btn ghost" id="exportBtn">⬇ Download backup (JSON)</button>
+        <label class="btn ghost" style="cursor:pointer;margin:0">⬆ Restore from file<input id="importFile" type="file" accept="application/json" style="display:none"></label>
+      </div>
+    </div>
+
+    <div class="card" data-settab="everyday">
+      <h2 class="section-title">Manage players &amp; raids</h2>
+      <div id="manageBody"></div>
+    </div>
+
+    <div class="card" data-settab="danger">
+      <h2 class="section-title">Recently deleted <span class="s2tag">Undo a mistake</span></h2>
+      <p class="note" style="margin-top:0">Deleted raids land here for <b>7 days</b> before they're gone for good — restore one anytime, or clear it out now. Standings recalculate the moment you restore.</p>
+      <div id="recycleBody"></div>
+    </div>
+
+    <div class="card" data-settab="danger">
+      <h2 class="section-title">Danger zone</h2>
+      <p class="note"><b>Clear all raids</b> resets every operator to 0 SR for a fresh start but <b>keeps players, PINs, seasons and the Hall of Fame</b> — use this to wipe a season's runs without deleting anyone. <b>Reset entire leaderboard</b> also removes every player. Neither can be undone — download a backup first.</p>
+      <div class="btnrow">
+        <button class="btn danger" id="clearRaidsBtn">Clear all raids (keep players)</button>
+        <button class="btn danger" id="wipeBtn">Reset entire leaderboard</button>
+      </div>
+    </div>
+    </div><!-- /settingsInner -->
+  </section>
+
+  <footer class="foot">
+    <div class="foot-inner">
+      <div class="fl" role="img" aria-label="DMZ"></div>
+      <p>Climb the ranks · Earn SR · Prove you're the best</p>
+    </div>
+  </footer>
+</div>
+
+<div id="profileModal" class="modal" style="display:none">
+  <div class="modal-backdrop" id="profileBackdrop"></div>
+  <div class="modal-card">
+    <button class="modal-close" id="profileClose" title="Close">✕</button>
+    <div id="profileBody"></div>
+  </div>
+</div>
+
+<div id="resultModal" class="modal rmodal" style="display:none">
+  <div class="modal-backdrop" id="resultBackdrop"></div>
+  <div class="rcard" id="resultCard">
+    <div id="resultBody"></div>
+    <button class="btn" id="resultClose">Continue</button>
+  </div>
+</div>
+
+<div id="seasonPop" class="modal" style="display:none">
+  <div class="modal-backdrop" id="seasonPopBackdrop"></div>
+  <div class="modal-card sp-card">
+    <div class="sp-burst"></div>
+    <div class="sp-kicker">A new season has begun</div>
+    <div class="sp-title" id="spTitle">Season</div>
+    <div class="sp-body">
+      Standings are fresh and the race is back to zero. When you log your first raid of the season,
+      you'll be asked to <b>set or re-enter your PIN</b> — that's how the board knows it's really you.
+    </div>
+    <div class="sp-pin">🔒 Reset / enter your PIN on your next raid</div>
+    <button class="btn" id="spClose">Let's go</button>
+  </div>
+</div>
+
+<script src="/assets/js/leaderboard.js?v=20260923-api-fallback"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+name: Sync DMZ Ranked website images
+on:
+  push:
+    branches:
+      - website
+    paths:
+      - index.html
+      - assets/css/leaderboard.css
+      - assets/js/leaderboard.js
+      - scripts/sync-website-assets.mjs
+      - .github/workflows/sync-website-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: dmzranked-website-assets
+  cancel-in-progress: false
+jobs:
+  sync-public-art:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: website
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download versioned public website image assets
+        run: node scripts/sync-website-assets.mjs
+      - name: Commit assets to website branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/legacy
+          if git diff --cached --quiet; then
+            echo "Images already present"
+          else
+            git commit -m "Import DMZ Ranked public website artwork [skip ci]"
+            git push origin HEAD:website
+          fi
