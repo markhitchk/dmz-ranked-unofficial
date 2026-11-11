@@ -63,6 +63,8 @@ public final class RankedSiteActivity extends Activity {
 
         getWindow().setStatusBarColor(DARK);
         getWindow().setNavigationBarColor(DARK);
+        // Android 15/16 may force edge-to-edge; keep status icons readable.
+        getWindow().getDecorView().setSystemUiVisibility(0);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -102,6 +104,13 @@ public final class RankedSiteActivity extends Activity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        // Respect each ranked website's mobile viewport rather than shrinking
+        // the desktop layout into a phone-width WebView.
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(false);
+        settings.setTextZoom(100);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
@@ -155,6 +164,10 @@ public final class RankedSiteActivity extends Activity {
         root.addView(webView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
+        // The previous build drew the toolbar under the clock/battery and let
+        // the websites extend behind the gesture-navigation bar. Insets belong
+        // on the activity root so both DMZ V1 and ARC receive usable space.
+        RankedSafeArea.apply(root);
 
         if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
             webView.loadUrl(homeUrl);
