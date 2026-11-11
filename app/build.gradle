@@ -212,8 +212,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 165
-        versionName '1.0.61'
+        versionCode 166
+        versionName '1.0.62'
     }
 
     sourceSets {
@@ -249,7 +249,7 @@ android {
             signingConfig signingConfigs.release
             debuggable true
             matchingFallbacks = ['debug']
-            resValue 'string', 'app_name', 'DMZ Ranked [Beta]'
+            resValue 'string', 'app_name', 'Ranked Hub [Beta]'
         }
     }
 }
