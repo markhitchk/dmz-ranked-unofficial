@@ -93,8 +93,8 @@ final class RankedHeaderView {
         String versionName = "Unknown";
         long buildCode = 0;
         try {
-            PackageInfo packageInfo = activity.getPackageManager()
-                    .getPackageInfo(activity.getPackageName(), 0);
+            PackageInfo packageInfo = activity.getPackageManager().getPackageInfo(
+                    activity.getPackageName(), 0);
             if (packageInfo != null) {
                 if (packageInfo.versionName != null) versionName = packageInfo.versionName;
                 buildCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
