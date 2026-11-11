@@ -11,6 +11,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 /**
@@ -21,6 +22,7 @@ import android.widget.Toast;
 public final class RankedHubActivity extends Activity {
     private static final String HUB_URL = "file:///android_asset/ranked-hub/index.html";
     private WebView hub;
+    private WebView brandedHeader;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -30,8 +32,13 @@ public final class RankedHubActivity extends Activity {
         getWindow().setNavigationBarColor(background);
         getWindow().getDecorView().setSystemUiVisibility(0);
 
-        FrameLayout root = new FrameLayout(this);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(background);
+        brandedHeader = RankedHeaderView.create(this, RankedHeaderView.THEME_HUB,
+                () -> startActivity(new Intent(this, SettingsActivity.class)));
+        root.addView(brandedHeader, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.HEIGHT_DP)));
         hub = new WebView(this);
         hub.setBackgroundColor(background);
         hub.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
@@ -62,9 +69,8 @@ public final class RankedHubActivity extends Activity {
             }
         });
 
-        root.addView(hub, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(hub, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
         RankedSafeArea.apply(root);
         hub.loadUrl(HUB_URL);
@@ -95,8 +101,18 @@ public final class RankedHubActivity extends Activity {
         finish();
     }
 
+    private int dp(int size) {
+        return Math.round(size * getResources().getDisplayMetrics().density);
+    }
+
     @Override
     protected void onDestroy() {
+        if (brandedHeader != null) {
+            ViewGroup parent = (ViewGroup) brandedHeader.getParent();
+            if (parent != null) parent.removeView(brandedHeader);
+            brandedHeader.destroy();
+            brandedHeader = null;
+        }
         if (hub != null) {
             ViewGroup parent = (ViewGroup) hub.getParent();
             if (parent != null) parent.removeView(hub);

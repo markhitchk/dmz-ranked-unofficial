@@ -1,13 +1,13 @@
 package com.harleytg.dmzranked;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.res.ColorStateList;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
@@ -19,10 +19,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Locale;
 
 /**
  * Isolated, allowlisted browser for Harley's Studios ranked websites.
@@ -37,6 +35,7 @@ public final class RankedSiteActivity extends Activity {
     private static final int DARK = Color.rgb(8, 12, 19);
 
     private WebView webView;
+    private WebView brandedHeader;
     private ProgressBar progress;
     private ValueCallback<Uri[]> fileCallback;
     private String homeUrl;
@@ -70,33 +69,16 @@ public final class RankedSiteActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(DARK);
 
-        LinearLayout toolbar = new LinearLayout(this);
-        toolbar.setOrientation(LinearLayout.HORIZONTAL);
-        toolbar.setGravity(Gravity.CENTER_VERTICAL);
-        toolbar.setPadding(dp(10), dp(5), dp(10), dp(5));
-        toolbar.setMinimumHeight(dp(56));
-
-        TextView back = toolbarButton("‹ HUB", () -> finish());
-        toolbar.addView(back);
-
-        TextView title = new TextView(this);
-        title.setText(siteTitle);
-        title.setTextColor(Color.WHITE);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setTextSize(15);
-        title.setSingleLine(true);
-        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        title.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, dp(48), 1f);
-        titleParams.leftMargin = dp(10);
-        toolbar.addView(title, titleParams);
-
-        toolbar.addView(toolbarButton("↻", () -> webView.reload()));
-        toolbar.addView(toolbarButton("↗", this::openCurrentPageInBrowser));
-        root.addView(toolbar);
+        int theme = SITE_DMZ_V1.equals(site)
+                ? RankedHeaderView.THEME_DMZ_V1 : RankedHeaderView.THEME_ARC;
+        brandedHeader = RankedHeaderView.create(this, theme, this::showLauncherMenu);
+        root.addView(brandedHeader, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.HEIGHT_DP)));
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);
+        progress.setProgressTintList(ColorStateList.valueOf(
+                SITE_DMZ_V1.equals(site) ? Color.rgb(244, 193, 95) : Color.rgb(98, 216, 229)));
         root.addView(progress, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(3)));
 
@@ -201,21 +183,33 @@ public final class RankedSiteActivity extends Activity {
         }
     }
 
-    private TextView toolbarButton(String caption, Runnable action) {
-        TextView button = new TextView(this);
-        button.setText(caption);
-        button.setTextColor(Color.rgb(248, 196, 100));
-        button.setTextSize(14);
-        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        button.setGravity(Gravity.CENTER);
-        button.setMinWidth(dp(48));
-        button.setMinHeight(dp(48));
-        button.setContentDescription("‹ HUB".equals(caption) ? "Return to ranked hub"
-                : "↻".equals(caption) ? "Reload website" : "Open website in browser");
-        button.setClickable(true);
-        button.setFocusable(true);
-        button.setOnClickListener(view -> action.run());
-        return button;
+    private void showLauncherMenu() {
+        String[] options = {
+                "Reload this website",
+                "Open in browser",
+                "Return to Ranked Hub",
+                "App settings"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(siteTitle)
+                .setItems(options, (dialog, index) -> {
+                    switch (index) {
+                        case 0:
+                            webView.reload();
+                            break;
+                        case 1:
+                            openCurrentPageInBrowser();
+                            break;
+                        case 2:
+                            finish();
+                            break;
+                        case 3:
+                            startActivity(new Intent(this, SettingsActivity.class));
+                            break;
+                        default:
+                            break;
+                    }
+                }).show();
     }
 
     @Override
@@ -239,6 +233,12 @@ public final class RankedSiteActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (brandedHeader != null) {
+            ViewGroup parent = (ViewGroup) brandedHeader.getParent();
+            if (parent != null) parent.removeView(brandedHeader);
+            brandedHeader.destroy();
+            brandedHeader = null;
+        }
         if (fileCallback != null) {
             fileCallback.onReceiveValue(null);
             fileCallback = null;
