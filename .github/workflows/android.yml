@@ -56,7 +56,7 @@ jobs:
           fi
 
       - name: Verify exact site branding and offline grid
-        run: python3 -m unittest discover -s tests -p 'test_ranked_hub_grid.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_ranked_*.py' -v
 
       - name: Build production, beta test APK, and AABs
         run: gradle assembleDebug assembleBeta assembleRelease bundleBeta bundleRelease
