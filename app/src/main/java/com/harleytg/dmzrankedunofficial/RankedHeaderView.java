@@ -123,7 +123,8 @@ final class RankedHeaderView {
         boolean beta = activity.getPackageName().endsWith(".beta");
         String badge = beta ? "<span class='badge'>BETA</span>" : "";
         String meta = "Version " + escape(versionName) + " &#8226; Build " + buildCode;
-        String actionPath = settingsMode ? "back" : "settings";
+        String actionHref = settingsMode
+                ? "rankedhub://action/back" : "rankedhub://action/settings";
         String actionLabel = settingsMode ? "Back to launcher" : "Open app settings";
         String actionIcon = settingsMode ? "&#10094;" : "&#9881;";
 
@@ -154,7 +155,7 @@ final class RankedHeaderView {
                 + "<img class='logo' src='" + logo + "' alt='" + escape(logoAlt) + "'>"
                 + "<div class='copy'><div class='name-row'><span class='name'>" + escape(title)
                 + "</span>" + badge + "</div><div class='meta'>" + meta + "</div></div>"
-                + "<a class='settings' href='rankedhub://action/" + actionPath
+                + "<a class='settings' href='" + actionHref
                 + "' aria-label='" + actionLabel + "'>" + actionIcon + "</a>"
                 + "</div></body></html>";
     }
