@@ -41,6 +41,7 @@ public final class RankedSiteActivity extends Activity {
     private String homeUrl;
     private String allowedHost;
     private String siteTitle;
+    private int sourceHeaderTheme = RankedHeaderView.THEME_DMZ_V1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +72,7 @@ public final class RankedSiteActivity extends Activity {
 
         int theme = SITE_DMZ_V1.equals(site)
                 ? RankedHeaderView.THEME_DMZ_V1 : RankedHeaderView.THEME_ARC;
+        sourceHeaderTheme = theme;
         brandedHeader = RankedHeaderView.create(this, theme, this::showLauncherMenu);
         root.addView(brandedHeader, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.HEIGHT_DP)));
@@ -204,7 +206,9 @@ public final class RankedSiteActivity extends Activity {
                             finish();
                             break;
                         case 3:
-                            startActivity(new Intent(this, SettingsActivity.class));
+                            startActivity(new Intent(this, SettingsActivity.class)
+                                    .putExtra(SettingsActivity.EXTRA_LAUNCHER_THEME,
+                                            sourceHeaderTheme));
                             break;
                         default:
                             break;

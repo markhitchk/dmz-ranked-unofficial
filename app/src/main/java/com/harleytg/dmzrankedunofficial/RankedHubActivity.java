@@ -36,7 +36,9 @@ public final class RankedHubActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(background);
         brandedHeader = RankedHeaderView.create(this, RankedHeaderView.THEME_HUB,
-                () -> startActivity(new Intent(this, SettingsActivity.class)));
+                () -> startActivity(new Intent(this, SettingsActivity.class)
+                        .putExtra(SettingsActivity.EXTRA_LAUNCHER_THEME,
+                                RankedHeaderView.THEME_HUB)));
         root.addView(brandedHeader, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.HEIGHT_DP)));
         hub = new WebView(this);

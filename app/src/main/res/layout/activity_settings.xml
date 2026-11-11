@@ -69,6 +69,43 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Shared launcher's branded title bar replaces the hidden legacy title bar,
+         preserving original IDs and every existing settings action. -->
+    <FrameLayout
+        android:id="@+id/settingsHeaderSlot"
+        android:layout_width="match_parent"
+        android:layout_height="78dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/settingsIntroPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="2dp">
+
+        <TextView
+            android:id="@+id/settingsScopeText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RANKED HUB / SYSTEM CONFIGURATION"
+            android:textColor="@color/dmz_gold"
+            android:textStyle="bold"
+            android:letterSpacing="0.09"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Tune your ranked experience, connectivity, notifications and account tools."
+            android:textColor="@color/dmz_muted"
+            android:textSize="13sp" />
+    </LinearLayout>
+
     <EditText
         android:id="@+id/settingsSearch"
         android:layout_width="match_parent"

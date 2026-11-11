@@ -23,13 +23,24 @@ final class RankedHeaderView {
     static final int THEME_HUB = 0;
     static final int THEME_DMZ_V1 = 1;
     static final int THEME_ARC = 2;
+    static final int THEME_COMMUNITY = 3;
     static final int HEIGHT_DP = 78;
 
     private RankedHeaderView() {}
 
     static WebView create(Activity activity, int theme, Runnable onSettings) {
+        return createInternal(activity, theme, onSettings, false);
+    }
+
+    static WebView createSettings(Activity activity, int theme, Runnable onBack) {
+        return createInternal(activity, theme, onBack, true);
+    }
+
+    private static WebView createInternal(Activity activity, int theme,
+                                          Runnable action, boolean settingsMode) {
         String background = theme == THEME_DMZ_V1 ? "#101010"
-                : theme == THEME_ARC ? "#071A29" : "#091923";
+                : theme == THEME_ARC ? "#071A29"
+                : theme == THEME_COMMUNITY ? "#111B19" : "#091923";
         WebView header = new WebView(activity);
         header.setBackgroundColor(Color.parseColor(background));
         header.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -52,19 +63,19 @@ final class RankedHeaderView {
                 if (request == null || !request.isForMainFrame()) return true;
                 Uri uri = request.getUrl();
                 if ("rankedhub".equals(uri.getScheme())
-                        && "action".equals(uri.getHost())
-                        && "/settings".equals(uri.getPath())) {
-                    onSettings.run();
+                        && "action".equals(uri.getHost())) {
+                    String expected = settingsMode ? "/back" : "/settings";
+                    if (expected.equals(uri.getPath())) action.run();
                 }
                 return true;
             }
         });
         header.loadDataWithBaseURL("file:///android_asset/ranked-hub/",
-                buildHtml(activity, theme), "text/html", "UTF-8", null);
+                buildHtml(activity, theme, settingsMode), "text/html", "UTF-8", null);
         return header;
     }
 
-    private static String buildHtml(Activity activity, int theme) {
+    private static String buildHtml(Activity activity, int theme, boolean settingsMode) {
         final String title;
         final String logo;
         final String logoAlt;
@@ -82,6 +93,12 @@ final class RankedHeaderView {
             logoAlt = "ARC Raiders Ranked official website logo";
             accent = "#62D8E5";
             background = "#071A29";
+        } else if (theme == THEME_COMMUNITY) {
+            title = "DMZ Ranked";
+            logo = "dmz_community.png";
+            logoAlt = "Original DMZRanked.com Android app artwork";
+            accent = "#B6C695";
+            background = "#111B19";
         } else {
             title = "Ranked Hub";
             logo = "official_studio.png";
@@ -106,6 +123,9 @@ final class RankedHeaderView {
         boolean beta = activity.getPackageName().endsWith(".beta");
         String badge = beta ? "<span class='badge'>BETA</span>" : "";
         String meta = "Version " + escape(versionName) + " &#8226; Build " + buildCode;
+        String actionPath = settingsMode ? "back" : "settings";
+        String actionLabel = settingsMode ? "Back to launcher" : "Open app settings";
+        String actionIcon = settingsMode ? "&#10094;" : "&#9881;";
 
         return "<!doctype html><html lang='en'><head>"
                 + "<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -134,7 +154,8 @@ final class RankedHeaderView {
                 + "<img class='logo' src='" + logo + "' alt='" + escape(logoAlt) + "'>"
                 + "<div class='copy'><div class='name-row'><span class='name'>" + escape(title)
                 + "</span>" + badge + "</div><div class='meta'>" + meta + "</div></div>"
-                + "<a class='settings' href='rankedhub://action/settings' aria-label='Open app settings'>&#9881;</a>"
+                + "<a class='settings' href='rankedhub://action/" + actionPath
+                + "' aria-label='" + actionLabel + "'>" + actionIcon + "</a>"
                 + "</div></body></html>";
     }
 

@@ -42,6 +42,7 @@ import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -119,6 +120,7 @@ public class SettingsActivity extends Activity {
     private static final String DEV_PIN_DOUBLE_HASH =
             "af237b066602cebf2ea25843fdab831639173b894205a21192b15c6ac242c23d";
 
+    public static final String EXTRA_LAUNCHER_THEME = "ranked_launcher_theme";
     public static final String EXTRA_ACTION = "settings_action";
     public static final String EXTRA_OPERATOR_NAME = "operator_name";
     public static final String ACTION_RELOAD = "reload";
@@ -126,6 +128,8 @@ public class SettingsActivity extends Activity {
     public static final String ACTION_RESTORE_OPERATOR = "restore_operator";
     public static final String ACTION_SELECT_OPERATOR = "select_operator";
 
+    private int launcherTheme = RankedHeaderView.THEME_COMMUNITY;
+    private WebView settingsHeader;
     private SharedPreferences preferences;
     private AppUpdateManager appUpdateManager;
     private InstallStateUpdatedListener installStateUpdatedListener;
@@ -154,7 +158,15 @@ public class SettingsActivity extends Activity {
         super.onCreate(savedInstanceState);
         preferences = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         setContentView(R.layout.activity_settings);
+        launcherTheme = getIntent().getIntExtra(
+                EXTRA_LAUNCHER_THEME, RankedHeaderView.THEME_COMMUNITY);
+        if (launcherTheme < RankedHeaderView.THEME_HUB
+                || launcherTheme > RankedHeaderView.THEME_COMMUNITY) {
+            launcherTheme = RankedHeaderView.THEME_COMMUNITY;
+        }
         configureSystemBars();
+        installRankedSettingsHeader();
+        RankedSettingsStyler.apply(this, launcherTheme);
 
         appUpdateManager = AppUpdateManagerFactory.create(this);
         installStateUpdatedListener = state -> runOnUiThread(() ->
@@ -175,13 +187,14 @@ public class SettingsActivity extends Activity {
 
         applyBrandLogo(findViewById(R.id.settingsLogo));
         applyBrandLogo(findViewById(R.id.aboutLogo));
+        RankedSettingsStyler.applyAboutLogo(this, launcherTheme);
 
         boolean betaBuild = getPackageName().endsWith(".beta");
         TextView settingsSubtitle = findViewById(R.id.settingsSubtitle);
         TextView aboutTitle = findViewById(R.id.aboutTitle);
         TextView aboutBetaBadge = findViewById(R.id.aboutBetaBadge);
         if (aboutTitle != null) {
-            aboutTitle.setText("DMZ RANKED");
+            aboutTitle.setText(RankedSettingsStyler.pageTitleFor(launcherTheme));
         }
         if (aboutBetaBadge != null) {
             aboutBetaBadge.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
@@ -455,7 +468,7 @@ public class SettingsActivity extends Activity {
         TextView large = findViewById(R.id.contentSizeLargeButton);
         TextView summary = findViewById(R.id.contentSizeSummary);
 
-        int active = getColor(R.color.dmz_gold);
+        int active = RankedSettingsStyler.accentFor(launcherTheme);
         int inactive = getColor(R.color.dmz_muted);
         if (compact != null) compact.setTextColor("compact".equals(size) ? active : inactive);
         if (standard != null) standard.setTextColor("standard".equals(size) ? active : inactive);
@@ -1705,6 +1718,22 @@ public class SettingsActivity extends Activity {
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+
+    private void installRankedSettingsHeader() {
+        View oldBar = findViewById(R.id.titleBar);
+        if (oldBar != null) oldBar.setVisibility(View.GONE);
+        FrameLayout slot = findViewById(R.id.settingsHeaderSlot);
+        if (slot == null) return;
+        slot.setVisibility(View.VISIBLE);
+        settingsHeader = RankedHeaderView.createSettings(this, launcherTheme, this::finish);
+        slot.addView(settingsHeader, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        TextView scope = findViewById(R.id.settingsScopeText);
+        if (scope != null) scope.setText(
+                RankedSettingsStyler.pageTitleFor(launcherTheme) + " / SYSTEM CONFIGURATION");
     }
 
     private void configureSystemBars() {
