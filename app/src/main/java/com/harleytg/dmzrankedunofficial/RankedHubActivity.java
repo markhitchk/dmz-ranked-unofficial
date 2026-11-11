@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -85,10 +86,14 @@ public final class RankedHubActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView symbol = label("H", 23, BG, true);
-        symbol.setGravity(Gravity.CENTER);
-        symbol.setBackground(rounded(AMBER, 0, 0, dp(11)));
-        row.addView(symbol, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        // Official Harley's Studios logo, byte-identical to the Puppy Clicker
+        // source PNG and packaged inside the APK for offline availability.
+        ImageView studioLogo = new ImageView(this);
+        studioLogo.setImageResource(R.drawable.harleys_studios_official);
+        studioLogo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        studioLogo.setAdjustViewBounds(true);
+        studioLogo.setContentDescription("Harley's Studios official logo");
+        row.addView(studioLogo, new LinearLayout.LayoutParams(dp(78), dp(78)));
 
         LinearLayout copy = new LinearLayout(this);
         copy.setOrientation(LinearLayout.VERTICAL);
