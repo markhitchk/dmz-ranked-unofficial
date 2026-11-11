@@ -3,6 +3,43 @@ plugins {
 }
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
+def generatedStudioLogoResDir = file("$buildDir/generated/studioBrandRes")
+def studioLogoUrl = "https://raw.githubusercontent.com/markhitchk/Puppy-Clicker/main/assets/logos/harleys_studios.png"
+def canonicalStudioLogoGitSha = "411164454ee72e94869cc7b0141644478a0b77d4"
+
+tasks.register("bundleOfficialStudioLogo") {
+    outputs.dir(generatedStudioLogoResDir)
+
+    doLast {
+        def outputDir = new File(generatedStudioLogoResDir, "drawable-nodpi")
+        def outputFile = new File(outputDir, "harleys_studios_official.png")
+        if (!outputFile.exists() || outputFile.length() == 0) {
+            def connection = new URL(studioLogoUrl).openConnection()
+            connection.setConnectTimeout(15000)
+            connection.setReadTimeout(20000)
+            def bytes = connection.getInputStream().withCloseable { input -> input.bytes }
+            outputDir.mkdirs()
+            outputFile.bytes = bytes
+        }
+
+        // Exact source artwork from Puppy Clicker, not an AI-generated stand-in.
+        def bytes = outputFile.bytes
+        if (bytes.length != 1556980 || bytes.length < 8 ||
+                bytes[0] != (byte)0x89 || bytes[1] != (byte)0x50 ||
+                bytes[2] != (byte)0x4E || bytes[3] != (byte)0x47) {
+            throw new GradleException("Harley's Studios source is missing or not the verified PNG")
+        }
+        def md = java.security.MessageDigest.getInstance("SHA-1")
+        md.update(("blob " + bytes.length + "\u0000").getBytes("UTF-8"))
+        md.update(bytes)
+        def actualSha = md.digest().collect { String.format("%02x", it & 0xFF) }.join("")
+        if (actualSha != canonicalStudioLogoGitSha) {
+            throw new GradleException("Harley's Studios logo checksum differs from canonical Puppy Clicker asset")
+        }
+        println("Bundled official Harley's Studios logo from Puppy Clicker: " + actualSha)
+    }
+}
+
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
 def generatedAppUiAssetsDir = file("$buildDir/generated/dmzAppUiAssets")
 def sourceRemoteAppUiDir = file("../remote/app-ui")
@@ -212,13 +249,14 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 166
-        versionName '1.0.62'
+        versionCode 167
+        versionName '1.0.63'
     }
 
     sourceSets {
         main {
             res.srcDir generatedLogoResDir
+            res.srcDir generatedStudioLogoResDir
             assets.srcDir generatedAppUiAssetsDir
         }
     }
@@ -256,6 +294,7 @@ android {
 
 tasks.named("preBuild").configure {
     dependsOn("generateDmzLogo")
+    dependsOn("bundleOfficialStudioLogo")
     dependsOn("generateDmzRemoteUiFallback")
 }
 
