@@ -30,7 +30,8 @@ tasks.register("bundleOfficialStudioLogo") {
             throw new GradleException("Harley's Studios source is missing or not the verified PNG")
         }
         def md = java.security.MessageDigest.getInstance("SHA-1")
-        md.update(("blob " + bytes.length + "\u0000").getBytes("UTF-8"))
+        md.update(("blob " + bytes.length).getBytes("UTF-8"))
+        md.update((byte) 0)
         md.update(bytes)
         def actualSha = md.digest().collect { String.format("%02x", it & 0xFF) }.join("")
         if (actualSha != canonicalStudioLogoGitSha) {
