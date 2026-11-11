@@ -4,6 +4,7 @@ plugins {
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
 def generatedStudioLogoResDir = file("$buildDir/generated/studioBrandRes")
+def generatedHubAssetsDir = file("$buildDir/generated/rankedHubAssets")
 def studioLogoUrl = "https://raw.githubusercontent.com/markhitchk/Puppy-Clicker/main/assets/logos/harleys_studios.png"
 def canonicalStudioLogoGitSha = "411164454ee72e94869cc7b0141644478a0b77d4"
 
@@ -242,6 +243,33 @@ tasks.register("generateDmzLogo") {
     }
 }
 
+tasks.register("prepareRankedHubAssets") {
+    dependsOn("bundleOfficialStudioLogo")
+    inputs.file(sourceLogoFile)
+    outputs.dir(generatedHubAssetsDir)
+    doLast {
+        def target = new File(generatedHubAssetsDir, "ranked-hub")
+        target.mkdirs()
+        def officialLogo = new File(generatedStudioLogoResDir, "drawable-nodpi/harleys_studios_official.png")
+        if (!officialLogo.exists() || officialLogo.length() != 1556980) {
+            throw new GradleException("Missing verified official Harley's Studios artwork")
+        }
+        copy {
+            from officialLogo
+            into target
+            rename { "official_studio.png" }
+        }
+        copy {
+            from sourceLogoFile
+            into target
+            rename { "dmz_community.png" }
+        }
+        if (!new File(target, "dmz_community.png").exists()) {
+            throw new GradleException("Missing legacy DMZ Ranked artwork")
+        }
+    }
+}
+
 android {
     namespace 'com.harleytg.dmzranked'
     compileSdk 36
@@ -250,8 +278,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 167
-        versionName '1.0.63'
+        versionCode 168
+        versionName '1.0.64'
     }
 
     sourceSets {
@@ -259,6 +287,7 @@ android {
             res.srcDir generatedLogoResDir
             res.srcDir generatedStudioLogoResDir
             assets.srcDir generatedAppUiAssetsDir
+            assets.srcDir generatedHubAssetsDir
         }
     }
 
@@ -297,6 +326,7 @@ tasks.named("preBuild").configure {
     dependsOn("generateDmzLogo")
     dependsOn("bundleOfficialStudioLogo")
     dependsOn("generateDmzRemoteUiFallback")
+    dependsOn("prepareRankedHubAssets")
 }
 
 

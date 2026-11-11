@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#061019">
+<title>Ranked Hub | Harley's Studios</title>
+<style>
+  :root {color-scheme:dark;--ink:#f5f8fa;--muted:#a8becb;--amber:#f4c15f;--cyan:#61dfe8;--green:#a9dc92}
+  * {box-sizing:border-box}
+  html {scroll-behavior:smooth}
+  body {margin:0;min-width:0;min-height:100vh;color:var(--ink);font-family:Arial,"Roboto",sans-serif;background:radial-gradient(ellipse 85% 32% at 50% -10%,#154052 0,transparent 78%),#061019}
+  body:before {content:"";position:fixed;inset:0;pointer-events:none;opacity:.26;background-image:linear-gradient(#265267 1px,transparent 1px),linear-gradient(90deg,#265267 1px,transparent 1px);background-size:39px 39px;mask-image:linear-gradient(#000,transparent 75%)}
+  .wrap {position:relative;margin:0 auto;max-width:860px;padding:16px 13px 26px}
+  header {display:flex;align-items:center;gap:11px;padding:8px 0 15px;border-bottom:1px solid #305364}
+  .studio {height:76px;width:76px;object-fit:contain;flex-shrink:0}
+  .heading {flex:1;min-width:0}
+  .eyebrow {font-size:10px;letter-spacing:.14em;font-weight:800;color:#88bed0;margin:0 0 5px}
+  h1 {font-family:Arial,sans-serif;line-height:1;font-size:clamp(23px,7vw,35px);letter-spacing:.025em;margin:0;font-weight:900}
+  .small {font-size:9px;letter-spacing:.09em;color:var(--muted);margin-top:7px}
+  .count {font-size:9px;font-weight:900;color:var(--amber);border:1px solid #907548;background:#17262e;border-radius:8px;padding:9px 7px;white-space:nowrap}
+  .section {display:flex;align-items:center;justify-content:space-between;padding:21px 3px 13px;gap:8px}
+  .section h2 {font-size:16px;line-height:1.1;letter-spacing:.05em;margin:0}
+  .section span {font-size:10px;letter-spacing:.07em;color:var(--muted);white-space:nowrap}
+  .grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+  .tile {text-decoration:none;position:relative;display:flex;flex-direction:column;align-items:center;min-width:0;min-height:255px;padding:12px 10px 11px;border:1px solid var(--accent);border-radius:15px;overflow:hidden;background:linear-gradient(145deg,var(--glow),#10232c 49%,#0b161f 100%);box-shadow:inset 0 0 24px rgba(255,255,255,.025),0 7px 20px rgba(0,0,0,.27);color:var(--ink);-webkit-tap-highlight-color:transparent}
+  .tile:before {content:"";position:absolute;inset:0;pointer-events:none;opacity:.17;background:repeating-linear-gradient(135deg,transparent 0 34px,var(--accent) 35px 36px,transparent 37px 72px);mask-image:linear-gradient(#000,transparent 62%)}
+  a.tile:active {transform:scale(.985);filter:brightness(1.15)}
+  a.tile:focus-visible {outline:3px solid white;outline-offset:2px}
+  .tile--dmz {--accent:var(--amber);--glow:#3d3422}
+  .tile--arc {--accent:var(--cyan);--glow:#133c4d}
+  .tile--community {--accent:var(--green);--glow:#263c31}
+  .tile--soon {--accent:#839cad;--glow:#24323e;opacity:.81}
+  .tag {z-index:1;width:100%;font-size:9px;text-align:left;letter-spacing:.12em;font-weight:900;color:var(--accent)}
+  .logo {z-index:1;flex:1;min-height:118px;width:100%;display:flex;align-items:center;justify-content:center;padding:8px 0 5px}
+  .logo img {display:block;max-width:100%;height:auto;max-height:126px;object-fit:contain}
+  .tile--arc .logo img {width:min(120px,100%);max-height:120px;border-radius:17px}
+  .tile--community .logo img {max-height:133px}
+  .plus {display:grid;place-items:center;font-size:64px;font-weight:300;color:#c3d6e4;width:102px;height:102px;border:1px solid #7898a6;background:#172d3a;border-radius:23px}
+  .name {z-index:1;line-height:1.11;font-size:clamp(15px,4.1vw,22px);font-weight:900;text-align:center;min-height:39px;display:flex;align-items:center;justify-content:center}
+  .meta {z-index:1;letter-spacing:.10em;color:#a8c0c9;font-size:9px;font-weight:800;text-align:center;margin:4px 0 13px;min-height:21px}
+  .action {z-index:1;display:block;text-align:center;margin-top:auto;width:100%;border:1px solid var(--accent);border-radius:9px;padding:10px 4px;background:#09161eb5;color:var(--accent);font-size:12px;font-weight:900;letter-spacing:.055em;white-space:nowrap}
+  .tile--soon .action {border-color:#658492;color:#9cb2bf}
+  .foot {font-size:10px;line-height:1.55;text-align:center;letter-spacing:.06em;color:#93aab6;margin:22px 8px 0}
+  @media (max-width:340px) {
+    .wrap {padding-left:9px;padding-right:9px}
+    .studio {width:60px;height:60px}
+    .count {display:none}
+    .grid {gap:8px}
+    .tile {padding:9px 7px;min-height:225px}
+    .logo {min-height:105px}
+    .logo img {max-height:110px}
+    .name {font-size:14px;min-height:34px}
+    .meta {font-size:8px}
+    .action {font-size:10px}
+  }
+  @media (min-width:600px) {
+    .wrap {padding:22px 28px 32px}
+    .studio {height:91px;width:91px}
+    .tile {min-height:300px}
+    .logo {min-height:150px}
+    .logo img {max-height:158px}
+    .tile--arc .logo img {width:160px;max-height:160px}
+    .name {font-size:23px}
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}a.tile:active{transform:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <img class="studio" src="official_studio.png" alt="Official Harley's Studios puppy logo">
+    <div class="heading">
+      <div class="eyebrow">HARLEY'S STUDIOS</div>
+      <h1>RANKED HUB</h1>
+      <div class="small">RANKED NETWORK · ANDROID</div>
+    </div>
+    <div class="count">HUB / 01</div>
+  </header>
+  <div class="section"><h2>SELECT A GAME</h2><span>03 AVAILABLE</span></div>
+  <section class="grid" aria-label="Ranked games">
+    <a class="tile tile--dmz" href="rankedhub://open/dmz-v1" aria-label="Open DMZ Ranked MW4 V1">
+      <div class="tag">MW4 / V1</div>
+      <div class="logo"><img src="dmz-v1.svg" alt="Official DMZ Ranked V1 site crest"></div>
+      <div class="name">DMZ RANKED</div>
+      <div class="meta">SEASONS · OPERATORS</div>
+      <div class="action">OPEN V1 ↗</div>
+    </a>
+    <a class="tile tile--arc" href="rankedhub://open/arc-raiders" aria-label="Open ARC Raiders Ranked">
+      <div class="tag">EXTRACTION / RANKED</div>
+      <div class="logo"><img src="arc-ranked.webp" alt="Official ARC Raiders Ranked website badge"></div>
+      <div class="name">ARC RAIDERS RANKED</div>
+      <div class="meta">EXTRACTIONS · STANDINGS</div>
+      <div class="action">OPEN ARC ↗</div>
+    </a>
+    <a class="tile tile--community" href="rankedhub://open/community" aria-label="Open original DMZRanked.com Android client">
+      <div class="tag">ORIGINAL COMMUNITY</div>
+      <div class="logo"><img src="dmz_community.png" alt="DMZ Ranked original Android app logo"></div>
+      <div class="name">DMZRANKED.COM</div>
+      <div class="meta">COMMUNITY / UNOFFICIAL</div>
+      <div class="action">OPEN SITE ↗</div>
+    </a>
+    <div class="tile tile--soon" aria-label="More ranked games coming soon">
+      <div class="tag">FUTURE OPERATIONS</div>
+      <div class="logo"><div class="plus" aria-hidden="true">+</div></div>
+      <div class="name">COMING SOON</div>
+      <div class="meta">MORE RANKED PROJECTS</div>
+      <div class="action">NOT AVAILABLE</div>
+    </div>
+  </section>
+  <p class="foot">HARLEY'S STUDIOS · RANKED NETWORK<br>Independent websites keep separate accounts and standings.<br>DMZRanked.com is a third-party community project.</p>
+</main>
+</body>
+</html>
