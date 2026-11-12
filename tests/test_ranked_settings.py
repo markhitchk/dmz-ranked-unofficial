@@ -11,7 +11,7 @@ class RankedSettingsTests(unittest.TestCase):
         header=(SRC/"RankedHeaderView.java").read_text()
         self.assertIn("THEME_COMMUNITY",header)
         self.assertIn("createSettings(",header)
-        self.assertIn("rankedhub://action/back",header)
+        self.assertIn('settingsMode ? "Back to launcher" : "Open app settings"',header)
         self.assertIn("dmz_community.png",header)
         self.assertIn("ranked-hub-selected.webp",header)
         self.assertIn("dmz-v1-discord.webp",header)
