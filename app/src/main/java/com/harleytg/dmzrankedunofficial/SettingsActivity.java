@@ -102,6 +102,9 @@ public class SettingsActivity extends Activity {
     private static final String PREF_OPERATOR_AUTOSAVE = "operator_auto_save";
     private static final String PREF_CONTENT_SIZE = "content_size";
     private static final String PREF_APP_ANIMATIONS = "app_animations";
+    private static final String PREF_REDUCED_MOTION = "reduced_motion";
+    private static final int EXPORT_RANKED_BACKUP_REQUEST = 7112;
+    private static final int IMPORT_RANKED_BACKUP_REQUEST = 7113;
 
     private static final String SITE_NOTIFICATION_CHANNEL = "dmz_site_alerts_v3_heads_up";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2004;
@@ -132,6 +135,8 @@ public class SettingsActivity extends Activity {
     private int launcherTheme = RankedHeaderView.THEME_COMMUNITY;
     private WebView settingsHeader;
     private SharedPreferences preferences;
+    private char[] pendingBackupPassword;
+    private boolean pendingBackupExport;
     private AppUpdateManager appUpdateManager;
     private InstallStateUpdatedListener installStateUpdatedListener;
     private boolean updateReadyDialogShown;
@@ -242,6 +247,7 @@ public class SettingsActivity extends Activity {
         Switch siteNotifications = findViewById(R.id.siteNotificationsSwitch);
         Switch operatorAutoSave = findViewById(R.id.operatorAutoSaveSwitch);
         Switch appAnimations = findViewById(R.id.appAnimationsSwitch);
+        Switch reducedMotion = findViewById(R.id.reducedMotionSwitch);
         Switch webviewDebug = findViewById(R.id.webviewDebugSwitch);
 
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
@@ -252,6 +258,7 @@ public class SettingsActivity extends Activity {
         siteNotifications.setChecked(preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true));
         operatorAutoSave.setChecked(preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true));
         appAnimations.setChecked(preferences.getBoolean(PREF_APP_ANIMATIONS, true));
+        reducedMotion.setChecked(preferences.getBoolean(PREF_REDUCED_MOTION, false));
         webviewDebug.setChecked(preferences.getBoolean(PREF_WEBVIEW_DEBUG, false));
 
         desktopSite.setOnCheckedChangeListener((buttonView, checked) ->
@@ -280,6 +287,8 @@ public class SettingsActivity extends Activity {
             preferences.edit().putBoolean(PREF_APP_ANIMATIONS, checked).apply();
             if (checked) runEntryAnimations();
         });
+        reducedMotion.setOnCheckedChangeListener((buttonView, checked) ->
+                preferences.edit().putBoolean(PREF_REDUCED_MOTION, checked).apply());
         webviewDebug.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_WEBVIEW_DEBUG, checked).apply());
 
@@ -291,6 +300,7 @@ public class SettingsActivity extends Activity {
         bindToggleCard(R.id.siteNotificationsCard, siteNotifications);
         bindToggleCard(R.id.operatorAutoSaveCard, operatorAutoSave);
         bindToggleCard(R.id.appAnimationsCard, appAnimations);
+        bindToggleCard(R.id.reducedMotionCard, reducedMotion);
         bindToggleCard(R.id.webviewDebugCard, webviewDebug);
 
         findViewById(R.id.contentSizeCompactButton).setOnClickListener(v -> setContentSize("compact"));
@@ -322,6 +332,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.operatorPickerCard).setOnClickListener(v -> showOperatorPicker());
         findViewById(R.id.operatorListText).setOnClickListener(v -> showOperatorPicker());
         findViewById(R.id.peerImportCard).setOnClickListener(v -> confirmPeerImport());
+        installRankedDestinationSettings();
         findViewById(R.id.notificationSettingsCard).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
         findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> checkForPlayUpdate(true));
@@ -371,6 +382,7 @@ public class SettingsActivity extends Activity {
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
         runEntryAnimations();
+        applySearch("");
     }
 
     @Override
@@ -659,6 +671,8 @@ public class SettingsActivity extends Activity {
                         "appearance display size compact standard large zoom text content density")
                 | showIfMatches(R.id.appAnimationsCard, q,
                         "appearance animation animations motion fade transition smooth");
+        appearanceMatch |= showIfMatches(R.id.reducedMotionCard, q,
+                "motion reduced animations startup accessibility");
         findViewById(R.id.appearanceSection).setVisibility(appearanceMatch ? View.VISIBLE : View.GONE);
 
         boolean widgetMatch = false;
@@ -696,6 +710,8 @@ public class SettingsActivity extends Activity {
                         "operator save now backup local website data")
                 | showIfMatches(R.id.restoreOperatorCard, q,
                         "operator restore recover backup local website data");
+        if(isRankedHubBuild() && launcherTheme != RankedHeaderView.THEME_COMMUNITY)
+            operatorMatch = false;
         findViewById(R.id.operatorBackupSection).setVisibility(operatorMatch ? View.VISIBLE : View.GONE);
 
         boolean transferMatch =
@@ -785,7 +801,15 @@ public class SettingsActivity extends Activity {
                         "danger reset app settings defaults");
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
-        boolean any = aboutMatch || appearanceMatch || widgetMatch || appMatch || operatorMatch
+        boolean destinationsMatch = isRankedHubBuild()
+                && (!searching || containsAny(q, "destination", "game", "ranked", "mw4", "arc", "dmz", "site"));
+        boolean backupsMatch = isRankedHubBuild()
+                && (!searching || containsAny(q, "backup", "restore", "export", "import", "encrypted", "portable"));
+        findViewById(R.id.rankedDestinationsSection).setVisibility(
+                destinationsMatch ? View.VISIBLE : View.GONE);
+        findViewById(R.id.rankedBackupSection).setVisibility(
+                backupsMatch ? View.VISIBLE : View.GONE);
+        boolean any = destinationsMatch || backupsMatch || aboutMatch || appearanceMatch || widgetMatch || appMatch || operatorMatch
                 || transferMatch || notificationMatch || updateMatch || actionMatch || betaProgramMatch
                 || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
@@ -850,6 +874,142 @@ public class SettingsActivity extends Activity {
         } catch (Throwable ignored) {
             return false;
         }
+    }
+
+
+    private void installRankedDestinationSettings() {
+        if(!isRankedHubBuild())return;
+        View destinations=findViewById(R.id.rankedDestinationsSection);
+        View backup=findViewById(R.id.rankedBackupSection);
+        if(destinations!=null)destinations.setVisibility(View.VISIBLE);
+        if(backup!=null)backup.setVisibility(View.VISIBLE);
+        TextView summary=findViewById(R.id.rankedDestinationSummary);
+        if(summary!=null){
+            String selected=RankedSettingsStyler.pageTitleFor(launcherTheme);
+            summary.setText("Selected: "+selected+
+                    " • Settings are scoped by destination. Account verification is handled by the website.");
+        }
+        findViewById(R.id.rankedMw4SettingsCard).setOnClickListener(v -> {
+            Intent i=new Intent(this,RankedSiteActivity.class);
+            i.putExtra(RankedSiteActivity.EXTRA_SITE_ID,RankedSiteActivity.SITE_DMZ_V1);
+            i.putExtra(RankedSiteActivity.EXTRA_OPEN_SITE_SETTINGS,true);
+            startActivity(i);
+        });
+        findViewById(R.id.rankedArcSettingsCard).setOnClickListener(v -> {
+            Intent i=new Intent(this,RankedSiteActivity.class);
+            i.putExtra(RankedSiteActivity.EXTRA_SITE_ID,RankedSiteActivity.SITE_ARC);
+            i.putExtra(RankedSiteActivity.EXTRA_OPEN_SITE_SETTINGS,true);
+            startActivity(i);
+        });
+        findViewById(R.id.rankedCommunitySettingsCard)
+                .setOnClickListener(v -> startActivity(new Intent(this,MainActivity.class)));
+        findViewById(R.id.rankedBackupExportCard)
+                .setOnClickListener(v -> beginRankedBackup(true));
+        findViewById(R.id.rankedBackupImportCard)
+                .setOnClickListener(v -> beginRankedBackup(false));
+    }
+
+    private void beginRankedBackup(boolean export) {
+        EditText field=new EditText(this);
+        field.setSingleLine(true);
+        field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        field.setHint("Passphrase, 8+ characters");
+        int pad=(int)(20*getResources().getDisplayMetrics().density);
+        field.setPadding(pad,pad,pad,pad);
+        new AlertDialog.Builder(this)
+                .setTitle(export?"ENCRYPT BACKUP":"UNLOCK BACKUP")
+                .setMessage(export
+                        ?"Create a passphrase to encrypt the portable Ranked Hub settings and "
+                        +"DMZRanked.com operator snapshots. Lost passphrases cannot be recovered."
+                        :"Enter the passphrase used to encrypt the selected backup.")
+                .setView(field)
+                .setNegativeButton("CANCEL",null)
+                .setPositiveButton("CONTINUE",(dialog,which)->{
+                    char[] password=field.getText().toString().toCharArray();
+                    field.setText("");
+                    if(password.length<8){
+                        java.util.Arrays.fill(password,'\0');
+                        android.widget.Toast.makeText(this,"Use at least 8 characters.",
+                                android.widget.Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    clearPendingPassword();
+                    pendingBackupPassword=password;
+                    pendingBackupExport=export;
+                    Intent intent=new Intent(export ? Intent.ACTION_CREATE_DOCUMENT : Intent.ACTION_OPEN_DOCUMENT);
+                    intent.setType("application/octet-stream");
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    if(export)intent.putExtra(Intent.EXTRA_TITLE,"ranked-hub.rankedhubbackup");
+                    startActivityForResult(intent,export ?
+                            EXPORT_RANKED_BACKUP_REQUEST : IMPORT_RANKED_BACKUP_REQUEST);
+                }).show();
+    }
+
+    private void clearPendingPassword() {
+        if(pendingBackupPassword!=null)java.util.Arrays.fill(pendingBackupPassword,'\0');
+        pendingBackupPassword=null;
+    }
+
+    private void handleRankedBackup(int requestCode, int resultCode, Intent data) {
+        if(resultCode!=RESULT_OK||data==null||data.getData()==null){
+            clearPendingPassword();return;
+        }
+        if(pendingBackupPassword==null)return;
+        final char[] password=pendingBackupPassword;
+        pendingBackupPassword=null;
+        final Uri uri=data.getData();
+        if(requestCode==EXPORT_RANKED_BACKUP_REQUEST){
+            new Thread(()->{
+                try{
+                    RankedBackupManager.exportBackup(this,uri,password);
+                    runOnUiThread(()->android.widget.Toast.makeText(this,
+                            "Encrypted backup exported.",android.widget.Toast.LENGTH_LONG).show());
+                }catch(Exception e){
+                    runOnUiThread(()->android.widget.Toast.makeText(this,
+                            "Backup export failed. Check storage and retry.",
+                            android.widget.Toast.LENGTH_LONG).show());
+                }finally{java.util.Arrays.fill(password,'\0');}
+            },"ranked-backup-export").start();
+        }else{
+            new Thread(()->{
+                try{
+                    RankedBackupManager.Preview preview=RankedBackupManager.inspectBackup(this,uri,password);
+                    runOnUiThread(()->confirmBackupImport(preview));
+                }catch(Exception e){
+                    runOnUiThread(()->android.widget.Toast.makeText(this,
+                            "Backup invalid or wrong passphrase.",
+                            android.widget.Toast.LENGTH_LONG).show());
+                }finally{java.util.Arrays.fill(password,'\0');}
+            },"ranked-backup-preview").start();
+        }
+    }
+
+    private void confirmBackupImport(RankedBackupManager.Preview preview) {
+        if(isFinishing())return;
+        new AlertDialog.Builder(this)
+                .setTitle("RESTORE BACKUP?")
+                .setMessage("Restore "+preview.settingCount()+" app preference(s) and up to "
+                        +preview.operatorCount()+" sanitized DMZRanked.com operator(s)? "
+                        +"Matching items will be replaced. Website sign-in sessions and "
+                        +"server ranks are not part of this backup.")
+                .setNegativeButton("CANCEL",null)
+                .setPositiveButton("RESTORE",(dialog,which)->{
+                    new Thread(()->{
+                        try{
+                            int n=RankedBackupManager.restoreBackup(this,preview);
+                            runOnUiThread(()->{
+                                android.widget.Toast.makeText(this,
+                                        "Restored settings and "+n+" operator(s).",
+                                        android.widget.Toast.LENGTH_LONG).show();
+                                recreate();
+                            });
+                        }catch(Exception e){
+                            runOnUiThread(()->android.widget.Toast.makeText(this,
+                                    "Restore failed; backup was not fully applied.",
+                                    android.widget.Toast.LENGTH_LONG).show());
+                        }
+                    },"ranked-backup-restore").start();
+                }).show();
     }
 
     private void updatePeerImportUi() {
@@ -1623,6 +1783,11 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == EXPORT_RANKED_BACKUP_REQUEST
+                ||requestCode == IMPORT_RANKED_BACKUP_REQUEST){
+            handleRankedBackup(requestCode,resultCode,data);
+            return;
+        }
         if (requestCode != PLAY_UPDATE_REQUEST) return;
 
         if (resultCode == RESULT_OK) {

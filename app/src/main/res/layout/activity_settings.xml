@@ -127,6 +127,7 @@
 
     <ScrollView
         android:id="@+id/settingsScroll"
+        android:clipToPadding="true"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -138,7 +139,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="16dp"
-            android:paddingTop="14dp"
+            android:paddingTop="28dp"
             android:paddingEnd="16dp"
             android:paddingBottom="28dp">
 
@@ -152,6 +153,129 @@
                 android:textColor="@color/dmz_muted"
                 android:textSize="14sp"
                 android:visibility="gone" />
+
+            <!-- Hub-only registry: native destination IDs, not inferred login status. -->
+            <LinearLayout
+                android:id="@+id/rankedDestinationsSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="10dp"
+                    android:text="RANKED DESTINATIONS"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/rankedDestinationSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="Website availability and account status are independent per game."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/rankedMw4SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:padding="17dp"
+                    android:minHeight="58dp"
+                    android:gravity="center_vertical"
+                    android:text="MW4 DMZ RANKED V1   •   OPEN SITE SETTINGS ›"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/rankedArcSettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:padding="17dp"
+                    android:minHeight="58dp"
+                    android:gravity="center_vertical"
+                    android:text="ARC RAIDERS RANKED   •   OPEN SITE SETTINGS ›"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/rankedCommunitySettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:padding="17dp"
+                    android:minHeight="58dp"
+                    android:gravity="center_vertical"
+                    android:text="DMZRANKED.COM   •   OPEN COMMUNITY APP ›"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/rankedRemoteBackupNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="Website backup requires site support. MW4 and ARC account records are kept by their websites."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rankedBackupSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="BACKUP CENTER"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="12dp"
+                    android:text="Encrypted portable backup: Ranked Hub app settings + safe DMZRanked.com operator snapshots. Website backup requires site support for MW4 and ARC. No passwords, PINs, sessions or server ranks."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/rankedBackupExportCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:gravity="center_vertical"
+                    android:minHeight="56dp"
+                    android:padding="17dp"
+                    android:text="EXPORT ENCRYPTED BACKUP ›"
+                    android:textColor="@color/dmz_white"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/rankedBackupImportCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/settings_card_background"
+                    android:gravity="center_vertical"
+                    android:minHeight="56dp"
+                    android:padding="17dp"
+                    android:text="RESTORE ENCRYPTED BACKUP ›"
+                    android:textColor="@color/dmz_white"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/aboutCard"
@@ -766,6 +890,29 @@
                 </LinearLayout>
             </LinearLayout>
 
+
+            <LinearLayout
+                android:id="@+id/reducedMotionCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/settings_card_background"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Reduced motion\nSkip intro animations and animated loading transitions"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+                <Switch
+                    android:id="@+id/reducedMotionSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Reduced motion" />
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/widgetSection"
