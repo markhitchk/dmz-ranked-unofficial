@@ -34,6 +34,7 @@ import android.widget.Toast;
  */
 public final class RankedSiteActivity extends Activity {
     public static final String EXTRA_SITE_ID = "ranked_site_id";
+    public static final String EXTRA_OPEN_SITE_SETTINGS = "ranked_open_site_settings";
     public static final String SITE_DMZ_V1 = "dmz-v1";
     public static final String SITE_ARC = "arc-raiders";
 
@@ -49,11 +50,14 @@ public final class RankedSiteActivity extends Activity {
     private String allowedHost;
     private String siteTitle;
     private int sourceHeaderTheme = RankedHeaderView.THEME_DMZ_V1;
+    private boolean requestedWebsiteSettings;
+    private boolean openedWebsiteSettings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String site = getIntent().getStringExtra(EXTRA_SITE_ID);
+        requestedWebsiteSettings = getIntent().getBooleanExtra(EXTRA_OPEN_SITE_SETTINGS, false);
         if (SITE_DMZ_V1.equals(site)) {
             homeUrl = "https://dmz-ranked.vercel.app/#v1";
             allowedHost = "dmz-ranked.vercel.app";
@@ -148,6 +152,13 @@ public final class RankedSiteActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 progress.setVisibility(View.GONE);
                 if (loadCoordinator != null) loadCoordinator.onPageFinished();
+                if (requestedWebsiteSettings && !openedWebsiteSettings
+                        && SITE_ARC.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
+                        && isApprovedSite(Uri.parse(url))) {
+                    openedWebsiteSettings = true;
+                    // Only first-party ARC site, and only after explicit user action.
+                    view.evaluateJavascript("(function(){var b=document.getElementById('siteSettingsButton');if(b)b.click();})()",null);
+                }
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -191,7 +202,10 @@ public final class RankedSiteActivity extends Activity {
         RankedSafeArea.apply(root);
 
         if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
-            webView.loadUrl(homeUrl);
+            String initial = homeUrl;
+            if (requestedWebsiteSettings && SITE_DMZ_V1.equals(site))
+                initial = "https://dmz-ranked.vercel.app/#v1/settings";
+            webView.loadUrl(initial);
         }
     }
 

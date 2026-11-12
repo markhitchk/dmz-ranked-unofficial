@@ -56,8 +56,9 @@ class RankedPlanImplementation(unittest.TestCase):
         self.assertIn("rankedBackupImportCard",xml)
 
     def test_no_claim_of_remote_site_backup_without_contract(self):
+        xml=(ROOT/"app/src/main/res/layout/activity_settings.xml").read_text()
         settings=source("SettingsActivity.java")
-        self.assertIn("Website backup requires site support",settings)
+        self.assertIn("Website backup requires site support",xml)
         self.assertIn("com.harleytg.rankedhub.beta",settings)
 
 if __name__=="__main__":

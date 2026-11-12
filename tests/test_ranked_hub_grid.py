@@ -41,7 +41,7 @@ class RankedHubGridTests(unittest.TestCase):
 
     def test_native_hub_routes_only_to_known_activities(self):
         java = (ROOT / "app/src/main/java/com/harleytg/dmzrankedunofficial/RankedHubActivity.java").read_text()
-        for term in ("RankedSafeArea.apply(root)", "new Intent(this, MainActivity.class)",
+        for term in ("RankedSafeArea.apply(stack)", "new Intent(this, MainActivity.class)",
                      "RankedSiteActivity.SITE_DMZ_V1", "RankedSiteActivity.SITE_ARC", "rankedhub"):
             self.assertIn(term, java)
 
