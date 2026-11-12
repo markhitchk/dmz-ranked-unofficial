@@ -38,7 +38,7 @@ class CompactChromeTests(unittest.TestCase):
             self.assertIn('@android:color/transparent',icon)
             self.assertIn('@drawable/ranked_hub_launcher_foreground',icon)
         foreground=(folder/"drawable/ranked_hub_launcher_foreground.xml").read_text()
-        self.assertIn('android:insetLeft="10dp"',foreground)
-        self.assertIn('android:insetTop="10dp"',foreground)
+        self.assertIn('android:insetLeft="21dp"',foreground)
+        self.assertIn('android:insetTop="21dp"',foreground)
 
 if __name__=="__main__":unittest.main()

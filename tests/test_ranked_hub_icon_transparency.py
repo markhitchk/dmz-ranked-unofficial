@@ -19,6 +19,17 @@ class RankedHubIconAlphaTests(unittest.TestCase):
             self.assertEqual(hashlib.sha1(
                 (f"blob {len(content)}\0").encode()+content).hexdigest(),SHA)
 
+    def test_adaptive_logo_fits_official_66dp_safe_zone(self):
+        layer=ET.parse(BETA/"drawable/ranked_hub_launcher_foreground.xml").getroot()
+        for side in ("Left","Top","Right","Bottom"):
+            self.assertEqual(layer.attrib[ANDROID+"inset"+side],"21dp")
+        # 108dp total icon - 21dp inset on either side = 66dp of artwork.
+        self.assertEqual(108-2*21,66)
+        splash=ET.parse(BETA/"drawable/ranked_hub_splash_icon.xml").getroot()
+        self.assertEqual(splash.attrib[ANDROID+"insetTop"],"28dp")
+        self.assertNotEqual(splash.attrib[ANDROID+"insetTop"],
+                            layer.attrib[ANDROID+"insetTop"])
+
     def test_beta_adaptive_icons_preserve_transparent_background(self):
         for name in ("ic_launcher.xml","ic_launcher_round.xml"):
             root=ET.parse(BETA/"mipmap-anydpi-v26"/name).getroot()
