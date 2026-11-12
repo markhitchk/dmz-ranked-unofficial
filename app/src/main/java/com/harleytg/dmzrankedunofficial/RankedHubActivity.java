@@ -116,6 +116,16 @@ public final class RankedHubActivity extends Activity {
             stack.addView(intro, new FrameLayout.LayoutParams(-1, -1));
         }
         loadLauncherHtml(reduceMotion);
+        // Android 13+ needs a user-granted permission in addition to channels.
+        // Ask only once; later changes remain available in Settings.
+        if(android.os.Build.VERSION.SDK_INT>=33
+                && prefs.getBoolean(NotificationSync.PREF_SITE_NOTIFICATIONS,true)
+                && !prefs.getBoolean("hub_notification_permission_prompted",false)
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    !=android.content.pm.PackageManager.PERMISSION_GRANTED){
+            prefs.edit().putBoolean("hub_notification_permission_prompted",true).apply();
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},7001);
+        }
     }
 
     /** Offline CSS-only launchers; no JavaScript and no externally fetched assets. */
