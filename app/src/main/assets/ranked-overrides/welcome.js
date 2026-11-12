@@ -23,7 +23,7 @@
     if(config.site==='dmz-v1'){
       // Prefer site-account state when available; the HUD uses the local operator callsign.
       var signed=document.querySelector('.hs-pin-cover-state');
-      if(signed&&/\\bSigned in\\b/i.test(signed.textContent||'')){
+      if(signed&&/\bSigned in\b/i.test(signed.textContent||'')){
         text=(signed.textContent||'').split(' · ')[0];
       }
       if(!text){
@@ -39,9 +39,16 @@
     }else{
       // The identity element exists only when the Raider account is signed in.
       var signedRaider=document.querySelector('.my-standing-identity .my-standing-name');
-      if(signedRaider)text=(signedRaider.textContent||'').trim();
+      if(signedRaider){
+        // Direct text nodes avoid adding an optional clan badge to the name.
+        for(var j=0;j<signedRaider.childNodes.length;j++){
+          var child=signedRaider.childNodes[j];
+          if(child.nodeType===3){text=(child.textContent||'').trim();if(text)break;}
+        }
+        if(!text)text=(signedRaider.textContent||'').trim();
+      }
     }
-    return text.replace(/\\s+/g,' ').replace(/[.!]+$/,'').trim().slice(0,40);
+    return text.replace(/\s+/g,' ').replace(/[.!]+$/,'').trim().slice(0,40);
   }
   function makeNode(tag,klass,content){
     var el=document.createElement(tag);
