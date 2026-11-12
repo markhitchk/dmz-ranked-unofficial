@@ -11,8 +11,8 @@ class RankedHubCompactSelector(unittest.TestCase):
         mobile=re.search(r'@media\s*\(max-width:599px\)\s*\{(?P<css>.*?)\n  \}',html,re.S)
         self.assertIsNotNone(mobile,"Create a dedicated narrow-phone CSS rule")
         css=mobile.group("css")
-        for token in (".tile {", "min-height:182px", ".logo {", "min-height:67px",
-                      ".foot {", ".action {", ".section {"):
+        for token in (".tile {", "height:152px", "min-height:0", ".logo {", "min-height:0",
+                      ".logo img {max-height:56px}", ".foot {", ".action {", ".section {"):
             self.assertIn(token,css)
         self.assertIn("HARLEY'S STUDIOS · RANKED NETWORK",html)
         self.assertIn("Independent websites keep separate accounts and standings.",html)
@@ -23,7 +23,18 @@ class RankedHubCompactSelector(unittest.TestCase):
         landscape=re.search(r'@media\s*\(min-width:600px\)\s*and\s*\(max-height:650px\)\s*\{(?P<css>.*?)\n  \}',html,re.S)
         self.assertIsNotNone(landscape,"Landscape phone requires a compact four-up row")
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr))",landscape.group("css"))
-        self.assertIn("min-height:165px",landscape.group("css"))
+        self.assertIn("height:138px",landscape.group("css"))
+
+    def test_tile_logo_and_button_do_not_force_extra_height(self):
+        html=HTML.read_text()
+        mobile=re.search(r'@media\\s*\\(max-width:599px\\)\\s*\\{(?P<css>.*?)\\n  \\}',html,re.S)
+        self.assertIsNotNone(mobile)
+        css=mobile.group("css")
+        self.assertIn(".logo {flex:0 0 48px",css)
+        self.assertIn(".action {",css)
+        self.assertIn("min-height:31px",css)
+        self.assertIn(".name {",css)
+        self.assertIn("max-height:152px",css)
 
     def test_game_destinations_and_tap_target_remain_readable(self):
         html=HTML.read_text()
