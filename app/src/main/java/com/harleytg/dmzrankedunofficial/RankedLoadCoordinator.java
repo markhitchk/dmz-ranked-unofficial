@@ -1,9 +1,6 @@
 package com.harleytg.dmzranked;
 
 import android.app.Activity;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -105,6 +102,9 @@ final class RankedLoadCoordinator {
     void onPageStarted(){
         generation++;
         failed=false;
+        panel.setVisibility(View.GONE);
+        actions.setVisibility(View.GONE);
+        indicator.setVisibility(View.VISIBLE);
         startedAt=System.currentTimeMillis();
         transition("CONNECTING","Connecting to "+hostname);
         int thisGeneration=generation;

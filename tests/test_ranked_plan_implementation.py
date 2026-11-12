@@ -22,9 +22,10 @@ class RankedPlanImplementation(unittest.TestCase):
         for event in ("onPageStarted","onPageCommitVisible","onReceivedError",
                       "onReceivedSslError","onPageFinished"):
             self.assertIn(event,site)
-        for action in ("RETRY", "OPEN HUB","COPY DIAGNOSTICS","TIMEOUT","ERROR"):
+        for action in ("RETRY", "HUB","BROWSER","TIMEOUT","ERROR"):
             self.assertIn(action,loader)
-        self.assertIn("verbose_loading",site)
+        self.assertIn("false, () -> webView.loadUrl(homeUrl)",site)
+        self.assertIn("visible=false;", loader)
         self.assertIn("15_000",loader)
         self.assertNotIn("percentComplete = 100",loader)
 
