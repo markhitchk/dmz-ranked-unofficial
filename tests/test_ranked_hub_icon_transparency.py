@@ -17,7 +17,7 @@ class RankedHubIconAlphaTests(unittest.TestCase):
         ]:
             content=path.read_bytes()
             self.assertEqual(hashlib.sha1(
-                (f"blob {len(content)}\\0").encode()+content).hexdigest(),SHA)
+                (f"blob {len(content)}\0").encode()+content).hexdigest(),SHA)
 
     def test_beta_launcher_icons_do_not_use_adaptive_black_backplate(self):
         for name in ("ic_launcher.xml","ic_launcher_round.xml"):
