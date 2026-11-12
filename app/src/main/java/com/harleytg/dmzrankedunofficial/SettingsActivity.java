@@ -2166,7 +2166,7 @@ public class SettingsActivity extends Activity {
         slot.setVisibility(View.VISIBLE);
         // The XML slot height is only a fallback; match Android/system
         // compact sizing and the in-app Content Size setting on creation.
-        ViewGroup.LayoutParams headerParams = slot.getLayoutParams();
+        android.view.ViewGroup.LayoutParams headerParams = slot.getLayoutParams();
         headerParams.height = Math.round(RankedHeaderView.heightDp(this)
                 * getResources().getDisplayMetrics().density);
         slot.setLayoutParams(headerParams);

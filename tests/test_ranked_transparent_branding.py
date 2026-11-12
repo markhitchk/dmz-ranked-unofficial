@@ -18,7 +18,7 @@ class TransparentBetaBrandingTests(unittest.TestCase):
             self.assertIn('android:drawable="@drawable/ranked_hub_launcher_foreground"', xml)
             self.assertNotIn('android:drawable="@color/dmz_black"', xml)
         inset = (BETA/"drawable/ranked_hub_launcher_foreground.xml").read_text()
-        self.assertIn('android:insetLeft="10dp"', inset)
+        self.assertIn('android:insetLeft="18dp"', inset)
 
     def test_splash_uses_beta_artwork_not_dmz_artwork(self):
         xml=(BETA/"values-v31/themes.xml").read_text()
