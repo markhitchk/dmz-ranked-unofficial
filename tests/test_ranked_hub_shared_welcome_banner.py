@@ -24,6 +24,24 @@ class WelcomeBannerTests(unittest.TestCase):
         self.assertIn('data-ranked-hub-site="dmz-v1"',css)
         self.assertIn('data-ranked-hub-site="arc-raiders"',css)
 
+    def test_mw4_fob_startup_css_does_not_hide_app_banner(self):
+        css=(ASSETS/"welcome.css").read_text()
+        js=(ASSETS/"welcome.js").read_text()
+        # MW4's original startup CSS hides unknown body children with a
+        # two-ID !important selector; the app's exemption must outrank it.
+        self.assertIn("html[data-start-version=\"v1\"][data-ranked-hub-site=\"dmz-v1\"]",css)
+        self.assertIn("#ranked-hub-welcome-banner#ranked-hub-welcome-banner",css)
+        self.assertIn("display:flex!important",css)
+        self.assertIn("--ranked-hub-welcome-offset",css)
+        self.assertIn(".mw4-main.page-operations",css)
+        self.assertIn(".fob-game-hud",css)
+        self.assertIn(".navigation-rail",css)
+        self.assertIn("banner.offsetHeight",js)
+        self.assertIn("computed.marginTop",js)
+        self.assertIn("computed.marginBottom",js)
+        self.assertIn("window.addEventListener('resize',schedule)",js)
+        self.assertIn("style.removeProperty('--ranked-hub-welcome-offset')",js)
+
     def test_installed_banner_is_secure_and_removable(self):
         code=(JAVA/"RankedSiteOverrides.java").read_text()
         self.assertIn('"https".equalsIgnoreCase(uri.getScheme())',code)
