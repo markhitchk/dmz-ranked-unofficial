@@ -1,0 +1,10 @@
+/* App-only override; MW4 DMZ website keeps its original design. */
+html[data-ranked-hub-site="dmz-v1"]{-webkit-text-size-adjust:100%}
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell{min-width:0;padding-bottom:env(safe-area-inset-bottom)}
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell :is(button,a,[role="button"]){touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+html[data-ranked-hub-site="dmz-v1"] .mw4-notice{max-width:calc(100vw - 24px);overflow-wrap:anywhere}
+html[data-ranked-hub-site="dmz-v1"] :is(input,select,textarea){max-width:100%;min-width:0}
+@media(max-width:600px){
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell button{min-height:36px}
+}
+@media(prefers-reduced-motion:reduce){html[data-ranked-hub-site="dmz-v1"] .mw4-notice{animation:none!important}}

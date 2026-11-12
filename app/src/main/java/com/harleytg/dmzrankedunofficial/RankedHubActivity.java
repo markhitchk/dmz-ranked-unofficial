@@ -161,9 +161,22 @@ public final class RankedHubActivity extends Activity {
         } else if ("/home".equals(path)) {
             loadLauncherHtml(reduceMotion);
         } else if ("/puppy-clicker".equals(path)) {
-            openSite(RankedSiteActivity.SITE_PUPPY);
+            openPuppyInBrowser();
         } else {
             Toast.makeText(this, "This operation is not available.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** Opens the player's preferred browser (Chrome if set as default). */
+    private void openPuppyInBrowser() {
+        try {
+            Intent intent=new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://puppy-clicker.vercel.app/"));
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException error) {
+            Toast.makeText(this, "No browser is available for Puppy Clicker.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 

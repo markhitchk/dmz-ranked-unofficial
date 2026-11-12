@@ -151,6 +151,7 @@ public final class RankedSiteActivity extends Activity {
             @Override
             public void onPageCommitVisible(WebView view, String url) {
                 if (loadCoordinator != null) loadCoordinator.onPageCommitVisible();
+                applyAppSiteCss(view,url);
             }
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request,
@@ -171,6 +172,7 @@ public final class RankedSiteActivity extends Activity {
                 progress.setVisibility(View.GONE);
                 if (loadCoordinator != null) loadCoordinator.onPageFinished();
                 rememberSafeSitePage(url);
+                applyAppSiteCss(view,url);
                 if (requestedWebsiteSettings && !openedWebsiteSettings
                         && SITE_ARC.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
                         && isApprovedSite(Uri.parse(url))) {
@@ -234,6 +236,13 @@ public final class RankedSiteActivity extends Activity {
     }
 
 
+    /** Only the two verified Harley's Studios ranked domains receive overrides. */
+    private void applyAppSiteCss(WebView view,String url) {
+        if(url==null || !isApprovedSite(Uri.parse(url))) return;
+        String id=getIntent().getStringExtra(EXTRA_SITE_ID);
+        RankedSiteOverrides.apply(this,view,id,allowedHost);
+    }
+
     /** Apply global settings supported by this first-party site browser.
      * Unsupported legacy widgets/operator controls are hidden in Settings.
      */
@@ -281,6 +290,7 @@ public final class RankedSiteActivity extends Activity {
     protected void onResume() {
         super.onResume();
         applySiteDisplayPreferences();
+        if(webView!=null) applyAppSiteCss(webView,webView.getUrl());
         // Restore the system/app compact chrome immediately after Settings.
         if (rootLayout != null && brandedHeader != null) {
             String next = RankedHeaderView.signature(this);
