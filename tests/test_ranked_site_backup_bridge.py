@@ -18,7 +18,8 @@ class FirstPartyBackupTests(unittest.TestCase):
   self.assertIn("isApprovedSite",s)
   self.assertIn("api.exportSafeState()",s)
   self.assertIn("api.importSafeState(",s)
-  self.assertIn("validate",s)
+  self.assertIn("RankedSiteSafeBackupStore.save",s)
+  self.assertIn("RankedSiteSafeBackupStore.read",s)
  def test_encrypted_archive_includes_optional_first_party_snapshots(self):
   s=src("RankedBackupManager.java")
   for x in ("RankedSiteSafeBackupStore","mw4.json","arc.json","formatVersion",
