@@ -19,12 +19,14 @@ class RankedHubIconAlphaTests(unittest.TestCase):
             self.assertEqual(hashlib.sha1(
                 (f"blob {len(content)}\0").encode()+content).hexdigest(),SHA)
 
-    def test_beta_launcher_icons_do_not_use_adaptive_black_backplate(self):
+    def test_beta_adaptive_icons_preserve_transparent_background(self):
         for name in ("ic_launcher.xml","ic_launcher_round.xml"):
             root=ET.parse(BETA/"mipmap-anydpi-v26"/name).getroot()
-            self.assertEqual(root.tag,"bitmap")
-            self.assertEqual(root.attrib[ANDROID+"src"],"@drawable/ranked_hub_logo")
-            self.assertEqual(root.attrib[ANDROID+"gravity"],"fill")
+            self.assertEqual(root.tag,"adaptive-icon")
+            self.assertEqual(root.find("background").attrib[ANDROID+"drawable"],
+                             "@android:color/transparent")
+            self.assertEqual(root.find("foreground").attrib[ANDROID+"drawable"],
+                             "@drawable/ranked_hub_launcher_foreground")
         # Existing legacy production icon stays as shipped.
         original=ET.parse(ROOT/"app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml").getroot()
         self.assertEqual(original.tag,"adaptive-icon")

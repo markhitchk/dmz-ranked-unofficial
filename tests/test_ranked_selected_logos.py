@@ -39,9 +39,9 @@ class SelectedBrandingTests(unittest.TestCase):
         self.assertEqual(git_blob_sha(src.read_bytes()),HUB_SHA)
         for name in ["ic_launcher.xml","ic_launcher_round.xml"]:
             xml=(base/"mipmap-anydpi-v26"/name).read_text()
-            self.assertIn("<bitmap ",xml)
-            self.assertIn('android:src="@drawable/ranked_hub_logo"',xml)
-            self.assertNotIn("<adaptive-icon",xml)
+            self.assertIn("<adaptive-icon",xml)
+            self.assertIn('android:drawable="@android:color/transparent"',xml)
+            self.assertIn('android:drawable="@drawable/ranked_hub_launcher_foreground"',xml)
         foreground=(base/"drawable/ranked_hub_launcher_foreground.xml").read_text()
         self.assertIn("@drawable/ranked_hub_logo",foreground)
 

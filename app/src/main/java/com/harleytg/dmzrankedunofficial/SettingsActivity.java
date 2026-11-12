@@ -2164,6 +2164,12 @@ public class SettingsActivity extends Activity {
         FrameLayout slot = findViewById(R.id.settingsHeaderSlot);
         if (slot == null) return;
         slot.setVisibility(View.VISIBLE);
+        // The XML slot height is only a fallback; match Android/system
+        // compact sizing and the in-app Content Size setting on creation.
+        ViewGroup.LayoutParams headerParams = slot.getLayoutParams();
+        headerParams.height = Math.round(RankedHeaderView.heightDp(this)
+                * getResources().getDisplayMetrics().density);
+        slot.setLayoutParams(headerParams);
         settingsHeader = RankedHeaderView.createSettings(this, launcherTheme, this::handleSettingsBack);
         slot.addView(settingsHeader, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,

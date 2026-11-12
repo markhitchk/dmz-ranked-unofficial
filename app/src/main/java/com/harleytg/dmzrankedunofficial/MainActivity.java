@@ -369,6 +369,7 @@ public class MainActivity extends Activity {
             updateLoadingIdentity();
 
             updateTitleBarIdentity();
+            applyBetaCompactTitleBar();
 
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
 
@@ -1835,6 +1836,32 @@ public class MainActivity extends Activity {
         updateLoadingVerbose(status);
     }
 
+    // The third-party community client keeps its original 74dp header outside
+    // Ranked Hub Beta. Only the beta's embedded community launcher is compact.
+    private void applyBetaCompactTitleBar() {
+        if (!"com.harleytg.rankedhub.beta".equals(getPackageName())) return;
+        View bar = findViewById(R.id.titleBar);
+        if (bar == null) return;
+        int height = RankedHeaderView.heightDp(this);
+        android.view.ViewGroup.LayoutParams barParams = bar.getLayoutParams();
+        barParams.height = Math.round(height * getResources().getDisplayMetrics().density);
+        bar.setLayoutParams(barParams);
+        if (titleLogoView != null) {
+            int logo = Math.round((height <= 48 ? 30 : height >= 61 ? 44 : 36)
+                    * getResources().getDisplayMetrics().density);
+            android.view.ViewGroup.LayoutParams logoParams = titleLogoView.getLayoutParams();
+            logoParams.width = logo;
+            logoParams.height = logo;
+            titleLogoView.setLayoutParams(logoParams);
+        }
+        float systemScale = Math.max(0.85f, Math.min(1.55f,
+                getResources().getConfiguration().fontScale));
+        if (titleTextView != null) {
+            titleTextView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+                    (height <= 48 ? 16f : 18f) * systemScale);
+        }
+    }
+
     private void applyAppearancePreferences() {
         if (webView == null) return;
         String size = preferences == null
@@ -2611,6 +2638,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        applyBetaCompactTitleBar();
         NotificationSync.setAppForeground(this, true);
         NotificationSync.configure(this);
         NotificationSync.primeBaseline(this);

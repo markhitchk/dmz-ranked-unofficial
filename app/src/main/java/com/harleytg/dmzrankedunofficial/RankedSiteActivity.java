@@ -46,6 +46,8 @@ public final class RankedSiteActivity extends Activity {
 
     private WebView webView;
     private WebView brandedHeader;
+    private LinearLayout rootLayout;
+    private String headerSignature;
     private RankedLoadCoordinator loadCoordinator;
     private ProgressBar progress;
     private ValueCallback<Uri[]> fileCallback;
@@ -87,6 +89,7 @@ public final class RankedSiteActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
 
         LinearLayout root = new LinearLayout(this);
+        rootLayout = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(DARK);
 
@@ -97,7 +100,8 @@ public final class RankedSiteActivity extends Activity {
         sourceHeaderTheme = theme;
         brandedHeader = RankedHeaderView.create(this, theme, this::showLauncherMenu);
         root.addView(brandedHeader, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.HEIGHT_DP)));
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.heightDp(this))));
+        headerSignature = RankedHeaderView.signature(this);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);
@@ -277,6 +281,21 @@ public final class RankedSiteActivity extends Activity {
     protected void onResume() {
         super.onResume();
         applySiteDisplayPreferences();
+        // Restore the system/app compact chrome immediately after Settings.
+        if (rootLayout != null && brandedHeader != null) {
+            String next = RankedHeaderView.signature(this);
+            if (!next.equals(headerSignature)) {
+                WebView old = brandedHeader;
+                rootLayout.removeView(old);
+                old.destroy();
+                brandedHeader = RankedHeaderView.create(this, sourceHeaderTheme,
+                        this::showLauncherMenu);
+                rootLayout.addView(brandedHeader, 0, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        dp(RankedHeaderView.heightDp(this))));
+                headerSignature = next;
+            }
+        }
     }
 
     private boolean isApprovedSite(Uri uri) {

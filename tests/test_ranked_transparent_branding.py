@@ -10,13 +10,15 @@ def sha_git(b):
     return hashlib.sha1(f"blob {len(b)}\0".encode() + b).hexdigest()
 
 class TransparentBetaBrandingTests(unittest.TestCase):
-    def test_launcher_icons_render_alpha_artwork_without_adaptive_backplate(self):
+    def test_adaptive_launcher_layers_are_transparent_and_use_original_art(self):
         for filename in ["ic_launcher.xml", "ic_launcher_round.xml"]:
             xml = (BETA / "mipmap-anydpi-v26" / filename).read_text()
-            self.assertIn("<bitmap ", xml)
-            self.assertIn('android:src="@drawable/ranked_hub_logo"', xml)
-            self.assertNotIn("<adaptive-icon", xml)
+            self.assertIn("<adaptive-icon", xml)
+            self.assertIn('android:drawable="@android:color/transparent"', xml)
+            self.assertIn('android:drawable="@drawable/ranked_hub_launcher_foreground"', xml)
             self.assertNotIn('android:drawable="@color/dmz_black"', xml)
+        inset = (BETA/"drawable/ranked_hub_launcher_foreground.xml").read_text()
+        self.assertIn('android:insetLeft="10dp"', inset)
 
     def test_splash_uses_beta_artwork_not_dmz_artwork(self):
         xml=(BETA/"values-v31/themes.xml").read_text()

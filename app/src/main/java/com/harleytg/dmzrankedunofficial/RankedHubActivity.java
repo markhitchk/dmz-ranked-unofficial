@@ -34,6 +34,8 @@ public final class RankedHubActivity extends Activity {
     private boolean reduceMotion;
     private WebView hub;
     private WebView brandedHeader;
+    private LinearLayout rootLayout;
+    private String headerSignature;
     private RankedIntroView intro;
 
     @Override
@@ -45,6 +47,7 @@ public final class RankedHubActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
 
         LinearLayout root = new LinearLayout(this);
+        rootLayout = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(background);
         brandedHeader = RankedHeaderView.create(this, RankedHeaderView.THEME_HUB,
@@ -52,7 +55,8 @@ public final class RankedHubActivity extends Activity {
                         .putExtra(SettingsActivity.EXTRA_LAUNCHER_THEME,
                                 RankedHeaderView.THEME_HUB)));
         root.addView(brandedHeader, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.HEIGHT_DP)));
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.heightDp(this))));
+        headerSignature = RankedHeaderView.signature(this);
         hub = new WebView(this);
         hub.setBackgroundColor(background);
         hub.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
@@ -167,6 +171,24 @@ public final class RankedHubActivity extends Activity {
         Intent intent = new Intent(this, RankedSiteActivity.class);
         intent.putExtra(RankedSiteActivity.EXTRA_SITE_ID, site);
         startActivity(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (rootLayout == null || brandedHeader == null) return;
+        String next = RankedHeaderView.signature(this);
+        if (next.equals(headerSignature)) return;
+        WebView old = brandedHeader;
+        rootLayout.removeView(old);
+        old.destroy();
+        brandedHeader = RankedHeaderView.create(this, RankedHeaderView.THEME_HUB,
+                () -> startActivity(new Intent(this, SettingsActivity.class)
+                        .putExtra(SettingsActivity.EXTRA_LAUNCHER_THEME,
+                                RankedHeaderView.THEME_HUB)));
+        rootLayout.addView(brandedHeader, 0, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(RankedHeaderView.heightDp(this))));
+        headerSignature = next;
     }
 
     @Override
