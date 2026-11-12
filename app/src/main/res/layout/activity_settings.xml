@@ -99,6 +99,7 @@
             android:textSize="11sp" />
 
         <TextView
+            android:id="@+id/settingsIntroDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
@@ -151,6 +152,15 @@
                 android:text="No app settings match your search."
                 android:textColor="@color/dmz_muted"
                 android:textSize="14sp"
+                android:visibility="gone" />
+
+            <!-- Hub Beta uses a category home screen; the existing detail sections
+                 remain intact below and are shown by the Settings navigator. -->
+            <LinearLayout
+                android:id="@+id/settingsCategoryOverview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:visibility="gone" />
 
             <!-- Hub-only registry: native destination IDs, not inferred login status. -->
