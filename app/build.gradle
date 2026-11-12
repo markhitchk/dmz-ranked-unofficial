@@ -316,8 +316,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 172
-        versionName '1.0.68'
+        versionCode 173
+        versionName '1.0.69'
     }
 
     sourceSets {
@@ -371,4 +371,13 @@ tasks.named("preBuild").configure {
 dependencies {
     implementation 'com.google.android.play:app-update:2.1.0'
     implementation 'androidx.work:work-runtime:2.10.1'
+}
+
+ 
+// Keep the existing production/debug DMZRanked app IDs unchanged.
+// Ranked Hub Beta is a separately installable app, not an update-in-place.
+androidComponents {
+    onVariants(selector().withBuildType('beta')) { variant ->
+        variant.applicationId.set('com.harleytg.rankedhub.beta')
+    }
 }

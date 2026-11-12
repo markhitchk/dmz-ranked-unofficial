@@ -81,6 +81,7 @@ public class SettingsActivity extends Activity {
     private static final String PLAY_STORE_MARKET_PREFIX = "market://details?id=";
     private static final String PRODUCTION_PACKAGE = "com.harleytg.dmzranked";
     private static final String BETA_PACKAGE = "com.harleytg.dmzranked.beta";
+    private static final String HUB_BETA_PACKAGE = "com.harleytg.rankedhub.beta";
     private static final String YOLANDO_AVATAR_URL = "https://cdn.discordapp.com/avatars/645842556898377728/b2c3a2a0001bc2d946ae52aeaa9abe1c.webp?size=3072";
     private static final String DCHINZ_AVATAR_URL = "https://cdn.discordapp.com/avatars/364411414787653642/71fc7b2b2cae4b81c38ad148aed61df3.webp?size=3072";
 
@@ -810,7 +811,25 @@ public class SettingsActivity extends Activity {
 
 
     private boolean isBetaBuild() {
-        return BETA_PACKAGE.equals(getPackageName());
+        return BETA_PACKAGE.equals(getPackageName()) || isRankedHubBuild();
+    }
+
+    private boolean isRankedHubBuild() {
+        return HUB_BETA_PACKAGE.equals(getPackageName());
+    }
+
+    private String[] rankedHubImportSources() {
+        java.util.ArrayList<String> sources = new java.util.ArrayList<>();
+        for (String source : new String[]{BETA_PACKAGE, PRODUCTION_PACKAGE}) {
+            if (RankedHubDataTransfer.isSourceAvailable(this, source)) {
+                sources.add(source);
+            }
+        }
+        return sources.toArray(new String[0]);
+    }
+
+    private String rankedHubSourceLabel(String source) {
+        return BETA_PACKAGE.equals(source) ? "Previous DMZ Ranked Beta" : "DMZ Ranked original";
     }
 
     private String peerPackageName() {
@@ -840,6 +859,21 @@ public class SettingsActivity extends Activity {
         View card = findViewById(R.id.peerImportCard);
         if (title == null || summary == null || action == null || card == null) return;
 
+        if (isRankedHubBuild()) {
+            String[] sources = rankedHubImportSources();
+            boolean available = sources.length > 0;
+            title.setText("Import from previous app");
+            summary.setText(available
+                    ? "Transfer supported app preferences and up to 2 locally saved DMZRanked.com operators. "
+                        + "Choose your previous app; passwords, PINs, sessions, and website cookies are excluded."
+                    : "Install or keep your previous DMZ Ranked Beta or original app to transfer compatible "
+                        + "settings and operator backups. Website accounts require sign-in again.");
+            action.setText(available ? "TRANSFER" : "NOT FOUND");
+            card.setEnabled(available);
+            card.setAlpha(available ? 1f : 0.62f);
+            return;
+        }
+
         String peer = peerAppLabel();
         boolean available = isPeerMigrationAvailable();
         title.setText("Import from " + peer);
@@ -858,6 +892,10 @@ public class SettingsActivity extends Activity {
     }
 
     private void confirmPeerImport() {
+        if (isRankedHubBuild()) {
+            confirmRankedHubImport();
+            return;
+        }
         if (!isPeerMigrationAvailable()) {
             updatePeerImportUi();
             Toast.makeText(this, peerAppLabel() + " is not available to import from.",
@@ -875,6 +913,72 @@ public class SettingsActivity extends Activity {
                 "CANCEL",
                 false,
                 this::importFromPeerApp);
+    }
+
+
+    // Import is deliberately user-initiated. Changing the Android package ID
+    // does not grant access to another app's sandbox or WebView cookies.
+    private void confirmRankedHubImport() {
+        String[] sources = rankedHubImportSources();
+        if (sources.length == 0) {
+            Toast.makeText(this, "Open or install the previous DMZ Ranked app, then retry.",
+                    Toast.LENGTH_LONG).show();
+            updatePeerImportUi();
+            return;
+        }
+        if (sources.length == 1) {
+            confirmRankedHubSource(sources[0]);
+            return;
+        }
+        String[] names = new String[sources.length];
+        for (int i = 0; i < sources.length; i++) {
+            names[i] = rankedHubSourceLabel(sources[i]);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("CHOOSE PREVIOUS APP")
+                .setItems(names, (dialog, which) -> {
+                    if (which >= 0 && which < sources.length) {
+                        confirmRankedHubSource(sources[which]);
+                    }
+                })
+                .setNegativeButton("CANCEL", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    private void confirmRankedHubSource(String sourcePackage) {
+        String label = rankedHubSourceLabel(sourcePackage);
+        DmzDialog.confirm(this,
+                "TRANSFER FROM " + label.toUpperCase(Locale.US) + "?",
+                "Copy compatible Android preferences and up to 2 app-managed DMZRanked.com operator "
+                        + "backups into Ranked Hub Beta. Existing data with the same name may be replaced. "
+                        + "The previous app stays installed. Cookies, sessions, PINs, passwords, "
+                        + "authentication tokens, and server account data will not transfer.",
+                "TRANSFER", "CANCEL", false,
+                () -> importRankedHubSource(sourcePackage));
+    }
+
+    private void importRankedHubSource(String sourcePackage) {
+        try {
+            RankedHubDataTransfer.Result imported =
+                    RankedHubDataTransfer.importFrom(this, sourcePackage, preferences);
+            Toast.makeText(this,
+                    "Imported " + imported.settings + " app preference(s) and "
+                            + imported.operators + " saved operator(s) from "
+                            + rankedHubSourceLabel(sourcePackage) + ". Sign into websites again.",
+                    Toast.LENGTH_LONG).show();
+            updateOperatorBackupStatus();
+            recreate();
+        } catch (SecurityException denied) {
+            Log.w(TAG, "Data transfer refused: source identity or signature failed", denied);
+            Toast.makeText(this, "Data transfer blocked: the previous app's signature "
+                    + "does not match this Ranked Hub build.", Toast.LENGTH_LONG).show();
+        } catch (Throwable error) {
+            Log.w(TAG, "Could not import previous app data", error);
+            Toast.makeText(this, "Transfer unavailable. Keep the original app installed, "
+                    + "open it once, and retry.", Toast.LENGTH_LONG).show();
+        } finally {
+            updatePeerImportUi();
+        }
     }
 
     private void importFromPeerApp() {
