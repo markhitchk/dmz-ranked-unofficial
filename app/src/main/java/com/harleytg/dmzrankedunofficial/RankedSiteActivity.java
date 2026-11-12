@@ -246,6 +246,10 @@ public final class RankedSiteActivity extends Activity {
         try{
             Uri url=Uri.parse(value);
             if(!isApprovedSite(url) || url.getQuery()!=null) return false;
+            // Both first-party ranked sites are single-page apps at the origin root.
+            // Never persist OAuth callback paths or arbitrary profile URL segments.
+            String path=url.getPath();
+            if(path!=null && !path.isEmpty() && !"/".equals(path))return false;
             String fragment=url.getFragment();
             return fragment==null || (fragment.length()<=72 &&
                     fragment.matches("[A-Za-z0-9/_-]*"));
