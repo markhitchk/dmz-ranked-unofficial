@@ -160,8 +160,14 @@ final class RankedHeaderView {
         title.setLetterSpacing(0.02f);
         title.setSingleLine(true);
         title.setEllipsize(TextUtils.TruncateAt.END);
-        // Weight constrains ARC's longer name so its BETA badge stays visible.
-        nameRow.addView(title, new LinearLayout.LayoutParams(0, -2, 1f));
+        // Match the original DMZ title bar: BETA follows the text rather than
+        // floating at the far right of the row. Limit long ARC titles safely.
+        float density = activity.getResources().getDisplayMetrics().density;
+        int screenWidthDp = Math.round(
+                activity.getResources().getDisplayMetrics().widthPixels / density);
+        title.setMaxWidth(dp(activity, Math.max(110,
+                screenWidthDp - (compact ? 164 : 180))));
+        nameRow.addView(title, new LinearLayout.LayoutParams(-2, -2));
 
         if (activity.getPackageName().endsWith(".beta")) {
             TextView badge = new TextView(activity);
