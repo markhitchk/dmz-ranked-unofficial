@@ -27,7 +27,7 @@ class RankedHubCompactSelector(unittest.TestCase):
 
     def test_tile_logo_and_button_do_not_force_extra_height(self):
         html=HTML.read_text()
-        mobile=re.search(r'@media\\s*\\(max-width:599px\\)\\s*\\{(?P<css>.*?)\\n  \\}',html,re.S)
+        mobile=re.search(r'@media\s*\(max-width:599px\)\s*\{(?P<css>.*?)\n  \}',html,re.S)
         self.assertIsNotNone(mobile)
         css=mobile.group("css")
         self.assertIn(".logo {flex:0 0 48px",css)
