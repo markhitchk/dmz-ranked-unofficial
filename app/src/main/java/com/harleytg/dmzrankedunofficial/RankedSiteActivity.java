@@ -54,6 +54,7 @@ public final class RankedSiteActivity extends Activity {
     private int sourceHeaderTheme = RankedHeaderView.THEME_DMZ_V1;
     private boolean requestedWebsiteSettings;
     private boolean openedWebsiteSettings;
+    private SharedPreferences sitePreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +75,7 @@ public final class RankedSiteActivity extends Activity {
             return;
         }
 
+        sitePreferences=getSharedPreferences("dmz_ranked_settings",Context.MODE_PRIVATE);
         getWindow().setStatusBarColor(DARK);
         getWindow().setNavigationBarColor(DARK);
         // Android 15/16 may force edge-to-edge; keep status icons readable.
@@ -106,6 +108,7 @@ public final class RankedSiteActivity extends Activity {
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
         settings.setTextZoom(100);
+        applySiteDisplayPreferences();
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setAllowFileAccess(false);
@@ -154,6 +157,7 @@ public final class RankedSiteActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 progress.setVisibility(View.GONE);
                 if (loadCoordinator != null) loadCoordinator.onPageFinished();
+                rememberSafeSitePage(url);
                 if (requestedWebsiteSettings && !openedWebsiteSettings
                         && SITE_ARC.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
                         && isApprovedSite(Uri.parse(url))) {
@@ -191,8 +195,7 @@ public final class RankedSiteActivity extends Activity {
 
         FrameLayout browserLayer = new FrameLayout(this);
         browserLayer.addView(webView, new FrameLayout.LayoutParams(-1,-1));
-        SharedPreferences pref = getSharedPreferences("dmz_ranked_settings", Context.MODE_PRIVATE);
-        boolean verbose = pref.getBoolean("verbose_loading", false);
+        boolean verbose = sitePreferences.getBoolean("verbose_loading", false);
         loadCoordinator = new RankedLoadCoordinator(this, browserLayer, site, allowedHost,
                 verbose, () -> webView.loadUrl(homeUrl), this::finish, this::openCurrentPageInBrowser);
         root.addView(browserLayer, new LinearLayout.LayoutParams(
@@ -205,10 +208,61 @@ public final class RankedSiteActivity extends Activity {
 
         if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
             String initial = homeUrl;
-            if (requestedWebsiteSettings && SITE_DMZ_V1.equals(site))
+            if (requestedWebsiteSettings && SITE_DMZ_V1.equals(site)) {
                 initial = "https://dmz-ranked.vercel.app/#v1/settings";
+            } else if (!requestedWebsiteSettings &&
+                    sitePreferences.getBoolean("remember_last_page",true)) {
+                String last=sitePreferences.getString("ranked_last_page_"+site,"");
+                if(last!=null && isSafeStoredPage(last)) initial=last;
+            }
             webView.loadUrl(initial);
         }
+    }
+
+
+    /** Apply global settings supported by this first-party site browser.
+     * Unsupported legacy widgets/operator controls are hidden in Settings.
+     */
+    private void applySiteDisplayPreferences() {
+        if(webView==null || sitePreferences==null)return;
+        WebSettings web=webView.getSettings();
+        String size=sitePreferences.getString("content_size","standard");
+        int zoom="compact".equals(size)?90:"large".equals(size)?115:100;
+        web.setTextZoom(zoom);
+        if(sitePreferences.getBoolean("desktop_site",false)){
+            web.setUserAgentString("Mozilla/5.0 (X11; Linux x86_64) "
+                    +"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
+        }else{
+            web.setUserAgentString(null); // reset to the actual Android WebView UA
+        }
+        if(sitePreferences.getBoolean("keep_awake",false)){
+            getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }else{
+            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+    }
+
+    private boolean isSafeStoredPage(String value) {
+        try{
+            Uri url=Uri.parse(value);
+            if(!isApprovedSite(url) || url.getQuery()!=null) return false;
+            String fragment=url.getFragment();
+            return fragment==null || (fragment.length()<=72 &&
+                    fragment.matches("[A-Za-z0-9/_-]*"));
+        }catch(Exception ignored){return false;}
+    }
+    private void rememberSafeSitePage(String value) {
+        if(sitePreferences==null || !sitePreferences.getBoolean("remember_last_page",true)
+                ||requestedWebsiteSettings || !isSafeStoredPage(value)) return;
+        String site=getIntent().getStringExtra(EXTRA_SITE_ID);
+        if(site==null)return;
+        sitePreferences.edit().putString("ranked_last_page_"+site,value).apply();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applySiteDisplayPreferences();
     }
 
     private boolean isApprovedSite(Uri uri) {
