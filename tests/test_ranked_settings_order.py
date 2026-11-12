@@ -19,6 +19,7 @@ class RankedSettingsOrderTests(unittest.TestCase):
         order = [ident(child) for child in container if ident(child)]
         expected = [
             "searchEmptyState",
+            "settingsCategoryOverview",
             "aboutCard",
             "rankedDestinationsSection",
             "appearanceSection",
