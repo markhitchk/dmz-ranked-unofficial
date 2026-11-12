@@ -230,7 +230,8 @@ public class SettingsActivity extends Activity {
         }
         View widgetSection = findViewById(R.id.widgetSection);
         if (widgetSection != null) {
-            widgetSection.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
+            widgetSection.setVisibility(betaBuild && isCommunityContext()
+                    ? View.VISIBLE : View.GONE);
         }
 
         PackageInfo packageInfo = getPackageInfoSafe();
@@ -696,7 +697,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.appearanceSection).setVisibility(appearanceMatch ? View.VISIBLE : View.GONE);
 
         boolean widgetMatch = false;
-        if (getPackageName().endsWith(".beta")) {
+        if (getPackageName().endsWith(".beta") && isCommunityContext()) {
             widgetMatch =
                     showIfMatches(R.id.addHomeWidgetCard, q,
                             "widget home screen pin add rank sr standing operator beta")
@@ -730,8 +731,7 @@ public class SettingsActivity extends Activity {
                         "operator save now backup local website data")
                 | showIfMatches(R.id.restoreOperatorCard, q,
                         "operator restore recover backup local website data");
-        if(isRankedHubBuild() && launcherTheme != RankedHeaderView.THEME_COMMUNITY)
-            operatorMatch = false;
+        if(!isCommunityContext()) operatorMatch = false;
         findViewById(R.id.operatorBackupSection).setVisibility(operatorMatch ? View.VISIBLE : View.GONE);
 
         boolean transferMatch =
@@ -746,6 +746,7 @@ public class SettingsActivity extends Activity {
                         "notification settings permission sound vibration android")
                 | showIfMatches(R.id.testNotificationCard, q,
                         "test notification alert diagnostics");
+        if(!isCommunityContext()) notificationMatch=false;
         findViewById(R.id.notificationsSection).setVisibility(notificationMatch ? View.VISIBLE : View.GONE);
 
         boolean updateMatch =
@@ -760,6 +761,11 @@ public class SettingsActivity extends Activity {
                         "reload refresh page action")
                 | showIfMatches(R.id.clearCacheCard, q,
                         "clear cache webview temporary files");
+        if(!isCommunityContext()) {
+            View legacyReload=findViewById(R.id.reloadCard);
+            if(legacyReload!=null)legacyReload.setVisibility(View.GONE);
+            // Cache controls remain available; the legacy reload action requires MainActivity.
+        }
         findViewById(R.id.pageActionsSection).setVisibility(actionMatch ? View.VISIBLE : View.GONE);
 
         boolean betaProgramMatch = false;
@@ -829,6 +835,14 @@ public class SettingsActivity extends Activity {
                 destinationsMatch ? View.VISIBLE : View.GONE);
         findViewById(R.id.rankedBackupSection).setVisibility(
                 backupsMatch ? View.VISIBLE : View.GONE);
+        if(!isCommunityContext()){
+            View refreshCard=findViewById(R.id.pullRefreshCard);
+            if(refreshCard!=null)refreshCard.setVisibility(View.GONE);
+            View legacyBetaCard=findViewById(R.id.dmzTickerBuilderCard);
+            if(legacyBetaCard!=null)legacyBetaCard.setVisibility(View.GONE);
+            legacyBetaCard=findViewById(R.id.dmzThemedObsBuilderCard);
+            if(legacyBetaCard!=null)legacyBetaCard.setVisibility(View.GONE);
+        }
         boolean any = destinationsMatch || backupsMatch || aboutMatch || appearanceMatch || widgetMatch || appMatch || operatorMatch
                 || transferMatch || notificationMatch || updateMatch || actionMatch || betaProgramMatch
                 || helpMatch || dangerMatch || developerMatch;
@@ -860,6 +874,10 @@ public class SettingsActivity extends Activity {
 
     private boolean isRankedHubBuild() {
         return HUB_BETA_PACKAGE.equals(getPackageName());
+    }
+
+    private boolean isCommunityContext() {
+        return !isRankedHubBuild() || launcherTheme == RankedHeaderView.THEME_COMMUNITY;
     }
 
     private String[] rankedHubImportSources() {
