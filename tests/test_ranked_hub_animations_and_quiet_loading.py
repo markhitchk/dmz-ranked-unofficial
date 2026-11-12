@@ -21,7 +21,7 @@ class HubPolishTests(unittest.TestCase):
         self.assertIn('html.reduce-motion', HTML)
         self.assertIn('prefers-reduced-motion:reduce', HTML)
         activity = (JAVA / "RankedHubActivity.java").read_text()
-        self.assertIn('loadLauncherHtml(reducedMotion)', activity)
+        self.assertIn('loadLauncherHtml(reduceMotion)', activity)
         self.assertIn('setJavaScriptEnabled(false)', activity)
 
     def test_real_settings_gear_in_shared_header(self):
