@@ -157,7 +157,7 @@ public final class RankedSiteActivity extends Activity {
             @Override
             public void onPageCommitVisible(WebView view, String url) {
                 if (loadCoordinator != null) loadCoordinator.onPageCommitVisible();
-                applyAppSiteCss(view,url);
+
             }
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request,
@@ -178,7 +178,7 @@ public final class RankedSiteActivity extends Activity {
                 progress.setVisibility(View.GONE);
                 if (loadCoordinator != null) loadCoordinator.onPageFinished();
                 rememberSafeSitePage(url);
-                applyAppSiteCss(view,url);
+
                 startOwnedSiteAlerts();
                 if (requestedWebsiteSettings && !openedWebsiteSettings
                         && SITE_ARC.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
@@ -242,13 +242,6 @@ public final class RankedSiteActivity extends Activity {
         }
     }
 
-
-    /** Only the two verified Harley's Studios ranked domains receive overrides. */
-    private void applyAppSiteCss(WebView view,String url) {
-        if(url==null || !isApprovedSite(Uri.parse(url))) return;
-        String id=getIntent().getStringExtra(EXTRA_SITE_ID);
-        RankedSiteOverrides.apply(this,view,id,allowedHost);
-    }
 
     /**
      * Forward visible, first-party website notices while the WebView is open.
@@ -358,7 +351,6 @@ public final class RankedSiteActivity extends Activity {
         super.onResume();
         applySiteDisplayPreferences();
         if(webView!=null) {
-            applyAppSiteCss(webView,webView.getUrl());
             startOwnedSiteAlerts();
         }
         // Restore the system/app compact chrome immediately after Settings.

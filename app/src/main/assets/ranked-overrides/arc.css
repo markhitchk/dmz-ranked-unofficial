@@ -1,8 +1,0 @@
-/* App-only override; ARC Raiders Ranked website keeps its original design. */
-html[data-ranked-hub-site="arc-raiders"]{-webkit-text-size-adjust:100%}
-html[data-ranked-hub-site="arc-raiders"] .shell{min-width:0;padding-bottom:env(safe-area-inset-bottom)}
-html[data-ranked-hub-site="arc-raiders"] :is(button,a,[role="button"]){touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-html[data-ranked-hub-site="arc-raiders"] #toast.toast{max-width:calc(100vw - 24px);overflow-wrap:anywhere}
-html[data-ranked-hub-site="arc-raiders"] :is(input,select,textarea){max-width:100%;min-width:0}
-@media(max-width:600px){html[data-ranked-hub-site="arc-raiders"] button{min-height:36px}}
-@media(prefers-reduced-motion:reduce){html[data-ranked-hub-site="arc-raiders"] #toast{animation:none!important}}

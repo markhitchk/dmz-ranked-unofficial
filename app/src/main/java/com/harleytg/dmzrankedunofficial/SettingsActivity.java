@@ -261,7 +261,6 @@ public class SettingsActivity extends Activity {
                 + " • Checking Google Play…");
 
         Switch desktopSite = findViewById(R.id.desktopSiteSwitch);
-        Switch cssOverrides = findViewById(R.id.firstPartyCssOverridesSwitch);
         Switch keepAwake = findViewById(R.id.keepAwakeSwitch);
         Switch pullRefresh = findViewById(R.id.pullRefreshSwitch);
         Switch rememberLastPage = findViewById(R.id.rememberLastPageSwitch);
@@ -273,11 +272,6 @@ public class SettingsActivity extends Activity {
         Switch webviewDebug = findViewById(R.id.webviewDebugSwitch);
 
         desktopSite.setChecked(preferences.getBoolean(PREF_DESKTOP, false));
-        cssOverrides.setChecked(preferences.getBoolean(
-                RankedSiteOverrides.PREF_CSS_OVERRIDES,true));
-        View cssCard=findViewById(R.id.firstPartyCssOverridesCard);
-        if(cssCard!=null) cssCard.setVisibility(isRankedHubBuild()
-                && !isCommunityContext()?View.VISIBLE:View.GONE);
         keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
         pullRefresh.setChecked(preferences.getBoolean(PREF_PULL_REFRESH, true));
         rememberLastPage.setChecked(preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true));
@@ -290,9 +284,6 @@ public class SettingsActivity extends Activity {
 
         desktopSite.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_DESKTOP, checked).apply());
-        cssOverrides.setOnCheckedChangeListener((buttonView,checked) ->
-                preferences.edit().putBoolean(
-                        RankedSiteOverrides.PREF_CSS_OVERRIDES,checked).apply());
         keepAwake.setOnCheckedChangeListener((buttonView, checked) ->
                 preferences.edit().putBoolean(PREF_KEEP_AWAKE, checked).apply());
         pullRefresh.setOnCheckedChangeListener((buttonView, checked) ->
@@ -323,7 +314,6 @@ public class SettingsActivity extends Activity {
                 preferences.edit().putBoolean(PREF_WEBVIEW_DEBUG, checked).apply());
 
         bindToggleCard(R.id.desktopSiteCard, desktopSite);
-        bindToggleCard(R.id.firstPartyCssOverridesCard,cssOverrides);
         bindToggleCard(R.id.keepAwakeCard, keepAwake);
         bindToggleCard(R.id.pullRefreshCard, pullRefresh);
         bindToggleCard(R.id.rememberLastPageCard, rememberLastPage);
