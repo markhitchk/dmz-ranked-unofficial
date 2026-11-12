@@ -10,6 +10,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.content.SharedPreferences;
+import android.content.Context;
+import android.webkit.WebResourceError;
+import android.webkit.SslErrorHandler;
+import android.net.http.SslError;
+import android.widget.FrameLayout;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -36,6 +42,7 @@ public final class RankedSiteActivity extends Activity {
 
     private WebView webView;
     private WebView brandedHeader;
+    private RankedLoadCoordinator loadCoordinator;
     private ProgressBar progress;
     private ValueCallback<Uri[]> fileCallback;
     private String homeUrl;
@@ -116,8 +123,31 @@ public final class RankedSiteActivity extends Activity {
             }
 
             @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                if (loadCoordinator != null) loadCoordinator.onPageStarted();
+            }
+            @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                if (loadCoordinator != null) loadCoordinator.onPageCommitVisible();
+            }
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request,
+                                        WebResourceError error) {
+                if (loadCoordinator != null && request != null && request.isForMainFrame()
+                        && error != null) {
+                    loadCoordinator.onNetworkError(error.getErrorCode());
+                }
+            }
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler,
+                                           SslError error) {
+                if (handler != null) handler.cancel();
+                if (loadCoordinator != null) loadCoordinator.onTlsError();
+            }
+            @Override
             public void onPageFinished(WebView view, String url) {
                 progress.setVisibility(View.GONE);
+                if (loadCoordinator != null) loadCoordinator.onPageFinished();
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -125,6 +155,7 @@ public final class RankedSiteActivity extends Activity {
             public void onProgressChanged(WebView view, int value) {
                 progress.setVisibility(value < 100 ? View.VISIBLE : View.GONE);
                 progress.setProgress(value);
+                if (loadCoordinator != null) loadCoordinator.onPageProgress(value);
             }
 
             @Override
@@ -145,7 +176,13 @@ public final class RankedSiteActivity extends Activity {
             }
         });
 
-        root.addView(webView, new LinearLayout.LayoutParams(
+        FrameLayout browserLayer = new FrameLayout(this);
+        browserLayer.addView(webView, new FrameLayout.LayoutParams(-1,-1));
+        SharedPreferences pref = getSharedPreferences("dmz_ranked_settings", Context.MODE_PRIVATE);
+        boolean verbose = pref.getBoolean("verbose_loading", false);
+        loadCoordinator = new RankedLoadCoordinator(this, browserLayer, site, allowedHost,
+                verbose, () -> webView.loadUrl(homeUrl), this::finish, this::openCurrentPageInBrowser);
+        root.addView(browserLayer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
         // The previous build drew the toolbar under the clock/battery and let
@@ -237,6 +274,7 @@ public final class RankedSiteActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (loadCoordinator != null) { loadCoordinator.dispose(); loadCoordinator = null; }
         if (brandedHeader != null) {
             ViewGroup parent = (ViewGroup) brandedHeader.getParent();
             if (parent != null) parent.removeView(brandedHeader);

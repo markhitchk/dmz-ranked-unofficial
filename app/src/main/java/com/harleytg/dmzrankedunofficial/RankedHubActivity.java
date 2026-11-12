@@ -1,6 +1,9 @@
 package com.harleytg.dmzranked;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
+import android.content.Context;
+import android.view.View;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -23,6 +26,7 @@ public final class RankedHubActivity extends Activity {
     private static final String HUB_URL = "file:///android_asset/ranked-hub/index.html";
     private WebView hub;
     private WebView brandedHeader;
+    private RankedIntroView intro;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -57,6 +61,15 @@ public final class RankedHubActivity extends Activity {
         settings.setDefaultTextEncodingName("UTF-8");
 
         hub.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                if (intro != null) {
+                    RankedIntroView done = intro;
+                    intro = null;
+                    done.finish(() -> { ViewGroup p = (ViewGroup)done.getParent();
+                        if (p != null) p.removeView(done); done.dispose(); });
+                }
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (request == null || !request.isForMainFrame()) return false;
@@ -73,8 +86,17 @@ public final class RankedHubActivity extends Activity {
 
         root.addView(hub, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        setContentView(root);
-        RankedSafeArea.apply(root);
+        FrameLayout stack = new FrameLayout(this);
+        stack.addView(root, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(stack);
+        RankedSafeArea.apply(stack);
+        SharedPreferences prefs = getSharedPreferences("dmz_ranked_settings", Context.MODE_PRIVATE);
+        boolean reducedMotion = prefs.getBoolean("reduced_motion", false)
+                || !prefs.getBoolean("app_animations", true);
+        if (state == null && !reducedMotion) {
+            intro = new RankedIntroView(this, false);
+            stack.addView(intro, new FrameLayout.LayoutParams(-1, -1));
+        }
         hub.loadUrl(HUB_URL);
     }
 
@@ -109,6 +131,7 @@ public final class RankedHubActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (intro != null) { intro.dispose(); intro = null; }
         if (brandedHeader != null) {
             ViewGroup parent = (ViewGroup) brandedHeader.getParent();
             if (parent != null) parent.removeView(brandedHeader);
