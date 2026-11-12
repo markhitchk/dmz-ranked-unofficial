@@ -410,6 +410,7 @@ public class SettingsActivity extends Activity {
         updateNotificationStatus();
         updateOperatorBackupStatus();
         updatePeerImportUi();
+        updateRankedSiteBackupSummary();
         startLivePlayUpdateMonitoring();
         if (developerUnlocked) updateDiagnosticsSummary();
     }
@@ -889,6 +890,7 @@ public class SettingsActivity extends Activity {
             summary.setText("Selected: "+selected+
                     " • Settings are scoped by destination. Account verification is handled by the website.");
         }
+        updateRankedSiteBackupSummary();
         findViewById(R.id.rankedMw4SettingsCard).setOnClickListener(v -> {
             Intent i=new Intent(this,RankedSiteActivity.class);
             i.putExtra(RankedSiteActivity.EXTRA_SITE_ID,RankedSiteActivity.SITE_DMZ_V1);
@@ -909,6 +911,21 @@ public class SettingsActivity extends Activity {
                 .setOnClickListener(v -> beginRankedBackup(false));
     }
 
+    private void updateRankedSiteBackupSummary() {
+        if (!isRankedHubBuild()) return;
+        TextView status=findViewById(R.id.rankedRemoteBackupNote);
+        if(status==null)return;
+        String mw4=RankedSiteSafeBackupStore.read(this,RankedSiteSafeBackupStore.MW4)
+                ==null ? "Not captured" : "Saved";
+        String arc=RankedSiteSafeBackupStore.read(this,RankedSiteSafeBackupStore.ARC)
+                ==null ? "Not captured" : "Saved";
+        status.setText("MW4 local preferences: "+mw4+"  •  ARC preferences: "+arc+
+                ". Open MW4 or ARC, choose the site-header options menu, then "+
+                "Capture safe site preferences. After importing a backup, reopen "+
+                "the site and select Restore saved site preferences. "+
+                "Website backup requires site support; server accounts are not exported.");
+    }
+
     private void beginRankedBackup(boolean export) {
         EditText field=new EditText(this);
         field.setSingleLine(true);
@@ -919,8 +936,10 @@ public class SettingsActivity extends Activity {
         new AlertDialog.Builder(this)
                 .setTitle(export?"ENCRYPT BACKUP":"UNLOCK BACKUP")
                 .setMessage(export
-                        ?"Create a passphrase to encrypt the portable Ranked Hub settings and "
-                        +"DMZRanked.com operator snapshots. Lost passphrases cannot be recovered."
+                        ?"Create a passphrase to encrypt Ranked Hub preferences, sanitized "+
+                        "DMZRanked.com operator backups and any saved MW4 / ARC local "+
+                        "preference snapshots. First capture site preferences inside "+
+                        "each ranked site. Lost passphrases cannot be recovered."
                         :"Enter the passphrase used to encrypt the selected backup.")
                 .setView(field)
                 .setNegativeButton("CANCEL",null)
@@ -988,10 +1007,12 @@ public class SettingsActivity extends Activity {
         if(isFinishing())return;
         new AlertDialog.Builder(this)
                 .setTitle("RESTORE BACKUP?")
-                .setMessage("Restore "+preview.settingCount()+" app preference(s) and up to "
-                        +preview.operatorCount()+" sanitized DMZRanked.com operator(s)? "
-                        +"Matching items will be replaced. Website sign-in sessions and "
-                        +"server ranks are not part of this backup.")
+                .setMessage("Restore "+preview.settingCount()+" app preference(s), up to "
+                        +preview.operatorCount()+" sanitized DMZRanked.com operator(s), and "
+                        +preview.siteCount()+" captured MW4/ARC preference snapshot(s)? "
+                        +"Matching items will be replaced. To apply MW4/ARC snapshots, "
+                        +"open each website and choose Restore saved site preferences. "
+                        +"Sessions and server ranks are excluded.")
                 .setNegativeButton("CANCEL",null)
                 .setPositiveButton("RESTORE",(dialog,which)->{
                     new Thread(()->{
@@ -999,7 +1020,8 @@ public class SettingsActivity extends Activity {
                             int n=RankedBackupManager.restoreBackup(this,preview);
                             runOnUiThread(()->{
                                 android.widget.Toast.makeText(this,
-                                        "Restored settings and "+n+" operator(s).",
+                                        "Restored settings, "+n+" operator(s), and "+
+                                        preview.siteCount()+" safe site snapshot(s).",
                                         android.widget.Toast.LENGTH_LONG).show();
                                 recreate();
                             });
