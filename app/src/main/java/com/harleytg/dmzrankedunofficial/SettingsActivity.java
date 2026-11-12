@@ -137,6 +137,8 @@ public class SettingsActivity extends Activity {
     private SharedPreferences preferences;
     private char[] pendingBackupPassword;
     private boolean pendingBackupExport;
+    private java.util.Set<String> selectedExportSites =
+            new java.util.HashSet<>(java.util.Arrays.asList("hub","community"));
     private AppUpdateManager appUpdateManager;
     private InstallStateUpdatedListener installStateUpdatedListener;
     private boolean updateReadyDialogShown;
@@ -927,6 +929,45 @@ public class SettingsActivity extends Activity {
     }
 
     private void beginRankedBackup(boolean export) {
+        if(export){
+            chooseRankedBackupExportSites();
+            return;
+        }
+        beginRankedBackupFile(false);
+    }
+
+    private void chooseRankedBackupExportSites(){
+        String[] ids={"hub","community","dmz-v1","arc-raiders"};
+        boolean hasMw4=RankedSiteSafeBackupStore.read(this,"dmz-v1")!=null;
+        boolean hasArc=RankedSiteSafeBackupStore.read(this,"arc-raiders")!=null;
+        String[] labels={
+            "Ranked Hub app settings",
+            "DMZRanked.com operator snapshots",
+            hasMw4?"MW4 DMZ local preferences":"MW4 DMZ — capture inside site first",
+            hasArc?"ARC Raiders graphics preference":"ARC Raiders — capture inside site first"
+        };
+        boolean[] checked={true,true,hasMw4,hasArc};
+        new AlertDialog.Builder(this).setTitle("CHOOSE BACKUP DATA")
+                .setMultiChoiceItems(labels,checked,(dialog,which,isChecked)->
+                        checked[which]=isChecked)
+                .setNegativeButton("CANCEL",null)
+                .setPositiveButton("CONTINUE",(dialog,which)->{
+                    java.util.Set<String> selected=new java.util.HashSet<>();
+                    for(int i=0;i<ids.length;i++)if(checked[i])selected.add(ids[i]);
+                    if(selected.isEmpty()
+                            ||(selected.contains("dmz-v1")&&!hasMw4)
+                            ||(selected.contains("arc-raiders")&&!hasArc)){
+                        android.widget.Toast.makeText(this,
+                                "Select at least one available site. Capture MW4/ARC preferences first.",
+                                android.widget.Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    selectedExportSites=selected;
+                    beginRankedBackupFile(true);
+                }).show();
+    }
+
+    private void beginRankedBackupFile(boolean export) {
         EditText field=new EditText(this);
         field.setSingleLine(true);
         field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -980,7 +1021,8 @@ public class SettingsActivity extends Activity {
         if(requestCode==EXPORT_RANKED_BACKUP_REQUEST){
             new Thread(()->{
                 try{
-                    RankedBackupManager.exportBackup(this,uri,password);
+                    java.util.Set<String> selected=new java.util.HashSet<>(selectedExportSites);
+                    RankedBackupManager.exportBackup(this,uri,password,selected);
                     runOnUiThread(()->android.widget.Toast.makeText(this,
                             "Encrypted backup exported.",android.widget.Toast.LENGTH_LONG).show());
                 }catch(Exception e){
@@ -1005,29 +1047,59 @@ public class SettingsActivity extends Activity {
 
     private void confirmBackupImport(RankedBackupManager.Preview preview) {
         if(isFinishing())return;
+        String[] ids={"hub","community","dmz-v1","arc-raiders"};
+        String[] labels={
+            "Ranked Hub: "+preview.settingCount()+" settings",
+            "DMZRanked.com: "+preview.operatorCount()+" operators",
+            "MW4 V1: local preferences",
+            "ARC Raiders: graphics preference"
+        };
+        boolean[] checked={
+            preview.backupEntries>0 && preview.settings.length()>0,
+            preview.operatorBackups.length()>0,
+            preview.siteSnapshots.has("dmz-v1"),
+            preview.siteSnapshots.has("arc-raiders")
+        };
+        boolean[] available={
+            preview.settings.length()>0,
+            preview.operatorBackups.length()>0,
+            preview.siteSnapshots.has("dmz-v1"),
+            preview.siteSnapshots.has("arc-raiders")
+        };
         new AlertDialog.Builder(this)
-                .setTitle("RESTORE BACKUP?")
-                .setMessage("Restore "+preview.settingCount()+" app preference(s), up to "
-                        +preview.operatorCount()+" sanitized DMZRanked.com operator(s), and "
-                        +preview.siteCount()+" captured MW4/ARC preference snapshot(s)? "
-                        +"Matching items will be replaced. To apply MW4/ARC snapshots, "
-                        +"open each website and choose Restore saved site preferences. "
-                        +"Sessions and server ranks are excluded.")
+                .setTitle("CHOOSE WHAT TO RESTORE")
+                .setMessage("Only checked data will be replaced. Local MW4/ARC settings "
+                        +"are staged in Ranked Hub; explicitly apply them inside "
+                        +"the corresponding website after restore. Passwords, "
+                        +"sessions and server rankings are excluded.")
+                .setMultiChoiceItems(labels,checked,(dialog,which,isChecked)->
+                        checked[which]=isChecked)
                 .setNegativeButton("CANCEL",null)
                 .setPositiveButton("RESTORE",(dialog,which)->{
+                    java.util.Set<String> selected=new java.util.HashSet<>();
+                    for(int i=0;i<ids.length;i++) {
+                        if(checked[i] && available[i])selected.add(ids[i]);
+                    }
+                    if(selected.isEmpty()){
+                        android.widget.Toast.makeText(this,"Choose at least one available backup entry.",
+                                android.widget.Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     new Thread(()->{
                         try{
-                            int n=RankedBackupManager.restoreBackup(this,preview);
+                            int n=RankedBackupManager.restoreBackup(this,preview,selected);
+                            int sites=(selected.contains("dmz-v1")?1:0)
+                                    +(selected.contains("arc-raiders")?1:0);
                             runOnUiThread(()->{
                                 android.widget.Toast.makeText(this,
-                                        "Restored settings, "+n+" operator(s), and "+
-                                        preview.siteCount()+" safe site snapshot(s).",
+                                        "Restored selected settings, "+n+" operator(s) and "+
+                                        sites+" site snapshot(s).",
                                         android.widget.Toast.LENGTH_LONG).show();
                                 recreate();
                             });
                         }catch(Exception e){
                             runOnUiThread(()->android.widget.Toast.makeText(this,
-                                    "Restore failed; backup was not fully applied.",
+                                    "Restore failed; original data was preserved where possible.",
                                     android.widget.Toast.LENGTH_LONG).show());
                         }
                     },"ranked-backup-restore").start();
