@@ -153,6 +153,11 @@ final class RankedBackupManager {
                 else if(value instanceof Integer)revert.putInt(key,(Integer)value);
                 else if(value instanceof Long)revert.putLong(key,(Long)value);
                 else if(value instanceof Float)revert.putFloat(key,(Float)value);
+                else if(value instanceof java.util.Set) {
+                    @SuppressWarnings("unchecked")
+                    java.util.Set<String> values=(java.util.Set<String>)value;
+                    revert.putStringSet(key,new java.util.HashSet<>(values));
+                }
             }
             revert.commit();
             OperatorBackupStore.importJson(context,priorOperators);
