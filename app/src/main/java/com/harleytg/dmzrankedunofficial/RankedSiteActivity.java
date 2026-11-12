@@ -26,6 +26,8 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 
 /**
@@ -241,7 +243,9 @@ public final class RankedSiteActivity extends Activity {
                 "Reload this website",
                 "Open in browser",
                 "Return to Ranked Hub",
-                "App settings"
+                "App settings",
+                "Capture safe site preferences",
+                "Restore saved site preferences"
         };
         new AlertDialog.Builder(this)
                 .setTitle(siteTitle)
@@ -261,10 +265,102 @@ public final class RankedSiteActivity extends Activity {
                                     .putExtra(SettingsActivity.EXTRA_LAUNCHER_THEME,
                                             sourceHeaderTheme));
                             break;
+                        case 4:
+                            captureSiteBackup();
+                            break;
+                        case 5:
+                            restoreSiteBackup();
+                            break;
                         default:
                             break;
                     }
                 }).show();
+    }
+
+
+    private String currentSite() {
+        return SITE_DMZ_V1.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
+                ? SITE_DMZ_V1 : SITE_ARC;
+    }
+
+    private boolean safeMainFrame() {
+        String url = webView == null ? null : webView.getUrl();
+        if(url == null || !isApprovedSite(Uri.parse(url))){
+            Toast.makeText(this,"Site backup only works on its verified HTTPS website.",
+                    Toast.LENGTH_LONG).show();
+            return false;
+        }
+        return true;
+    }
+
+    /** Explicit user-initiated export. It never scrapes WebView storage. */
+    private void captureSiteBackup() {
+        if(!safeMainFrame())return;
+        String site=currentSite();
+        String script="(function(){var api=window.RankedHubBackupV1;"
+                +"if(!api||api.siteId!=="+JSONObject.quote(site)
+                +")return null;return JSON.stringify(api.exportSafeState());})()";
+        webView.evaluateJavascript(script, result->{
+            try{
+                if(!safeMainFrame())return; // origin may change while callback is pending
+                Object parsed=new JSONTokener(result).nextValue();
+                if(!(parsed instanceof String))throw new IllegalArgumentException("No website contract");
+                JSONObject document=new JSONObject((String)parsed);
+                RankedSiteSafeBackupStore.save(this,site,document);
+                Toast.makeText(this,siteTitle+" preferences captured for encrypted backup.",
+                        Toast.LENGTH_LONG).show();
+            }catch(Exception error){
+                Toast.makeText(this,
+                        "Website backup unavailable. Update the site or try again after loading.",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void restoreSiteBackup() {
+        if(!safeMainFrame())return;
+        String site=currentSite();
+        JSONObject saved=RankedSiteSafeBackupStore.read(this,site);
+        if(saved==null){
+            Toast.makeText(this,"No saved "+siteTitle+" preferences yet. Capture or import a backup first.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("RESTORE LOCAL SITE PREFERENCES?")
+            .setMessage("Restore the saved "+siteTitle+" preferences to this verified website? "
+                +"Your website account, PIN, session, ranked records, and server standings "
+                +"will not be changed.")
+            .setNegativeButton("CANCEL",null)
+            .setPositiveButton("RESTORE",(d,w)->{
+                if(!safeMainFrame())return;
+                try{
+                    // Build a quoted JSON literal, not direct string interpolation from HTML.
+                    String serialized=JSONObject.quote(saved.toString());
+                    String script="(function(){var api=window.RankedHubBackupV1;"
+                        +"if(!api||api.siteId!=="+JSONObject.quote(site)
+                        +")return {ok:false};return api.importSafeState(JSON.parse("
+                        +serialized+"));})()";
+                    webView.evaluateJavascript(script,result->{
+                        try{
+                            if(!safeMainFrame())return;
+                            JSONObject status=new JSONObject(result);
+                            if(status.optBoolean("ok",false)){
+                                Toast.makeText(this,"Safe site preferences restored.",
+                                    Toast.LENGTH_LONG).show();
+                            }else{
+                                Toast.makeText(this,"Website backup contract unavailable or invalid.",
+                                    Toast.LENGTH_LONG).show();
+                            }
+                        }catch(Exception ignored){
+                            Toast.makeText(this,"Website did not accept the safe restore.",
+                                Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }catch(Exception error){
+                    Toast.makeText(this,"Invalid saved site backup.",Toast.LENGTH_LONG).show();
+                }
+            }).show();
     }
 
     @Override
