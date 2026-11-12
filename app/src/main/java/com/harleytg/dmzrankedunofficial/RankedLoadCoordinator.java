@@ -50,7 +50,8 @@ final class RankedLoadCoordinator {
         this.retry=retry;
         this.returnToHub=returnToHub;
         this.openBrowser=openBrowser;
-        visible=verbose;
+        // Ranked Hub never exposes verbose loading telemetry to players.
+        visible=false;
         panel=new FrameLayout(activity);
         GradientDrawable bg=new GradientDrawable();
         bg.setColor(Color.rgb(7,23,33));
@@ -86,15 +87,9 @@ final class RankedLoadCoordinator {
         actions.setVisibility(View.GONE);
         col.addView(actions);
         addAction("RETRY",retry);
-        addAction("OPEN HUB",returnToHub);
-        addAction("OPEN BROWSER",openBrowser);
-        addAction("COPY DIAGNOSTICS",()->{
-            ClipboardManager clipboard=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);
-            if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Ranked Hub load",
-                    "Site: "+siteId+"\nHost: "+hostname+"\nState: "+state+
-                    "\nElapsed: "+Math.max(0,(System.currentTimeMillis()-startedAt)/1000)+"s"));
-        });
-        panel.setVisibility(verbose ? View.VISIBLE : View.GONE);
+        addAction("HUB",returnToHub);
+        addAction("BROWSER",openBrowser);
+        panel.setVisibility(View.GONE);
     }
 
     private void addAction(String label,Runnable action) {
@@ -155,7 +150,7 @@ final class RankedLoadCoordinator {
         panel.setVisibility(View.VISIBLE);
         indicator.setVisibility(failed?View.GONE:View.VISIBLE);
         actions.setVisibility(failed?View.VISIBLE:View.GONE);
-        status.setText("RANKED HUB  /  "+next);
+        status.setText("GAME UNAVAILABLE");
         details.setText(summary);
     }
     void dispose(){

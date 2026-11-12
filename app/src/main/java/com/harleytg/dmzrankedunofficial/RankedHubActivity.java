@@ -1,6 +1,10 @@
 package com.harleytg.dmzranked;
 
 import android.app.Activity;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.view.View;
@@ -97,7 +101,30 @@ public final class RankedHubActivity extends Activity {
             intro = new RankedIntroView(this, false);
             stack.addView(intro, new FrameLayout.LayoutParams(-1, -1));
         }
-        hub.loadUrl(HUB_URL);
+        loadLauncherHtml(reducedMotion);
+    }
+
+    /** Offline CSS-only launcher; no JavaScript and no externally fetched assets. */
+    private void loadLauncherHtml(boolean reducedMotion) {
+        if (!reducedMotion) {
+            hub.loadUrl(HUB_URL);
+            return;
+        }
+        // Android's app_animations / reduced_motion preferences also disable
+        // the WebView card animations, without enabling JavaScript.
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                getAssets().open("ranked-hub/index.html"), StandardCharsets.UTF_8))) {
+            StringBuilder content = new StringBuilder();
+            char[] buffer = new char[4096];
+            int count;
+            while ((count = reader.read(buffer)) != -1) content.append(buffer, 0, count);
+            String html = content.toString().replace("<html lang=\"en\">",
+                    "<html lang=\"en\" class=\"reduce-motion\">");
+            hub.loadDataWithBaseURL("file:///android_asset/ranked-hub/", html,
+                    "text/html", "UTF-8", null);
+        } catch (IOException e) {
+            hub.loadUrl(HUB_URL); // Bundled asset fallback.
+        }
     }
 
     private void openDestination(Uri uri) {

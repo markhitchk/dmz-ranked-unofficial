@@ -195,9 +195,8 @@ public final class RankedSiteActivity extends Activity {
 
         FrameLayout browserLayer = new FrameLayout(this);
         browserLayer.addView(webView, new FrameLayout.LayoutParams(-1,-1));
-        boolean verbose = sitePreferences.getBoolean("verbose_loading", false);
         loadCoordinator = new RankedLoadCoordinator(this, browserLayer, site, allowedHost,
-                verbose, () -> webView.loadUrl(homeUrl), this::finish, this::openCurrentPageInBrowser);
+                false, () -> webView.loadUrl(homeUrl), this::finish, this::openCurrentPageInBrowser);
         root.addView(browserLayer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);

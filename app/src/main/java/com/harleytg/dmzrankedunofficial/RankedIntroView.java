@@ -67,12 +67,6 @@ final class RankedIntroView extends FrameLayout {
         heading.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
         heading.setGravity(Gravity.CENTER);
         column.addView(heading,new LinearLayout.LayoutParams(-1,dp(42)));
-        TextView subtitle=new TextView(activity);
-        subtitle.setText("HARLEY'S STUDIOS  //  RANKED NETWORK");
-        subtitle.setTextColor(Color.rgb(89,218,231));
-        subtitle.setTextSize(11);
-        subtitle.setGravity(Gravity.CENTER);
-        column.addView(subtitle,new LinearLayout.LayoutParams(-1,dp(30)));
 
         if(!reducedMotion) {
             logo.setScaleX(0.91f);

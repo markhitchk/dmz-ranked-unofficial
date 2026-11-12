@@ -318,6 +318,13 @@ public class SettingsActivity extends Activity {
         bindToggleCard(R.id.pullRefreshCard, pullRefresh);
         bindToggleCard(R.id.rememberLastPageCard, rememberLastPage);
         bindToggleCard(R.id.verboseLoadingCard, verboseLoading);
+        // Detailed loading is intentionally unavailable in Ranked Hub Beta.
+        // Diagnostics remain accessible from the developer tools.
+        if (isRankedHubBuild()) {
+            verboseLoading.setChecked(false);
+            verboseLoading.setEnabled(false);
+            findViewById(R.id.verboseLoadingCard).setVisibility(View.GONE);
+        }
         bindToggleCard(R.id.siteNotificationsCard, siteNotifications);
         bindToggleCard(R.id.operatorAutoSaveCard, operatorAutoSave);
         bindToggleCard(R.id.appAnimationsCard, appAnimations);
@@ -746,6 +753,7 @@ public class SettingsActivity extends Activity {
                         "remember last page restore reopen startup")
                 | showIfMatches(R.id.verboseLoadingCard, q,
                         "detailed verbose loading status percentage progress");
+        if (isRankedHubBuild()) findViewById(R.id.verboseLoadingCard).setVisibility(View.GONE);
         findViewById(R.id.appExperienceSection).setVisibility(appMatch ? View.VISIBLE : View.GONE);
 
         boolean operatorMatch =

@@ -1779,6 +1779,13 @@ public class MainActivity extends Activity {
         if (appName != null) {
             appName.setText("DMZ Ranked");
         }
+        // The Ranked Hub beta's community client shares this Activity.
+        // Keep the splash branded but hide version/build and extra labels.
+        if ("com.harleytg.rankedhub.beta".equals(getPackageName())) {
+            if (versionText != null) versionText.setVisibility(View.GONE);
+            if (loadingBetaBadge != null) loadingBetaBadge.setVisibility(View.GONE);
+            return;
+        }
         if (loadingBetaBadge != null) {
             loadingBetaBadge.setVisibility(beta ? View.VISIBLE : View.GONE);
         }
@@ -1856,7 +1863,8 @@ public class MainActivity extends Activity {
         }
 
         if (loadingVerboseText == null || preferences == null) return;
-        boolean verbose = preferences.getBoolean(PREF_VERBOSE_LOADING, false);
+        boolean verbose = !"com.harleytg.rankedhub.beta".equals(getPackageName())
+                && preferences.getBoolean(PREF_VERBOSE_LOADING, false);
         loadingVerboseText.setText(safeStatus);
         loadingVerboseText.setVisibility(verbose ? View.VISIBLE : View.GONE);
     }

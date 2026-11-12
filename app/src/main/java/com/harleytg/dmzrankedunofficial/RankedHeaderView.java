@@ -126,7 +126,14 @@ final class RankedHeaderView {
         String actionHref = settingsMode
                 ? "rankedhub://action/back" : "rankedhub://action/settings";
         String actionLabel = settingsMode ? "Back to launcher" : "Open app settings";
-        String actionIcon = settingsMode ? "&#10094;" : "&#9881;";
+        // An SVG gear is consistently rendered on Android WebView (unlike Unicode U+2699).
+        String actionIcon = settingsMode ? "&#10094;"
+                : "<svg viewBox='0 0 24 24' width='28' height='28' fill='none' "
+                + "stroke='currentColor' stroke-width='1.8' stroke-linecap='round' "
+                + "stroke-linejoin='round' aria-hidden='true'>"
+                + "<path d='M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z'/>"
+                + "<path d='M19.4 13.3a7.7 7.7 0 0 0 0-2.6l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2.2-1.3L14.5 3h-5l-.3 2.4A8 8 0 0 0 7 6.7l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 0 2.6l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 2.2 1.3l.3 2.4h5l.3-2.4a8 8 0 0 0 2.2-1.3l2.4 1 2-3.5-2-1.5Z'/>"
+                + "</svg>";
 
         return "<!doctype html><html lang='en'><head>"
                 + "<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -147,6 +154,9 @@ final class RankedHeaderView {
                 + ".settings{flex:0 0 44px;height:48px;display:flex;align-items:center;justify-content:center;"
                 + "font-size:30px;line-height:1;color:" + accent + ";text-decoration:none}"
                 + ".settings:focus-visible{outline:2px solid white;border-radius:7px}"
+                + ".settings svg{width:28px;height:28px;display:block;transition:transform 180ms ease}"
+                + ".settings:active svg{transform:rotate(35deg) scale(.92)}"
+                + "@media(prefers-reduced-motion:reduce){.settings svg{transition:none}}"
                 + "@media(max-width:355px){.bar{gap:7px;padding-left:7px;padding-right:5px}"
                 + ".logo{width:43px;height:43px;flex-basis:43px}.name{font-size:17px}"
                 + ".badge{font-size:9px;padding:4px 5px}.meta{font-size:10px}"
