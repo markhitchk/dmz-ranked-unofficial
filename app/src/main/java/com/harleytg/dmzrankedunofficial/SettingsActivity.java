@@ -135,6 +135,7 @@ public class SettingsActivity extends Activity {
     private int launcherTheme = RankedHeaderView.THEME_COMMUNITY;
     private WebView settingsHeader;
     private SharedPreferences preferences;
+    private RankedSettingsNavigator settingsNavigator;
     private char[] pendingBackupPassword;
     private boolean pendingBackupExport;
     private java.util.Set<String> selectedExportSites =
@@ -328,7 +329,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.contentSizeLargeButton).setOnClickListener(v -> setContentSize("large"));
         updateContentSizeUi();
 
-        findViewById(R.id.backButton).setOnClickListener(v -> finish());
+        findViewById(R.id.backButton).setOnClickListener(v -> handleSettingsBack());
         findViewById(R.id.creditsButton).setOnClickListener(v -> toggleCredits());
         findViewById(R.id.developerUnlockTrigger).setOnClickListener(v -> handleDeveloperUnlockTap());
         findViewById(R.id.reloadCard).setOnClickListener(v -> {
@@ -353,6 +354,13 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.operatorListText).setOnClickListener(v -> showOperatorPicker());
         findViewById(R.id.peerImportCard).setOnClickListener(v -> confirmPeerImport());
         installRankedDestinationSettings();
+        // Keep the original DMZRanked.com stable Settings unchanged.
+        // Ranked Hub Beta uses a category overview with scoped detail screens.
+        if (isRankedHubBuild()) {
+            settingsNavigator = new RankedSettingsNavigator(this, launcherTheme, () ->
+                    applySearch(((EditText) findViewById(R.id.settingsSearch))
+                            .getText().toString()));
+        }
         findViewById(R.id.notificationSettingsCard).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.testNotificationCard).setOnClickListener(v -> requestNotificationPermissionIfNeeded(true));
         findViewById(R.id.checkUpdatesCard).setOnClickListener(v -> checkForPlayUpdate(true));
@@ -402,7 +410,25 @@ public class SettingsActivity extends Activity {
         loadRemoteAvatar(YOLANDO_AVATAR_URL, findViewById(R.id.yolandoAvatar));
         loadRemoteAvatar(DCHINZ_AVATAR_URL, findViewById(R.id.dchinzAvatar));
         runEntryAnimations();
+        if (settingsNavigator != null) settingsNavigator.restoreState(savedInstanceState);
         applySearch("");
+    }
+
+    private void handleSettingsBack() {
+        if (settingsNavigator != null && settingsNavigator.onBack()) return;
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (settingsNavigator != null && settingsNavigator.onBack()) return;
+        super.onBackPressed();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        if (settingsNavigator != null) settingsNavigator.saveState(state);
+        super.onSaveInstanceState(state);
     }
 
     @Override
@@ -746,7 +772,15 @@ public class SettingsActivity extends Activity {
                         "notification settings permission sound vibration android")
                 | showIfMatches(R.id.testNotificationCard, q,
                         "test notification alert diagnostics");
-        if(!isCommunityContext()) notificationMatch=false;
+        if (!isCommunityContext()) {
+            // Hub, MW4 and ARC support Android notification permission/tools,
+            // but cannot claim the original DMZRanked.com website alert feed.
+            findViewById(R.id.siteNotificationsCard).setVisibility(View.GONE);
+            notificationMatch = showIfMatches(R.id.notificationSettingsCard, q,
+                    "notifications android alert permission settings")
+                    | showIfMatches(R.id.testNotificationCard, q,
+                    "notification test alert permission android");
+        }
         findViewById(R.id.notificationsSection).setVisibility(notificationMatch ? View.VISIBLE : View.GONE);
 
         boolean updateMatch =
@@ -851,6 +885,7 @@ public class SettingsActivity extends Activity {
                 || transferMatch || notificationMatch || updateMatch || actionMatch || betaProgramMatch
                 || helpMatch || dangerMatch || developerMatch;
         findViewById(R.id.searchEmptyState).setVisibility(searching && !any ? View.VISIBLE : View.GONE);
+        if (settingsNavigator != null) settingsNavigator.apply(query);
     }
 
     private boolean showIfMatches(int viewId, String query, String keywords) {
@@ -2129,7 +2164,7 @@ public class SettingsActivity extends Activity {
         FrameLayout slot = findViewById(R.id.settingsHeaderSlot);
         if (slot == null) return;
         slot.setVisibility(View.VISIBLE);
-        settingsHeader = RankedHeaderView.createSettings(this, launcherTheme, this::finish);
+        settingsHeader = RankedHeaderView.createSettings(this, launcherTheme, this::handleSettingsBack);
         slot.addView(settingsHeader, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
