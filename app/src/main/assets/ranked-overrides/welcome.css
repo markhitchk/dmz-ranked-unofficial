@@ -67,3 +67,35 @@ html[data-ranked-hub-site="arc-raiders"] #ranked-hub-welcome-banner{
   #ranked-hub-welcome-banner .dmz-hs-app-title{font-size:16px}
   #ranked-hub-welcome-banner .dmz-hs-note{font-size:10px}
 }
+
+/*
+ * MW4's startup stylesheet intentionally hides unknown direct body children:
+ * html[data-start-version="v1"] body > :not(#mw4-root):not(#mw4-startup):not(noscript).
+ * The extra ID below is intentional: it beats that two-ID !important rule,
+ * without changing the public website or relaxing it for other elements.
+ */
+html[data-start-version="v1"][data-ranked-hub-site="dmz-v1"] body > #ranked-hub-welcome-banner#ranked-hub-welcome-banner {
+  display:flex!important;
+}
+
+/*
+ * The FOB is a full-screen (100dvh), overflow-hidden HUD. Reserve the precise
+ * rendered height of the app banner so it remains visible *above* the lobby
+ * without pushing Deploy offscreen or letting the fixed navigation overlap it.
+ * Other V1 routes and the ARC site retain their original layout.
+ */
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell[data-page="operations"] {
+  height:calc(100dvh - var(--ranked-hub-welcome-offset, 0px))!important;
+  min-height:0!important;
+}
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell[data-page="operations"] .mw4-main.page-operations,
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell[data-page="operations"] .fob-game-hud {
+  height:calc(100dvh - var(--ranked-hub-welcome-offset, 0px))!important;
+  min-height:0!important;
+}
+html[data-ranked-hub-site="dmz-v1"] .mw4-shell[data-page="operations"] .navigation-rail {
+  top:var(--ranked-hub-welcome-offset, 0px)!important;
+  bottom:auto!important;
+  height:calc(100dvh - var(--ranked-hub-welcome-offset, 0px))!important;
+  min-height:0!important;
+}
