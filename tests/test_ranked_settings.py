@@ -13,8 +13,8 @@ class RankedSettingsTests(unittest.TestCase):
         self.assertIn("createSettings(",header)
         self.assertIn("rankedhub://action/back",header)
         self.assertIn("dmz_community.png",header)
-        self.assertIn("official_studio.png",header)
-        self.assertIn("dmz-v1.svg",header)
+        self.assertIn("ranked-hub-selected.webp",header)
+        self.assertIn("dmz-v1-discord.webp",header)
         self.assertIn("arc-ranked.webp",header)
 
     def test_origin_theme_is_forwarded(self):

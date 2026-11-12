@@ -26,12 +26,12 @@ class RankedHubGridTests(unittest.TestCase):
         self.assertEqual(git_blob_sha((ASSETS / "arc-ranked.webp").read_bytes()),
                          "19ddced610d2273b658e062f4ef50b024969fa68")
         html = (ASSETS / "index.html").read_text()
-        for name in ("dmz-v1.svg", "arc-ranked.webp", "dmz_community.png"):
+        for name in ("dmz-v1-discord.webp", "arc-ranked.webp", "dmz_community.png"):
             self.assertIn(name, html)
         # Studio logo is now in the shared native header rather than duplicated
         # inside the scrolling grid.
         header = (ROOT / "app/src/main/java/com/harleytg/dmzrankedunofficial/RankedHeaderView.java").read_text()
-        self.assertIn("official_studio.png", header)
+        self.assertIn("ranked-hub-selected.webp", header)
 
     def test_android_stages_original_studio_and_legacy_artwork(self):
         gradle = (ROOT / "app/build.gradle").read_text()

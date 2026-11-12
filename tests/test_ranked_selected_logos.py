@@ -14,11 +14,11 @@ def git_blob_sha(data):
 
 class SelectedBrandingTests(unittest.TestCase):
     def test_hub_logo_is_exact_chosen_user_artwork(self):
-        asset=ASSETS/"ranked-hub-logo.webp"
+        asset=ASSETS/"ranked-hub-selected.webp"
         self.assertTrue(asset.is_file(), "Missing selected Ranked Hub logo")
         self.assertEqual(git_blob_sha(asset.read_bytes()),HUB_SHA)
         header=(JAVA/"RankedHeaderView.java").read_text()
-        self.assertIn('logo = "ranked-hub-logo.webp"',header)
+        self.assertIn('logo = "ranked-hub-selected.webp"',header)
         self.assertIn("Harley's Studios",header)
 
     def test_dmz_v1_uses_user_selected_discord_server_icon(self):

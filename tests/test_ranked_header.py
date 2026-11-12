@@ -8,8 +8,8 @@ JAVA=ROOT/"app/src/main/java/com/harleytg/dmzrankedunofficial"
 class RankedHeaderTests(unittest.TestCase):
     def test_shared_header_has_source_accurate_themed_logos(self):
         src=(JAVA/"RankedHeaderView.java").read_text()
-        for token in ("THEME_HUB", "THEME_DMZ_V1", "THEME_ARC", "official_studio.png",
-                      "dmz-v1.svg", "arc-ranked.webp", "rankedhub://action/settings"):
+        for token in ("THEME_HUB", "THEME_DMZ_V1", "THEME_ARC", "ranked-hub-selected.webp",
+                      "dmz-v1-discord.webp", "arc-ranked.webp", "rankedhub://action/settings"):
             self.assertIn(token,src)
         for color in ("#33D4E7", "#F4C15F", "#62D8E5"):
             self.assertIn(color,src)

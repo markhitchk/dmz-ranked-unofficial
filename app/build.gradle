@@ -264,6 +264,44 @@ tasks.register("prepareRankedHubAssets") {
             into target
             rename { "dmz_community.png" }
         }
+        // Bundle the owner-selected MW4 Discord server icon for offline UI.
+        def discordLogoUrl = "https://cdn.discordapp.com/icons/1560773091674685563/add804ea564a54751612a45d8a5aeb1c.webp?size=512"
+        def discordLogoFile = new File(target, "dmz-v1-discord.webp")
+        if (!discordLogoFile.exists() || discordLogoFile.length() < 1024) {
+            def response = null
+            def lastError = null
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    def connection = (java.net.HttpURLConnection) new URL(discordLogoUrl).openConnection()
+                    connection.setConnectTimeout(20000)
+                    connection.setReadTimeout(25000)
+                    connection.setInstanceFollowRedirects(true)
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (RankedHub-Android/1.0; IconFetch)")
+                    connection.setRequestProperty("Accept", "image/webp,image/*;q=0.9,*/*;q=0.1")
+                    if (connection.responseCode != 200) {
+                        throw new GradleException("Discord image returned HTTP " + connection.responseCode)
+                    }
+                    response = connection.inputStream.withCloseable { it.bytes }
+                    connection.disconnect()
+                    break
+                } catch (Exception error) {
+                    lastError = error
+                    if (attempt < 3) Thread.sleep(700L * attempt)
+                }
+            }
+            if (response == null) {
+                throw new GradleException("Cannot bundle selected MW4 Discord icon", lastError)
+            }
+            discordLogoFile.bytes = response
+        }
+        def iconBytes = discordLogoFile.bytes
+        def riff = new String(iconBytes, 0, Math.min(iconBytes.length, 4), "US-ASCII")
+        def webp = iconBytes.length >= 12 ? new String(iconBytes, 8, 4, "US-ASCII") : ""
+        if (iconBytes.length < 1024 || riff != "RIFF" || webp != "WEBP") {
+            throw new GradleException("Selected MW4 logo is not valid WEBP")
+        }
+        println("Bundled DMZ MW4 Discord icon (" + iconBytes.length + " bytes)")
+
         if (!new File(target, "dmz_community.png").exists()) {
             throw new GradleException("Missing legacy DMZ Ranked artwork")
         }
@@ -278,8 +316,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 170
-        versionName '1.0.66'
+        versionCode 171
+        versionName '1.0.67'
     }
 
     sourceSets {

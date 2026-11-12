@@ -64,7 +64,19 @@ final class RankedSettingsStyler {
         ImageView about = activity.findViewById(R.id.aboutLogo);
         if (about == null) return;
         if (theme == RankedHeaderView.THEME_HUB) {
-            about.setImageResource(R.drawable.harleys_studios_official);
+            try (InputStream stream = activity.getAssets()
+                    .open("ranked-hub/ranked-hub-selected.webp")) {
+                about.setImageBitmap(BitmapFactory.decodeStream(stream));
+            } catch (Exception ignored) {
+                about.setImageResource(R.drawable.harleys_studios_official);
+            }
+        } else if (theme == RankedHeaderView.THEME_DMZ_V1) {
+            try (InputStream stream = activity.getAssets()
+                    .open("ranked-hub/dmz-v1-discord.webp")) {
+                about.setImageBitmap(BitmapFactory.decodeStream(stream));
+            } catch (Exception ignored) {
+                // The original DMZ app artwork remains the fallback.
+            }
         } else if (theme == RankedHeaderView.THEME_ARC) {
             try (InputStream stream = activity.getAssets()
                     .open("ranked-hub/arc-ranked.webp")) {
@@ -72,7 +84,7 @@ final class RankedSettingsStyler {
             } catch (Exception ignored) {
                 // Original DMZ logo stays visible if the ARC logo cannot decode.
             }
-        } // DMZ V1 and the original DMZRanked.com retain their native logo.
+        } // Original DMZRanked.com keeps its own independent logo.
     }
 
     private static void styleViews(Activity activity, View view, int theme, int accent) {
