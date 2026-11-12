@@ -18,7 +18,7 @@ class TransparentBetaBrandingTests(unittest.TestCase):
             self.assertIn('android:drawable="@drawable/ranked_hub_launcher_foreground"', xml)
             self.assertNotIn('android:drawable="@color/dmz_black"', xml)
         inset = (BETA/"drawable/ranked_hub_launcher_foreground.xml").read_text()
-        self.assertIn('android:insetLeft="18dp"', inset)
+        self.assertIn('android:insetLeft="10dp"', inset)
 
     def test_splash_uses_beta_artwork_not_dmz_artwork(self):
         xml=(BETA/"values-v31/themes.xml").read_text()
@@ -44,7 +44,7 @@ class TransparentBetaBrandingTests(unittest.TestCase):
         self.assertIn('android:background="@android:color/transparent"',about)
         header=(ROOT/"app/src/main/java/com/harleytg/dmzrankedunofficial/RankedHeaderView.java").read_text()
         self.assertIn("ranked-hub-selected.webp",header)
-        self.assertIn("object-fit:contain",header)
+        self.assertIn("ImageView.ScaleType.CENTER_INSIDE",header)
 
 if __name__=="__main__":
     unittest.main()

@@ -1847,7 +1847,7 @@ public class MainActivity extends Activity {
         barParams.height = Math.round(height * getResources().getDisplayMetrics().density);
         bar.setLayoutParams(barParams);
         if (titleLogoView != null) {
-            int logo = Math.round((height <= 48 ? 30 : height >= 61 ? 44 : 36)
+            int logo = Math.round((height <= 65 ? 39 : 46)
                     * getResources().getDisplayMetrics().density);
             android.view.ViewGroup.LayoutParams logoParams = titleLogoView.getLayoutParams();
             logoParams.width = logo;
@@ -1857,7 +1857,7 @@ public class MainActivity extends Activity {
         if (titleTextView != null) {
             // SP already incorporates Android's fontScale; do not apply it twice.
             titleTextView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
-                    height <= 48 ? 16f : 18f);
+                    height <= 65 ? 18f : 21f);
         }
     }
 

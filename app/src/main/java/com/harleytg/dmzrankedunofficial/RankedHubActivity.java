@@ -33,7 +33,7 @@ public final class RankedHubActivity extends Activity {
     private boolean projectsPage;
     private boolean reduceMotion;
     private WebView hub;
-    private WebView brandedHeader;
+    private View brandedHeader;
     private LinearLayout rootLayout;
     private String headerSignature;
     private RankedIntroView intro;
@@ -179,9 +179,8 @@ public final class RankedHubActivity extends Activity {
         if (rootLayout == null || brandedHeader == null) return;
         String next = RankedHeaderView.signature(this);
         if (next.equals(headerSignature)) return;
-        WebView old = brandedHeader;
+        View old = brandedHeader;
         rootLayout.removeView(old);
-        old.destroy();
         brandedHeader = RankedHeaderView.create(this, RankedHeaderView.THEME_HUB,
                 () -> startActivity(new Intent(this, SettingsActivity.class)
                         .putExtra(SettingsActivity.EXTRA_LAUNCHER_THEME,
@@ -210,7 +209,6 @@ public final class RankedHubActivity extends Activity {
         if (brandedHeader != null) {
             ViewGroup parent = (ViewGroup) brandedHeader.getParent();
             if (parent != null) parent.removeView(brandedHeader);
-            brandedHeader.destroy();
             brandedHeader = null;
         }
         if (hub != null) {

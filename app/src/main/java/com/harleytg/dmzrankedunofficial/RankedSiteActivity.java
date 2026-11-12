@@ -45,7 +45,7 @@ public final class RankedSiteActivity extends Activity {
     private static final int DARK = Color.rgb(8, 12, 19);
 
     private WebView webView;
-    private WebView brandedHeader;
+    private View brandedHeader;
     private LinearLayout rootLayout;
     private String headerSignature;
     private RankedLoadCoordinator loadCoordinator;
@@ -285,9 +285,8 @@ public final class RankedSiteActivity extends Activity {
         if (rootLayout != null && brandedHeader != null) {
             String next = RankedHeaderView.signature(this);
             if (!next.equals(headerSignature)) {
-                WebView old = brandedHeader;
+                View old = brandedHeader;
                 rootLayout.removeView(old);
-                old.destroy();
                 brandedHeader = RankedHeaderView.create(this, sourceHeaderTheme,
                         this::showLauncherMenu);
                 rootLayout.addView(brandedHeader, 0, new LinearLayout.LayoutParams(
@@ -475,7 +474,6 @@ public final class RankedSiteActivity extends Activity {
         if (brandedHeader != null) {
             ViewGroup parent = (ViewGroup) brandedHeader.getParent();
             if (parent != null) parent.removeView(brandedHeader);
-            brandedHeader.destroy();
             brandedHeader = null;
         }
         if (fileCallback != null) {

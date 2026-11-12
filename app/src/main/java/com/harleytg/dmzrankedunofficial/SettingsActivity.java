@@ -133,7 +133,7 @@ public class SettingsActivity extends Activity {
     public static final String ACTION_SELECT_OPERATOR = "select_operator";
 
     private int launcherTheme = RankedHeaderView.THEME_COMMUNITY;
-    private WebView settingsHeader;
+    private View settingsHeader;
     private SharedPreferences preferences;
     private RankedSettingsNavigator settingsNavigator;
     private char[] pendingBackupPassword;

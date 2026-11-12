@@ -26,10 +26,9 @@ class HubPolishTests(unittest.TestCase):
 
     def test_real_settings_gear_in_shared_header(self):
         header = (JAVA / "RankedHeaderView.java").read_text()
-        self.assertIn('<svg viewBox=', header)
-        self.assertIn('aria-hidden=', header)
-        self.assertIn('rankedhub://action/settings', header)
-        self.assertNotIn('&#9881;', header)
+        self.assertIn('R.drawable.ic_settings', header)
+        self.assertIn('ImageButton button', header)
+        self.assertIn('Open app settings', header)
 
     def test_optional_verbose_loaders_and_recovery_controls(self):
         intro = (JAVA / "RankedIntroView.java").read_text()

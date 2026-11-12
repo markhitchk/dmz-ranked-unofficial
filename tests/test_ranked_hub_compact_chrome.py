@@ -10,9 +10,9 @@ class CompactChromeTests(unittest.TestCase):
         self.assertIn("contentSize(activity)", header)
         self.assertIn("fontScale", header)
         self.assertIn("DENSITY_DEVICE_STABLE", header)
-        self.assertIn("compact ? 44", header)
-        self.assertIn("HEIGHT_DP = 52;", header)
-        self.assertIn("baseline + extra",header)
+        self.assertIn("? 58 :", header)
+        self.assertIn("HEIGHT_DP = 74;", header)
+        self.assertIn("base + extra",header)
         for activity in ("RankedHubActivity.java","RankedSiteActivity.java","SettingsActivity.java"):
             src=(JAVA/activity).read_text()
             self.assertIn("RankedHeaderView.heightDp(this)",src)
@@ -38,7 +38,7 @@ class CompactChromeTests(unittest.TestCase):
             self.assertIn('@android:color/transparent',icon)
             self.assertIn('@drawable/ranked_hub_launcher_foreground',icon)
         foreground=(folder/"drawable/ranked_hub_launcher_foreground.xml").read_text()
-        self.assertIn('android:insetLeft="18dp"',foreground)
-        self.assertIn('android:insetTop="18dp"',foreground)
+        self.assertIn('android:insetLeft="10dp"',foreground)
+        self.assertIn('android:insetTop="10dp"',foreground)
 
 if __name__=="__main__":unittest.main()
