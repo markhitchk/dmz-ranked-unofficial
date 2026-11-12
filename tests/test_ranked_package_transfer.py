@@ -11,8 +11,8 @@ class PackageTransferTests(unittest.TestCase):
         self.assertIn("applicationId 'com.harleytg.dmzranked'", g)
         self.assertIn("variant.applicationId.set('com.harleytg.rankedhub.beta')", g)
         self.assertIn("withBuildType('beta')", g)
-        self.assertIn("versionCode 186", g)
-        self.assertIn("versionName '1.0.82'", g)
+        self.assertIn("versionCode 187", g)
+        self.assertIn("versionName '1.0.83'", g)
 
     def test_migration_uses_only_explicit_installed_legacy_sources(self):
         s=(JAVA/"RankedHubDataTransfer.java").read_text()
