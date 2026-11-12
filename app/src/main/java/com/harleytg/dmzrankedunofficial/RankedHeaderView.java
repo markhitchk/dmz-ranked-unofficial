@@ -83,8 +83,8 @@ final class RankedHeaderView {
         final String background;
         if (theme == THEME_DMZ_V1) {
             title = "DMZ Ranked";
-            logo = "dmz-v1.svg";
-            logoAlt = "DMZ Ranked V1 official website crest";
+            logo = "dmz-v1-discord.webp";
+            logoAlt = "DMZ Ranked MW4 V1 Discord server icon";
             accent = "#F4C15F";
             background = "#101010";
         } else if (theme == THEME_ARC) {
@@ -101,8 +101,8 @@ final class RankedHeaderView {
             background = "#111B19";
         } else {
             title = "Ranked Hub";
-            logo = "official_studio.png";
-            logoAlt = "Harley's Studios official puppy logo";
+            logo = "ranked-hub-selected.webp";
+            logoAlt = "Ranked Hub puppy shield logo";
             accent = "#33D4E7";
             background = "#091923";
         }
