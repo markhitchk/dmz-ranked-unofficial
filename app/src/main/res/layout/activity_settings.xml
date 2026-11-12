@@ -27,6 +27,7 @@
 
         <ImageView
             android:id="@+id/settingsLogo"
+            android:background="@android:color/transparent"
             android:layout_width="46dp"
             android:layout_height="46dp"
             android:contentDescription="DMZ Ranked logo"
@@ -168,6 +169,7 @@
 
                     <ImageView
                         android:id="@+id/aboutLogo"
+                        android:background="@android:color/transparent"
                         android:layout_width="72dp"
                         android:layout_height="72dp"
                         android:contentDescription="DMZ Ranked logo"

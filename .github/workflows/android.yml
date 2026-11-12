@@ -82,7 +82,7 @@ jobs:
       - name: Upload beta test APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ranked-Hub-Beta-1.0.67-171-APK
+          name: Ranked-Hub-Beta-1.0.68-172-APK
           path: app/build/outputs/apk/beta/app-beta.apk
 
       - name: Verify beta AAB signature
@@ -91,7 +91,7 @@ jobs:
       - name: Upload beta test AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Ranked-Hub-Beta-1.0.67-171-AAB
+          name: Ranked-Hub-Beta-1.0.68-172-AAB
           path: app/build/outputs/bundle/beta/app-beta.aab
 
       - name: Verify stable release APK signature and alignment
@@ -102,7 +102,7 @@ jobs:
       - name: Upload stable release APK
         uses: actions/upload-artifact@v4
         with:
-          name: DMZ-Ranked-1.0.67-171-APK
+          name: DMZ-Ranked-1.0.68-172-APK
           path: app/build/outputs/apk/release/app-release.apk
 
       - name: Verify release AAB signature
@@ -111,5 +111,5 @@ jobs:
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DMZ-Ranked-1.0.67-171-AAB
+          name: DMZ-Ranked-1.0.68-172-AAB
           path: app/build/outputs/bundle/release/app-release.aab
