@@ -17,6 +17,7 @@
   var logoNode=null;
   var lastName=null;
   var timer=null;
+  var lastOffset=-1;
 
   function ownName(){
     var text='';
@@ -87,6 +88,18 @@
     if(!banner.isConnected||banner.parentNode!==document.body){
       document.body.insertBefore(banner,document.body.firstChild);
     }
+    // The V1 FOB occupies the entire WebView and hides ordinary body siblings.
+    // Keep the reservation in sync with the app banner's rendered height.
+    if(config.site==='dmz-v1'){
+      var computed=window.getComputedStyle(banner);
+      var offset=banner.offsetHeight+
+        (parseFloat(computed.marginTop)||0)+(parseFloat(computed.marginBottom)||0);
+      offset=Math.max(0,Math.ceil(offset));
+      if(offset!==lastOffset){
+        lastOffset=offset;
+        document.documentElement.style.setProperty('--ranked-hub-welcome-offset',offset+'px');
+      }
+    }
     if(!welcomeNode)welcomeNode=banner.querySelector('.dmz-hs-welcome');
     var name=ownName();
     if(name!==lastName&&welcomeNode){
@@ -112,6 +125,8 @@
     if(observer)observer.disconnect();
     window.removeEventListener('hashchange',schedule);
     window.removeEventListener('focus',schedule);
+    window.removeEventListener('resize',schedule);
+    if(config.site==='dmz-v1') document.documentElement.style.removeProperty('--ranked-hub-welcome-offset');
     var banner=document.getElementById(id);
     if(banner)banner.remove();
     if(window.__rankedHubWelcome&&window.__rankedHubWelcome.destroy===destroy)
@@ -122,5 +137,6 @@
   observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
   window.addEventListener('hashchange',schedule);
   window.addEventListener('focus',schedule);
+  window.addEventListener('resize',schedule);
   refresh();
 })();
