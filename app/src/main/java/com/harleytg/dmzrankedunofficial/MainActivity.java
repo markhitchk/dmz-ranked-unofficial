@@ -1781,7 +1781,8 @@ public class MainActivity extends Activity {
         }
         // The Ranked Hub beta's community client shares this Activity.
         // Keep the splash branded but hide version/build and extra labels.
-        if ("com.harleytg.rankedhub.beta".equals(getPackageName())) {
+        if ("com.harleytg.rankedhub.beta".equals(getPackageName())
+                && (preferences == null || !preferences.getBoolean(PREF_VERBOSE_LOADING, true))) {
             if (versionText != null) versionText.setVisibility(View.GONE);
             if (loadingBetaBadge != null) loadingBetaBadge.setVisibility(View.GONE);
             return;
@@ -1863,8 +1864,8 @@ public class MainActivity extends Activity {
         }
 
         if (loadingVerboseText == null || preferences == null) return;
-        boolean verbose = !"com.harleytg.rankedhub.beta".equals(getPackageName())
-                && preferences.getBoolean(PREF_VERBOSE_LOADING, false);
+        boolean verbose = preferences.getBoolean(PREF_VERBOSE_LOADING,
+                "com.harleytg.rankedhub.beta".equals(getPackageName()));
         loadingVerboseText.setText(safeStatus);
         loadingVerboseText.setVisibility(verbose ? View.VISIBLE : View.GONE);
     }

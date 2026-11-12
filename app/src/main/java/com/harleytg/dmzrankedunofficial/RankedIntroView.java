@@ -23,9 +23,10 @@ import java.io.InputStream;
 final class RankedIntroView extends FrameLayout {
     private final boolean reducedMotion;
     private ObjectAnimator radarAnimation;
+    private final TextView startupStatus;
     private boolean ended;
 
-    RankedIntroView(Activity activity, boolean reduceMotion) {
+    RankedIntroView(Activity activity, boolean reduceMotion, boolean verbose) {
         super(activity);
         reducedMotion=reduceMotion;
         setClickable(false);
@@ -67,6 +68,29 @@ final class RankedIntroView extends FrameLayout {
         heading.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
         heading.setGravity(Gravity.CENTER);
         column.addView(heading,new LinearLayout.LayoutParams(-1,dp(42)));
+        startupStatus = new TextView(activity);
+        startupStatus.setTextColor(Color.rgb(113,222,236));
+        startupStatus.setTextSize(12);
+        startupStatus.setGravity(Gravity.CENTER);
+        startupStatus.setText("STARTUP • INITIALIZING");
+        startupStatus.setVisibility(verbose ? View.VISIBLE : View.GONE);
+        column.addView(startupStatus,new LinearLayout.LayoutParams(-1,dp(30)));
+        if (verbose) {
+            TextView version = new TextView(activity);
+            version.setGravity(Gravity.CENTER);
+            version.setTextColor(Color.rgb(161,192,207));
+            version.setTextSize(11);
+            try {
+                android.content.pm.PackageInfo info = activity.getPackageManager()
+                        .getPackageInfo(activity.getPackageName(), 0);
+                version.setText("VERSION " + info.versionName + " • BUILD "
+                        + (android.os.Build.VERSION.SDK_INT >= 28
+                            ? info.getLongVersionCode() : info.versionCode));
+            } catch (Exception error) {
+                version.setText("LOCAL ASSETS • OFFLINE LAUNCHER");
+            }
+            column.addView(version,new LinearLayout.LayoutParams(-1,dp(24)));
+        }
 
         if(!reducedMotion) {
             logo.setScaleX(0.91f);
@@ -77,6 +101,10 @@ final class RankedIntroView extends FrameLayout {
             radarAnimation.setDuration(2400);
             radarAnimation.start();
         }
+    }
+
+    void setStatus(String status) {
+        if (!ended && startupStatus.getVisibility() == View.VISIBLE) startupStatus.setText(status);
     }
 
     void finish(Runnable done) {

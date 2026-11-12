@@ -275,7 +275,7 @@ public class SettingsActivity extends Activity {
         keepAwake.setChecked(preferences.getBoolean(PREF_KEEP_AWAKE, false));
         pullRefresh.setChecked(preferences.getBoolean(PREF_PULL_REFRESH, true));
         rememberLastPage.setChecked(preferences.getBoolean(PREF_REMEMBER_LAST_PAGE, true));
-        verboseLoading.setChecked(preferences.getBoolean(PREF_VERBOSE_LOADING, false));
+        verboseLoading.setChecked(preferences.getBoolean(PREF_VERBOSE_LOADING, isRankedHubBuild()));
         siteNotifications.setChecked(preferences.getBoolean(PREF_SITE_NOTIFICATIONS, true));
         operatorAutoSave.setChecked(preferences.getBoolean(PREF_OPERATOR_AUTOSAVE, true));
         appAnimations.setChecked(preferences.getBoolean(PREF_APP_ANIMATIONS, true));
@@ -318,13 +318,6 @@ public class SettingsActivity extends Activity {
         bindToggleCard(R.id.pullRefreshCard, pullRefresh);
         bindToggleCard(R.id.rememberLastPageCard, rememberLastPage);
         bindToggleCard(R.id.verboseLoadingCard, verboseLoading);
-        // Detailed loading is intentionally unavailable in Ranked Hub Beta.
-        // Diagnostics remain accessible from the developer tools.
-        if (isRankedHubBuild()) {
-            verboseLoading.setChecked(false);
-            verboseLoading.setEnabled(false);
-            findViewById(R.id.verboseLoadingCard).setVisibility(View.GONE);
-        }
         bindToggleCard(R.id.siteNotificationsCard, siteNotifications);
         bindToggleCard(R.id.operatorAutoSaveCard, operatorAutoSave);
         bindToggleCard(R.id.appAnimationsCard, appAnimations);
@@ -752,8 +745,7 @@ public class SettingsActivity extends Activity {
                 | showIfMatches(R.id.rememberLastPageCard, q,
                         "remember last page restore reopen startup")
                 | showIfMatches(R.id.verboseLoadingCard, q,
-                        "detailed verbose loading status percentage progress");
-        if (isRankedHubBuild()) findViewById(R.id.verboseLoadingCard).setVisibility(View.GONE);
+                        "verbose startup splash loading status steps stages percentage progress");
         findViewById(R.id.appExperienceSection).setVisibility(appMatch ? View.VISIBLE : View.GONE);
 
         boolean operatorMatch =
@@ -2138,7 +2130,7 @@ public class SettingsActivity extends Activity {
                 + "Keep screen awake: " + onOff(PREF_KEEP_AWAKE, false) + "\n"
                 + "Pull to refresh: " + onOff(PREF_PULL_REFRESH, true) + "\n"
                 + "Remember last page: " + onOff(PREF_REMEMBER_LAST_PAGE, true) + "\n"
-                + "Detailed loading: " + onOff(PREF_VERBOSE_LOADING, false) + "\n"
+                + "Verbose startup and loading: " + onOff(PREF_VERBOSE_LOADING, isRankedHubBuild()) + "\n"
                 + "WebView debugging: " + onOff(PREF_WEBVIEW_DEBUG, false);
     }
 

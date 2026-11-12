@@ -39,6 +39,7 @@ public final class RankedSiteActivity extends Activity {
     public static final String EXTRA_OPEN_SITE_SETTINGS = "ranked_open_site_settings";
     public static final String SITE_DMZ_V1 = "dmz-v1";
     public static final String SITE_ARC = "arc-raiders";
+    public static final String SITE_PUPPY = "puppy-clicker";
 
     private static final int FILE_PICKER_REQUEST = 6101;
     private static final int DARK = Color.rgb(8, 12, 19);
@@ -69,6 +70,10 @@ public final class RankedSiteActivity extends Activity {
             homeUrl = "https://arc-raiders-ranked.vercel.app/";
             allowedHost = "arc-raiders-ranked.vercel.app";
             siteTitle = "ARC Raiders Ranked";
+        } else if (SITE_PUPPY.equals(site)) {
+            homeUrl = "https://puppy-clicker.vercel.app/";
+            allowedHost = "puppy-clicker.vercel.app";
+            siteTitle = "Puppy Clicker";
         } else {
             // Reject arbitrary URLs/hosts passed to the activity.
             finish();
@@ -86,7 +91,9 @@ public final class RankedSiteActivity extends Activity {
         root.setBackgroundColor(DARK);
 
         int theme = SITE_DMZ_V1.equals(site)
-                ? RankedHeaderView.THEME_DMZ_V1 : RankedHeaderView.THEME_ARC;
+                ? RankedHeaderView.THEME_DMZ_V1
+                : SITE_PUPPY.equals(site) ? RankedHeaderView.THEME_PUPPY
+                : RankedHeaderView.THEME_ARC;
         sourceHeaderTheme = theme;
         brandedHeader = RankedHeaderView.create(this, theme, this::showLauncherMenu);
         root.addView(brandedHeader, new LinearLayout.LayoutParams(
@@ -95,7 +102,9 @@ public final class RankedSiteActivity extends Activity {
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);
         progress.setProgressTintList(ColorStateList.valueOf(
-                SITE_DMZ_V1.equals(site) ? Color.rgb(244, 193, 95) : Color.rgb(98, 216, 229)));
+                SITE_DMZ_V1.equals(site) ? Color.rgb(244, 193, 95)
+                : SITE_PUPPY.equals(site) ? Color.rgb(246, 197, 143)
+                : Color.rgb(98, 216, 229)));
         root.addView(progress, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(3)));
 
@@ -195,8 +204,10 @@ public final class RankedSiteActivity extends Activity {
 
         FrameLayout browserLayer = new FrameLayout(this);
         browserLayer.addView(webView, new FrameLayout.LayoutParams(-1,-1));
+        boolean verbose = sitePreferences.getBoolean("verbose_loading",
+                "com.harleytg.rankedhub.beta".equals(getPackageName()));
         loadCoordinator = new RankedLoadCoordinator(this, browserLayer, site, allowedHost,
-                false, () -> webView.loadUrl(homeUrl), this::finish, this::openCurrentPageInBrowser);
+                verbose, () -> webView.loadUrl(homeUrl), this::finish, this::openCurrentPageInBrowser);
         root.addView(browserLayer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
@@ -296,14 +307,14 @@ public final class RankedSiteActivity extends Activity {
     }
 
     private void showLauncherMenu() {
-        String[] options = {
-                "Reload this website",
-                "Open in browser",
-                "Return to Ranked Hub",
-                "App settings",
-                "Capture safe site preferences",
-                "Restore saved site preferences"
-        };
+        // Puppy Clicker does not implement the RankedHubBackupV1 contract.
+        // Never advertise MW4/ARC-specific backup actions for that website.
+        String[] options = SITE_PUPPY.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
+                ? new String[]{"Reload this website", "Open in browser",
+                        "Return to Projects", "App settings"}
+                : new String[]{"Reload this website", "Open in browser",
+                        "Return to Ranked Hub", "App settings",
+                        "Capture safe site preferences", "Restore saved site preferences"};
         new AlertDialog.Builder(this)
                 .setTitle(siteTitle)
                 .setItems(options, (dialog, index) -> {

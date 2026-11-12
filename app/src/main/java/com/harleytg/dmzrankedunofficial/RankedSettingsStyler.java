@@ -30,6 +30,7 @@ final class RankedSettingsStyler {
         if (theme == RankedHeaderView.THEME_DMZ_V1) return Color.parseColor("#F4C15F");
         if (theme == RankedHeaderView.THEME_ARC) return Color.parseColor("#62D8E5");
         if (theme == RankedHeaderView.THEME_COMMUNITY) return Color.parseColor("#B6C695");
+        if (theme == RankedHeaderView.THEME_PUPPY) return Color.parseColor("#F6C58F");
         return Color.parseColor("#33D4E7");
     }
 
@@ -37,6 +38,7 @@ final class RankedSettingsStyler {
         if (theme == RankedHeaderView.THEME_DMZ_V1) return "DMZ RANKED V1";
         if (theme == RankedHeaderView.THEME_ARC) return "ARC RAIDERS RANKED";
         if (theme == RankedHeaderView.THEME_COMMUNITY) return "DMZRANKED.COM";
+        if (theme == RankedHeaderView.THEME_PUPPY) return "PUPPY CLICKER";
         return "RANKED HUB";
     }
 
@@ -83,6 +85,13 @@ final class RankedSettingsStyler {
                 about.setImageBitmap(BitmapFactory.decodeStream(stream));
             } catch (Exception ignored) {
                 // Original DMZ logo stays visible if the ARC logo cannot decode.
+            }
+        } else if (theme == RankedHeaderView.THEME_PUPPY) {
+            try (InputStream stream = activity.getAssets()
+                    .open("ranked-hub/puppy_clicker.png")) {
+                about.setImageBitmap(BitmapFactory.decodeStream(stream));
+            } catch (Exception ignored) {
+                // Keep the existing icon when an asset cannot be decoded.
             }
         } // Original DMZRanked.com keeps its own independent logo.
     }

@@ -24,6 +24,7 @@ final class RankedHeaderView {
     static final int THEME_DMZ_V1 = 1;
     static final int THEME_ARC = 2;
     static final int THEME_COMMUNITY = 3;
+    static final int THEME_PUPPY = 4;
     static final int HEIGHT_DP = 78;
 
     private RankedHeaderView() {}
@@ -40,7 +41,8 @@ final class RankedHeaderView {
                                           Runnable action, boolean settingsMode) {
         String background = theme == THEME_DMZ_V1 ? "#101010"
                 : theme == THEME_ARC ? "#071A29"
-                : theme == THEME_COMMUNITY ? "#111B19" : "#091923";
+                : theme == THEME_COMMUNITY ? "#111B19"
+                : theme == THEME_PUPPY ? "#201925" : "#091923";
         WebView header = new WebView(activity);
         header.setBackgroundColor(Color.parseColor(background));
         header.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -99,6 +101,12 @@ final class RankedHeaderView {
             logoAlt = "Original DMZRanked.com Android app artwork";
             accent = "#B6C695";
             background = "#111B19";
+        } else if (theme == THEME_PUPPY) {
+            title = "Puppy Clicker";
+            logo = "puppy_clicker.png";
+            logoAlt = "Official Puppy Clicker logo";
+            accent = "#F6C58F";
+            background = "#201925";
         } else {
             title = "Ranked Hub";
             logo = "ranked-hub-selected.webp";

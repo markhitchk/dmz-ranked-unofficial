@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#061019">
+<title>Harley's Studios Projects | Ranked Hub</title>
+<style>
+:root{color-scheme:dark;--ink:#f5f8fa;--muted:#a8becb}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#061019;color:var(--ink);font-family:Arial,Roboto,sans-serif}
+body{background:radial-gradient(ellipse 90% 50% at 50% -10%,#1e3545,transparent 85%),#061019}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:linear-gradient(#285367 1px,transparent 1px),linear-gradient(90deg,#285367 1px,transparent 1px);background-size:39px 39px}
+.wrap{position:relative;max-width:860px;margin:auto;padding:12px 14px 22px}
+.back{display:inline-flex;align-items:center;min-height:42px;color:#8fe4ee;font-size:12px;font-weight:bold;text-decoration:none;letter-spacing:.06em}
+.back:focus-visible,.card:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.heading{display:flex;align-items:center;gap:12px;padding:4px 0 12px}
+.brand{width:54px;height:54px;object-fit:contain}
+.heading h1{font-size:clamp(18px,5vw,25px);line-height:1.08;margin:0}
+.heading p{color:#a8bdc9;font-size:11px;letter-spacing:.06em;margin:5px 0 0}
+.section{display:flex;justify-content:space-between;gap:7px;align-items:center;padding:12px 2px}
+.section h2{font-size:16px;margin:0;letter-spacing:.04em}
+.section span{font-size:11px;color:#acc2ce}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card{--edge:#668395;position:relative;display:flex;flex-direction:column;align-items:center;text-decoration:none;min-width:0;min-height:245px;padding:12px 10px;border:1px solid var(--edge);border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#243742,#10232c 50%,#0b161f);color:inherit;box-shadow:0 7px 20px #0004}
+.card:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.12;background:repeating-linear-gradient(135deg,transparent 0 38px,var(--edge) 39px 40px,transparent 41px 78px)}
+.card--puppy{--edge:#f6c58f;background:linear-gradient(145deg,#3c302e,#10232c 57%,#0b161f)}
+.card--ranked{--edge:#66d4e5}
+.card--studio{--edge:#b8a5e8}
+.card--future{--edge:#8c9eac}
+.tag{position:relative;align-self:flex-start;color:var(--edge);font-size:10px;font-weight:800;letter-spacing:.06em}
+.art{position:relative;flex:1;min-height:116px;display:grid;place-items:center;width:100%;padding:6px 0}
+.art img{max-width:95%;max-height:130px;object-fit:contain}
+.art .plus{width:88px;height:88px;border:1px solid #567c8f;border-radius:19px;display:grid;place-items:center;font-size:57px;font-weight:300;color:#afc3d0}
+.name{position:relative;text-align:center;min-height:36px;display:grid;place-items:center;font-weight:900;font-size:clamp(13px,3.8vw,19px)}
+.meta{position:relative;color:#aec1cb;font-size:10px;text-align:center;margin:5px 0 11px}
+.action{position:relative;display:grid;place-items:center;min-height:43px;width:100%;border:1px solid var(--edge);border-radius:10px;font-weight:800;font-size:12px;letter-spacing:.02em;color:var(--edge);background:#091821}
+.card.disabled{opacity:.78}
+.card.disabled .action{color:#91a5b4}
+.note{font-size:11px;color:#92b0c0;text-align:center;line-height:1.5;margin:14px 0 0}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.card{animation:rise .35s ease-out both}.card:nth-child(2){animation-delay:70ms}.card:nth-child(3){animation-delay:140ms}.card:nth-child(4){animation-delay:210ms}
+.card--puppy .art img{animation:float 5s ease-in-out infinite}
+a.card{transition:transform .17s ease}a.card:active{transform:scale(.98)}
+@media(max-width:599px){
+html,body{height:100%}
+.wrap{height:100vh;height:100dvh;min-height:480px;display:flex;flex-direction:column;padding:5px 10px 12px}
+.back{flex:0 0 auto;min-height:33px}
+.heading{flex:0 0 auto;padding:0 0 5px}
+.brand{width:45px;height:45px}
+.section{flex:0 0 auto;padding:8px 3px}
+.section h2{font-size:13px}.section span{font-size:9px}
+.grid{flex:1 1 auto;min-height:0;grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
+.card{height:auto;min-height:0;padding:7px 6px;border-radius:14px}
+.tag{font-size:8px}
+.art{min-height:0;padding:3px 0}
+.art img{max-height:min(125px,18dvh)}
+.art .plus{width:min(88px,15dvh);height:min(88px,15dvh);font-size:45px}
+.name{min-height:29px;font-size:clamp(12px,3.6vw,16px)}
+.meta{font-size:8px;margin:3px 0 6px}
+.action{min-height:40px;font-size:10px}
+.note{flex:0 0 auto;font-size:10px;margin:10px 0 0}
+}
+@media(min-width:600px) and (max-height:650px){
+.wrap{height:100vh;height:100dvh;display:flex;flex-direction:column;padding:5px 12px}
+.back{min-height:28px}.heading{padding:0}.brand{width:36px;height:36px}
+.section{padding:5px 0}
+.grid{flex:1;min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr}
+.card{min-height:0;padding:6px 5px}.art{min-height:0}.art img{max-height:min(110px,22dvh)}
+.name{font-size:12px;min-height:24px}.meta{font-size:8px;margin:2px 0 4px}
+.action{min-height:29px;font-size:9px}.note{margin:5px}
+}
+@media(prefers-reduced-motion:reduce){.card,.card--puppy .art img{animation:none!important}a.card{transition:none!important}}
+html.reduce-motion .card,html.reduce-motion .card--puppy .art img{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<main class="wrap">
+<a class="back" href="rankedhub://open/home" aria-label="Back to Ranked Hub game selector">&#8592; BACK TO RANKED HUB</a>
+<div class="heading">
+<img class="brand" src="official_studio.png" alt="Official Harley's Studios logo">
+<div><h1>HARLEY'S STUDIOS</h1><p>PROJECT LAUNCHER · RANKED HUB</p></div>
+</div>
+<div class="section"><h2>SELECT A PROJECT</h2><span>01 AVAILABLE</span></div>
+<section class="grid" aria-label="Harley's Studios projects">
+<a class="card card--puppy" href="rankedhub://open/puppy-clicker" aria-label="Open Puppy Clicker">
+<div class="tag">GAME / LIVE</div><div class="art"><img src="puppy_clicker.png" alt="Official Puppy Clicker game logo"></div>
+<div class="name">PUPPY CLICKER</div><div class="meta">PUPPIES · PROGRESS · CARE</div><div class="action">OPEN PUPPY CLICKER ↗</div>
+</a>
+<div class="card card--ranked disabled" aria-label="Future ranked game, coming soon">
+<div class="tag">FUTURE RANKED</div><div class="art"><div class="plus">+</div></div>
+<div class="name">NEXT RANKED GAME</div><div class="meta">PROJECT TO BE ANNOUNCED</div><div class="action">COMING SOON</div>
+</div>
+<div class="card card--studio disabled" aria-label="Future Harley's Studios project, coming soon">
+<div class="tag">HARLEY'S STUDIOS</div><div class="art"><img src="official_studio.png" alt="Harley's Studios"></div>
+<div class="name">MORE PROJECTS</div><div class="meta">GAMES · APPS · EXPERIMENTS</div><div class="action">COMING SOON</div>
+</div>
+<div class="card card--future disabled" aria-label="Additional future games, not available">
+<div class="tag">FUTURE OPERATIONS</div><div class="art"><div class="plus">+</div></div>
+<div class="name">MORE TO COME</div><div class="meta">FUTURE RANKED GAMES</div><div class="action">NOT AVAILABLE</div>
+</div>
+</section>
+<p class="note">Harley's Studios projects are independent. Accounts and progress are not shared between games.</p>
+</main></body></html>

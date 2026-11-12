@@ -264,6 +264,31 @@ tasks.register("prepareRankedHubAssets") {
             into target
             rename { "dmz_community.png" }
         }
+        // Bundle Puppy Clicker's exact official website logo for the Projects launcher.
+        def puppyLogoUrl = "https://raw.githubusercontent.com/markhitchk/Puppy-Clicker/main/assets/logos/puppy_clicker.png"
+        def puppyLogoSha = "120206a7057633b3da2c49ba70c001926c19860c"
+        def puppyLogoFile = new File(target, "puppy_clicker.png")
+        if (!puppyLogoFile.exists() || puppyLogoFile.length() != 920318) {
+            def connection = new URL(puppyLogoUrl).openConnection()
+            connection.setConnectTimeout(20000)
+            connection.setReadTimeout(30000)
+            puppyLogoFile.bytes = connection.getInputStream().withCloseable { it.bytes }
+        }
+        def puppyBytes = puppyLogoFile.bytes
+        if (puppyBytes.length != 920318
+                || puppyBytes[0] != (byte)0x89 || puppyBytes[1] != (byte)0x50) {
+            throw new GradleException("Missing official Puppy Clicker PNG artwork")
+        }
+        def puppyDigest = java.security.MessageDigest.getInstance("SHA-1")
+        puppyDigest.update(("blob " + puppyBytes.length).getBytes("UTF-8"))
+        puppyDigest.update((byte)0)
+        puppyDigest.update(puppyBytes)
+        def puppyActualSha = puppyDigest.digest()
+                .collect { String.format("%02x", it & 0xFF) }.join("")
+        if (puppyActualSha != puppyLogoSha) {
+            throw new GradleException("Puppy Clicker artwork does not match canonical repo asset")
+        }
+
         // Bundle the owner-selected MW4 Discord server icon for offline UI.
         def discordLogoUrl = "https://cdn.discordapp.com/icons/1560773091674685563/add804ea564a54751612a45d8a5aeb1c.webp?size=512"
         def discordLogoFile = new File(target, "dmz-v1-discord.webp")
@@ -316,8 +341,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 181
-        versionName '1.0.77'
+        versionCode 182
+        versionName '1.0.78'
     }
 
     sourceSets {

@@ -18,6 +18,10 @@ class RankedHubGridTests(unittest.TestCase):
             self.assertIn("rankedhub://open/" + target, html)
         self.assertIn("COMING SOON", html)
         self.assertNotIn("rankedhub://open/coming", html)
+        self.assertIn("rankedhub://open/projects", html)
+        projects = (ASSETS / "projects.html").read_text()
+        self.assertIn("rankedhub://open/puppy-clicker", projects)
+        self.assertIn("rankedhub://open/home", projects)
         self.assertNotIn("ONE HUB.", html)
 
     def test_official_site_logos_are_bundled(self):

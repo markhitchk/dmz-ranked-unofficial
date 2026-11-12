@@ -28,6 +28,10 @@ import android.widget.Toast;
  */
 public final class RankedHubActivity extends Activity {
     private static final String HUB_URL = "file:///android_asset/ranked-hub/index.html";
+    private static final String PROJECTS_ASSET = "projects.html";
+    private static final String HOME_ASSET = "index.html";
+    private boolean projectsPage;
+    private boolean reduceMotion;
     private WebView hub;
     private WebView brandedHeader;
     private RankedIntroView intro;
@@ -65,8 +69,12 @@ public final class RankedHubActivity extends Activity {
         settings.setDefaultTextEncodingName("UTF-8");
 
         hub.setWebViewClient(new WebViewClient() {
+            @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                if (intro != null) intro.setStatus("LOADING • LOCAL LAUNCHER");
+            }
             @Override public void onPageFinished(WebView view, String url) {
                 if (intro != null) {
+                    intro.setStatus("READY • GAME SELECTOR LOADED");
                     RankedIntroView done = intro;
                     intro = null;
                     done.finish(() -> { ViewGroup p = (ViewGroup)done.getParent();
@@ -95,25 +103,33 @@ public final class RankedHubActivity extends Activity {
         setContentView(stack);
         RankedSafeArea.apply(stack);
         SharedPreferences prefs = getSharedPreferences("dmz_ranked_settings", Context.MODE_PRIVATE);
-        boolean reducedMotion = prefs.getBoolean("reduced_motion", false)
+        reduceMotion = prefs.getBoolean("reduced_motion", false)
                 || !prefs.getBoolean("app_animations", true);
-        if (state == null && !reducedMotion) {
-            intro = new RankedIntroView(this, false);
+        boolean verbose = prefs.getBoolean("verbose_loading", true);
+        if (state == null && (!reduceMotion || verbose)) {
+            intro = new RankedIntroView(this, reduceMotion, verbose);
             stack.addView(intro, new FrameLayout.LayoutParams(-1, -1));
         }
-        loadLauncherHtml(reducedMotion);
+        loadLauncherHtml(reduceMotion);
     }
 
-    /** Offline CSS-only launcher; no JavaScript and no externally fetched assets. */
+    /** Offline CSS-only launchers; no JavaScript and no externally fetched assets. */
     private void loadLauncherHtml(boolean reducedMotion) {
+        loadLauncherHtml(HOME_ASSET, reducedMotion);
+    }
+
+    private void loadLauncherHtml(String assetName, boolean reducedMotion) {
+        // Only constant, packaged launcher filenames may be selected.
+        String safeAsset = PROJECTS_ASSET.equals(assetName) ? PROJECTS_ASSET : HOME_ASSET;
+        projectsPage = PROJECTS_ASSET.equals(safeAsset);
         if (!reducedMotion) {
-            hub.loadUrl(HUB_URL);
+            hub.loadUrl("file:///android_asset/ranked-hub/" + safeAsset);
             return;
         }
         // Android's app_animations / reduced_motion preferences also disable
         // the WebView card animations, without enabling JavaScript.
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                getAssets().open("ranked-hub/index.html"), StandardCharsets.UTF_8))) {
+                getAssets().open("ranked-hub/" + safeAsset), StandardCharsets.UTF_8))) {
             StringBuilder content = new StringBuilder();
             char[] buffer = new char[4096];
             int count;
@@ -123,7 +139,7 @@ public final class RankedHubActivity extends Activity {
             hub.loadDataWithBaseURL("file:///android_asset/ranked-hub/", html,
                     "text/html", "UTF-8", null);
         } catch (IOException e) {
-            hub.loadUrl(HUB_URL); // Bundled asset fallback.
+            hub.loadUrl("file:///android_asset/ranked-hub/" + safeAsset); // Bundled fallback.
         }
     }
 
@@ -136,6 +152,12 @@ public final class RankedHubActivity extends Activity {
             openSite(RankedSiteActivity.SITE_ARC);
         } else if ("/community".equals(path)) {
             startActivity(new Intent(this, MainActivity.class));
+        } else if ("/projects".equals(path)) {
+            loadLauncherHtml(PROJECTS_ASSET, reduceMotion);
+        } else if ("/home".equals(path)) {
+            loadLauncherHtml(reduceMotion);
+        } else if ("/puppy-clicker".equals(path)) {
+            openSite(RankedSiteActivity.SITE_PUPPY);
         } else {
             Toast.makeText(this, "This operation is not available.", Toast.LENGTH_SHORT).show();
         }
@@ -149,7 +171,11 @@ public final class RankedHubActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        finish();
+        if (projectsPage) {
+            loadLauncherHtml(reduceMotion);
+        } else {
+            finish();
+        }
     }
 
     private int dp(int size) {

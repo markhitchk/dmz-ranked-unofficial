@@ -47,8 +47,8 @@ final class RankedLoadCoordinator {
         this.retry=retry;
         this.returnToHub=returnToHub;
         this.openBrowser=openBrowser;
-        // Ranked Hub never exposes verbose loading telemetry to players.
-        visible=false;
+        // The dedicated Settings toggle controls live loading stages.
+        visible=verbose;
         panel=new FrameLayout(activity);
         GradientDrawable bg=new GradientDrawable();
         bg.setColor(Color.rgb(7,23,33));
@@ -86,7 +86,7 @@ final class RankedLoadCoordinator {
         addAction("RETRY",retry);
         addAction("HUB",returnToHub);
         addAction("BROWSER",openBrowser);
-        panel.setVisibility(View.GONE);
+        panel.setVisibility(verbose ? View.VISIBLE : View.GONE);
     }
 
     private void addAction(String label,Runnable action) {
@@ -150,7 +150,7 @@ final class RankedLoadCoordinator {
         panel.setVisibility(View.VISIBLE);
         indicator.setVisibility(failed?View.GONE:View.VISIBLE);
         actions.setVisibility(failed?View.VISIBLE:View.GONE);
-        status.setText("GAME UNAVAILABLE");
+        status.setText(failed ? "GAME UNAVAILABLE" : "LOADING • " + next);
         details.setText(summary);
     }
     void dispose(){

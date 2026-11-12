@@ -31,14 +31,18 @@ class HubPolishTests(unittest.TestCase):
         self.assertIn('rankedhub://action/settings', header)
         self.assertNotIn('&#9881;', header)
 
-    def test_quiet_loaders_preserve_recovery_controls(self):
+    def test_optional_verbose_loaders_and_recovery_controls(self):
         intro = (JAVA / "RankedIntroView.java").read_text()
         self.assertNotIn('HARLEY\'S STUDIOS  //  RANKED NETWORK', intro)
         load = (JAVA / "RankedLoadCoordinator.java").read_text()
-        self.assertIn('visible=false;', load)
+        self.assertIn('visible=verbose;', load)
         self.assertIn('GAME UNAVAILABLE', load)
         self.assertIn('addAction("RETRY",retry)', load)
         self.assertNotIn('COPY DIAGNOSTICS', load)
+        self.assertIn('startupStatus', intro)
+        settings = (JAVA / "SettingsActivity.java").read_text()
+        self.assertIn('PREF_VERBOSE_LOADING', settings)
+        self.assertNotIn('verboseLoading.setEnabled(false)', settings)
         main = (JAVA / "MainActivity.java").read_text()
         self.assertIn('com.harleytg.rankedhub.beta', main)
         self.assertIn('loadingVerboseText.setVisibility(verbose ? View.VISIBLE : View.GONE)', main)

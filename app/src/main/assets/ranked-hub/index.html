@@ -40,7 +40,7 @@
   .name {z-index:1;line-height:1.11;font-size:clamp(15px,4.1vw,22px);font-weight:900;text-align:center;min-height:39px;display:flex;align-items:center;justify-content:center}
   .meta {z-index:1;letter-spacing:.10em;color:#a8c0c9;font-size:9px;font-weight:800;text-align:center;margin:4px 0 13px;min-height:21px}
   .action {z-index:1;display:block;text-align:center;margin-top:auto;width:100%;border:1px solid var(--accent);border-radius:9px;padding:10px 4px;background:#09161eb5;color:var(--accent);font-size:12px;font-weight:900;letter-spacing:.055em;white-space:nowrap}
-  .tile--soon .action {border-color:#658492;color:#9cb2bf}
+  .tile--soon .action {border-color:#839cad;color:#d7e9f4}
   .foot {font-size:10px;line-height:1.45;text-align:center;letter-spacing:.04em;color:#93aab6;margin:16px 8px 0}
   .foot::first-line {color:#a9d7e7;font-weight:800;letter-spacing:.09em}
   /* Keep the independent-accounts notice visible beneath the full game grid. */
@@ -188,18 +188,18 @@
     transform:translate3d(-130%,0,0) skewX(-18deg);animation:hubScan 5.4s ease-in-out infinite}
   .tile--arc:after {animation-duration:4.8s;animation-delay:1.1s}
   .tile--community:after {animation-duration:6s;animation-delay:2s}
-  .tile--soon:after {display:none}
+  .tile--soon:after {animation-duration:6.2s;animation-delay:2.4s}
   .tile--dmz .logo img {animation:hubLogoFloat 5.3s ease-in-out infinite}
   .tile--arc .logo img {animation:hubLogoFloat 4.8s ease-in-out infinite 400ms}
   .tile--community .logo img {animation:hubLogoFloat 6s ease-in-out infinite 800ms}
-  .tile--soon .plus {animation:hubBreath 3.5s ease-in-out infinite}
+  .tile--soon .logo img {animation:hubBreath 5.2s ease-in-out infinite}
   @media(prefers-reduced-motion:reduce) {
     html{scroll-behavior:auto}
-    .tile,.tile:after,.tile .logo img,.tile--soon .plus{animation:none!important;transition:none!important}
+    .tile,.tile:after,.tile .logo img,.tile--soon .logo img{animation:none!important;transition:none!important}
     a.tile:focus-visible,a.tile:active{transform:none!important}
   }
   html.reduce-motion .tile,html.reduce-motion .tile:after,
-  html.reduce-motion .tile .logo img,html.reduce-motion .tile--soon .plus {
+  html.reduce-motion .tile .logo img,html.reduce-motion .tile--soon .logo img {}
     animation:none!important;transition:none!important}
   html.reduce-motion a.tile:focus-visible,html.reduce-motion a.tile:active {
     transform:none!important;transition:none!important}
@@ -231,13 +231,13 @@
       <div class="meta">COMMUNITY / UNOFFICIAL</div>
       <div class="action">OPEN SITE ↗</div>
     </a>
-    <div class="tile tile--soon" aria-label="More ranked games coming soon">
-      <div class="tag">FUTURE OPERATIONS</div>
-      <div class="logo"><div class="plus" aria-hidden="true">+</div></div>
-      <div class="name">COMING SOON</div>
-      <div class="meta">MORE RANKED PROJECTS</div>
-      <div class="action">NOT AVAILABLE</div>
-    </div>
+    <a class="tile tile--soon" href="rankedhub://open/projects" aria-label="Open Harley's Studios other projects launcher">
+      <div class="tag">HARLEY'S STUDIOS</div>
+      <div class="logo"><img src="official_studio.png" alt="Official Harley's Studios logo"></div>
+      <div class="name">OTHER PROJECTS</div>
+      <div class="meta">PUPPY CLICKER · COMING SOON</div>
+      <div class="action">OPEN PROJECTS ↗</div>
+    </a>
   </section>
   <p class="foot">HARLEY'S STUDIOS · RANKED NETWORK<br>Independent websites keep separate accounts and standings.<br>DMZRanked.com is a third-party community project.</p>
 </main>
