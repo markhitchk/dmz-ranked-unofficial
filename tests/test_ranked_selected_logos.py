@@ -19,7 +19,7 @@ class SelectedBrandingTests(unittest.TestCase):
         self.assertEqual(git_blob_sha(asset.read_bytes()),HUB_SHA)
         header=(JAVA/"RankedHeaderView.java").read_text()
         self.assertIn('logo = "ranked-hub-selected.webp"',header)
-        self.assertIn("Harley's Studios",header)
+        self.assertIn("Ranked Hub",header)
 
     def test_dmz_v1_uses_user_selected_discord_server_icon(self):
         html=(ASSETS/"index.html").read_text()
