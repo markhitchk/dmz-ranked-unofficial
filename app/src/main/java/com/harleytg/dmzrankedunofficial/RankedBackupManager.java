@@ -46,16 +46,20 @@ final class RankedBackupManager {
     static final class Preview {
         final JSONObject settings;
         final JSONObject operatorBackups;
+        final JSONObject siteSnapshots;
         final long createdAt;
         final int backupEntries;
-        Preview(JSONObject settings,JSONObject operatorBackups,long createdAt,int backupEntries){
+        Preview(JSONObject settings,JSONObject operatorBackups,JSONObject siteSnapshots,
+                long createdAt,int backupEntries){
             this.settings=settings;
             this.operatorBackups=operatorBackups;
+            this.siteSnapshots=siteSnapshots;
             this.createdAt=createdAt;
             this.backupEntries=backupEntries;
         }
         int settingCount(){return settings.length();}
         int operatorCount(){return operatorBackups.length();}
+        int siteCount(){return siteSnapshots.length();}
     }
 
     private RankedBackupManager(){}
@@ -103,8 +107,37 @@ final class RankedBackupManager {
         String size=preview.settings.optString("content_size","");
         if("standard".equals(size)||"compact".equals(size)||"large".equals(size))
             edit.putString("content_size",size);
-        if(!edit.commit())throw new IllegalStateException("Could not apply preferences");
-        return OperatorBackupStore.importJson(context,preview.operatorBackups.toString());
+        // Validate every first-party snapshot before mutating any app state.
+        JSONObject snapshots=new JSONObject();
+        java.util.Iterator<String> keys=preview.siteSnapshots.keys();
+        while(keys.hasNext()){
+            String site=keys.next();
+            snapshots.put(site,RankedSiteSafeBackupStore.validate(
+                    site,preview.siteSnapshots.optJSONObject(site)));
+        }
+        java.util.Map<String,?> priorPrefs=new java.util.HashMap<>(prefs.getAll());
+        String priorOperators=OperatorBackupStore.exportJson(context);
+        JSONObject priorSites=RankedSiteSafeBackupStore.snapshot(context);
+        try{
+            if(!edit.commit())throw new IllegalStateException("Could not apply preferences");
+            int result=OperatorBackupStore.importJson(context,preview.operatorBackups.toString());
+            RankedSiteSafeBackupStore.restoreSnapshots(context,snapshots);
+            return result;
+        }catch(Exception error){
+            SharedPreferences.Editor revert=prefs.edit().clear();
+            for(java.util.Map.Entry<String,?> item:priorPrefs.entrySet()){
+                Object value=item.getValue(); String key=item.getKey();
+                if(value instanceof Boolean)revert.putBoolean(key,(Boolean)value);
+                else if(value instanceof String)revert.putString(key,(String)value);
+                else if(value instanceof Integer)revert.putInt(key,(Integer)value);
+                else if(value instanceof Long)revert.putLong(key,(Long)value);
+                else if(value instanceof Float)revert.putFloat(key,(Float)value);
+            }
+            revert.commit();
+            OperatorBackupStore.importJson(context,priorOperators);
+            RankedSiteSafeBackupStore.restoreSnapshots(context,priorSites);
+            throw error;
+        }
     }
 
     private static byte[] buildZip(Context context) throws Exception {
@@ -116,6 +149,7 @@ final class RankedBackupManager {
         String size=prefs.getString("content_size","standard");
         if("standard".equals(size)||"compact".equals(size)||"large".equals(size))
             settings.put("content_size",size);
+        JSONObject siteSnapshots=RankedSiteSafeBackupStore.snapshot(context);
         JSONObject rawOperators=new JSONObject(OperatorBackupStore.exportJson(context));
         JSONObject safeOperators=RankedHubDataTransfer.sanitizeOperatorBackups(rawOperators);
         byte[] hub=settings.toString().getBytes(StandardCharsets.UTF_8);
@@ -125,8 +159,22 @@ final class RankedBackupManager {
         JSONArray entries=new JSONArray();
         entries.put(entry("hub","hub.json",hub));
         entries.put(entry("community","community.json",operators));
+        byte[] mw4=siteSnapshots.has(RankedSiteSafeBackupStore.MW4)
+                ?siteSnapshots.getJSONObject(RankedSiteSafeBackupStore.MW4).toString()
+                    .getBytes(StandardCharsets.UTF_8):null;
+        byte[] arc=siteSnapshots.has(RankedSiteSafeBackupStore.ARC)
+                ?siteSnapshots.getJSONObject(RankedSiteSafeBackupStore.ARC).toString()
+                    .getBytes(StandardCharsets.UTF_8):null;
+        if(mw4!=null){
+            if(mw4.length>MAX_ENTRY)throw new IllegalArgumentException("MW4 backup too large");
+            entries.put(entry("dmz-v1","mw4.json",mw4));
+        }
+        if(arc!=null){
+            if(arc.length>MAX_ENTRY)throw new IllegalArgumentException("ARC backup too large");
+            entries.put(entry("arc-raiders","arc.json",arc));
+        }
         JSONObject manifest=new JSONObject();
-        manifest.put("formatVersion",1);
+        manifest.put("formatVersion",2);
         manifest.put("appPackage","com.harleytg.rankedhub.beta");
         manifest.put("createdAt",System.currentTimeMillis());
         manifest.put("entries",entries);
@@ -135,6 +183,8 @@ final class RankedBackupManager {
             put(zip,"manifest.json",manifest.toString().getBytes(StandardCharsets.UTF_8));
             put(zip,"hub.json",hub);
             put(zip,"community.json",operators);
+            if(mw4!=null)put(zip,"mw4.json",mw4);
+            if(arc!=null)put(zip,"arc.json",arc);
         }
         if(bytes.size()>MAX_FILE-256)throw new IllegalArgumentException("Backup too large");
         return bytes.toByteArray();
@@ -163,7 +213,8 @@ final class RankedBackupManager {
             while((item=zip.getNextEntry())!=null){
                 String name=item.getName();
                 if(item.isDirectory() || !("manifest.json".equals(name)||"hub.json".equals(name)
-                        ||"community.json".equals(name)) || files.containsKey(name))
+                        ||"community.json".equals(name)||"mw4.json".equals(name)
+                        ||"arc.json".equals(name)) || files.containsKey(name))
                     throw new IllegalArgumentException("Unexpected or duplicate ZIP entry");
                 ByteArrayOutputStream part=new ByteArrayOutputStream();
                 byte[] buf=new byte[8192];
@@ -177,18 +228,22 @@ final class RankedBackupManager {
                 files.put(name,part.toByteArray());
             }
         }
-        if(files.size()!=3)throw new IllegalArgumentException("Missing backup entries");
+        if(files.size()<3 || files.size()>5)throw new IllegalArgumentException("Invalid backup entry count");
         JSONObject manifest=new JSONObject(new String(files.get("manifest.json"),StandardCharsets.UTF_8));
-        if(manifest.optInt("formatVersion",0)!=1)throw new IllegalArgumentException("Unsupported backup version");
+        int format=manifest.optInt("formatVersion",0);
+        if(format!=1 && format!=2)throw new IllegalArgumentException("Unsupported backup version");
         JSONArray entries=manifest.optJSONArray("entries");
-        if(entries==null||entries.length()!=2)throw new IllegalArgumentException("Backup manifest is incomplete");
+        if(entries==null || entries.length() < 2 || entries.length() > 4)
+            throw new IllegalArgumentException("Backup manifest is incomplete");
         Set<String> seen=new HashSet<>();
         for(int i=0;i<entries.length();i++){
             JSONObject e=entries.getJSONObject(i);
             String site=e.optString("siteId","");
             String path=e.optString("dataPath","");
             if(!("hub".equals(site)&&"hub.json".equals(path)
-                    ||"community".equals(site)&&"community.json".equals(path))
+                    ||"community".equals(site)&&"community.json".equals(path)
+                    ||"dmz-v1".equals(site)&&"mw4.json".equals(path)
+                    ||"arc-raiders".equals(site)&&"arc.json".equals(path))
                     ||!seen.add(site)||e.optInt("schemaVersion",0)!=1)
                 throw new IllegalArgumentException("Invalid backup destination");
             byte[] payload=files.get(path);
@@ -196,7 +251,22 @@ final class RankedBackupManager {
                     ||!sha256(payload).equals(e.optString("sha256","")))
                 throw new IllegalArgumentException("Corrupt backup checksum");
         }
-        if(seen.size()!=2)throw new IllegalArgumentException("Incomplete destination list");
+        if(!seen.contains("hub")||!seen.contains("community")
+                || seen.size()!=files.size()-1
+                || (format==1 && seen.size()!=2)
+                || (format==1 && (files.containsKey("mw4.json")||files.containsKey("arc.json"))))
+            throw new IllegalArgumentException("Incomplete destination list");
+        JSONObject siteSnapshots=new JSONObject();
+        if(files.containsKey("mw4.json")){
+            JSONObject safe=RankedSiteSafeBackupStore.validate(RankedSiteSafeBackupStore.MW4,
+                    new JSONObject(new String(files.get("mw4.json"),StandardCharsets.UTF_8)));
+            siteSnapshots.put(RankedSiteSafeBackupStore.MW4,safe);
+        }
+        if(files.containsKey("arc.json")){
+            JSONObject safe=RankedSiteSafeBackupStore.validate(RankedSiteSafeBackupStore.ARC,
+                    new JSONObject(new String(files.get("arc.json"),StandardCharsets.UTF_8)));
+            siteSnapshots.put(RankedSiteSafeBackupStore.ARC,safe);
+        }
         JSONObject settings=new JSONObject(new String(files.get("hub.json"),StandardCharsets.UTF_8));
         JSONObject operators=new JSONObject(new String(files.get("community.json"),StandardCharsets.UTF_8));
         // Even old archives must pass the current security filtering before restore.
@@ -209,7 +279,8 @@ final class RankedBackupManager {
         String size=settings.optString("content_size","");
         if("standard".equals(size)||"compact".equals(size)||"large".equals(size))
             allowed.put("content_size",size);
-        return new Preview(allowed,safeOperators,manifest.optLong("createdAt",0),3);
+        return new Preview(allowed,safeOperators,siteSnapshots,
+                manifest.optLong("createdAt",0),files.size());
     }
 
     private static String sha256(byte[] bytes)throws Exception {
