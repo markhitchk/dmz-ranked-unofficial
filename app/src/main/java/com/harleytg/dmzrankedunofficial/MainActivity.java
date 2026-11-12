@@ -1854,11 +1854,10 @@ public class MainActivity extends Activity {
             logoParams.height = logo;
             titleLogoView.setLayoutParams(logoParams);
         }
-        float systemScale = Math.max(0.85f, Math.min(1.55f,
-                getResources().getConfiguration().fontScale));
         if (titleTextView != null) {
+            // SP already incorporates Android's fontScale; do not apply it twice.
             titleTextView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
-                    (height <= 48 ? 16f : 18f) * systemScale);
+                    height <= 48 ? 16f : 18f);
         }
     }
 
