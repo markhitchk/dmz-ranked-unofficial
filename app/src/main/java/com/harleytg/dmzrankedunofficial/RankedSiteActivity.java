@@ -58,6 +58,11 @@ public final class RankedSiteActivity extends Activity {
     private boolean requestedWebsiteSettings;
     private boolean openedWebsiteSettings;
     private SharedPreferences sitePreferences;
+    private final android.os.Handler alertHandler = new android.os.Handler(
+            android.os.Looper.getMainLooper());
+    private int alertGeneration;
+    private String lastAlertText = "";
+    private boolean alertBaselineReady;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,6 +152,7 @@ public final class RankedSiteActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 if (loadCoordinator != null) loadCoordinator.onPageStarted();
+                stopOwnedSiteAlerts();
             }
             @Override
             public void onPageCommitVisible(WebView view, String url) {
@@ -173,6 +179,7 @@ public final class RankedSiteActivity extends Activity {
                 if (loadCoordinator != null) loadCoordinator.onPageFinished();
                 rememberSafeSitePage(url);
                 applyAppSiteCss(view,url);
+                startOwnedSiteAlerts();
                 if (requestedWebsiteSettings && !openedWebsiteSettings
                         && SITE_ARC.equals(getIntent().getStringExtra(EXTRA_SITE_ID))
                         && isApprovedSite(Uri.parse(url))) {
@@ -243,6 +250,66 @@ public final class RankedSiteActivity extends Activity {
         RankedSiteOverrides.apply(this,view,id,allowedHost);
     }
 
+    /**
+     * Forward visible, first-party website notices while the WebView is open.
+     * No app-level push service or background website scraping is implied.
+     * Notifications use Android's independent per-website channels.
+     */
+    private void startOwnedSiteAlerts() {
+        String site=getIntent().getStringExtra(EXTRA_SITE_ID);
+        if(!SITE_DMZ_V1.equals(site) && !SITE_ARC.equals(site)) return;
+        if(webView==null) return;
+        stopOwnedSiteAlerts();
+        alertBaselineReady=false;
+        lastAlertText="";
+        int generation=alertGeneration;
+        webView.postDelayed(()->checkOwnedSiteAlerts(generation),1900);
+    }
+
+    private void stopOwnedSiteAlerts() {
+        alertGeneration++;
+        alertHandler.removeCallbacksAndMessages(null);
+    }
+
+    private void checkOwnedSiteAlerts(int generation) {
+        if(generation!=alertGeneration || isFinishing() || webView==null) return;
+        String current=webView.getUrl();
+        if(current==null || !isApprovedSite(Uri.parse(current))) return;
+        String id=getIntent().getStringExtra(EXTRA_SITE_ID);
+        if(sitePreferences!=null && sitePreferences.getBoolean(
+                NotificationSync.PREF_SITE_NOTIFICATIONS,true)) {
+            String selector=SITE_DMZ_V1.equals(id)
+                    ? ".mw4-notice[role=status]" : "#toast.toast.visible";
+            // Only inspect a single visible notification element, never forms,
+            // credentials, messages or general site content.
+            String js="(function(){if(location.protocol!=='https:'||location.hostname!=="
+                    +JSONObject.quote(allowedHost)+")return '';"
+                    +"var e=document.querySelector("+JSONObject.quote(selector)+");"
+                    +"if(!e||!e.getClientRects().length)return '';"
+                    +"return String(e.textContent||'').replace(/\\s+/g,' ').trim().slice(0,250);})()";
+            webView.evaluateJavascript(js,result->{
+                if(generation!=alertGeneration || isFinishing() || webView==null)return;
+                String url=webView.getUrl();
+                if(url==null || !isApprovedSite(Uri.parse(url)))return;
+                try {
+                    Object value=new JSONTokener(result).nextValue();
+                    String message=value instanceof String?(String)value:"";
+                    if(!alertBaselineReady){
+                        alertBaselineReady=true;
+                        lastAlertText=message;
+                    }else if(!message.isEmpty() && !message.equals(lastAlertText)){
+                        lastAlertText=message;
+                        HubNotificationChannels.notifyFirstParty(this,id,
+                                "Website notification",message,"notice:"+message);
+                    }else if(message.isEmpty()){
+                        lastAlertText="";
+                    }
+                }catch(Exception ignored){}
+            });
+        }
+        webView.postDelayed(()->checkOwnedSiteAlerts(generation),2300);
+    }
+
     /** Apply global settings supported by this first-party site browser.
      * Unsupported legacy widgets/operator controls are hidden in Settings.
      */
@@ -290,7 +357,10 @@ public final class RankedSiteActivity extends Activity {
     protected void onResume() {
         super.onResume();
         applySiteDisplayPreferences();
-        if(webView!=null) applyAppSiteCss(webView,webView.getUrl());
+        if(webView!=null) {
+            applyAppSiteCss(webView,webView.getUrl());
+            startOwnedSiteAlerts();
+        }
         // Restore the system/app compact chrome immediately after Settings.
         if (rootLayout != null && brandedHeader != null) {
             String next = RankedHeaderView.signature(this);
@@ -479,7 +549,14 @@ public final class RankedSiteActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        stopOwnedSiteAlerts();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
+        stopOwnedSiteAlerts();
         if (loadCoordinator != null) { loadCoordinator.dispose(); loadCoordinator = null; }
         if (brandedHeader != null) {
             ViewGroup parent = (ViewGroup) brandedHeader.getParent();
