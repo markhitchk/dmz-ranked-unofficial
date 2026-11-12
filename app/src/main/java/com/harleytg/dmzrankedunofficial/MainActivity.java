@@ -1241,6 +1241,10 @@ public class MainActivity extends Activity {
     }
 
     private void ensureSiteNotificationChannel() {
+        if(HubNotificationChannels.isHub(this)){
+            HubNotificationChannels.ensure(this);
+            return;
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null || manager.getNotificationChannel(SITE_NOTIFICATION_CHANNEL) != null) return;
@@ -1526,6 +1530,11 @@ public class MainActivity extends Activity {
             body = body.substring(9).trim();
         }
         if (body.length() > 320) body = body.substring(0, 319) + "…";
+        if(HubNotificationChannels.isHub(this)){
+            NotificationSync.recordForegroundNotification(this,"DMZ Ranked",body);
+            HubNotificationChannels.notifyCommunity(this,alertLine,body,"live:"+message);
+            return;
+        }
         String preview = body.isEmpty() ? alertLine : alertLine + " • " + body;
         String expanded = body.isEmpty() ? alertLine : alertLine + "\n" + body;
 

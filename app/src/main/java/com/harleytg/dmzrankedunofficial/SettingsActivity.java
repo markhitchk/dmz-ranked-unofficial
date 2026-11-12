@@ -1597,6 +1597,14 @@ public class SettingsActivity extends Activity {
                     || channel.getImportance() >= NotificationManager.IMPORTANCE_HIGH;
         }
 
+        if(isRankedHubBuild() && enabled && permissionGranted){
+            HubNotificationChannels.ensure(this);
+            status.setText("Channels: MW4 DMZ, ARC Raiders, DMZRanked.com, Ranked Hub App."
+                    +"\nCommunity background checks are supported. First-party website alerts"
+                    +" require a supported site event while the site is open.");
+            status.setTextColor(getColor(R.color.dmz_green));
+            return;
+        }
         if (!enabled) {
             status.setText("Website notifications are off");
             status.setTextColor(getColor(R.color.dmz_muted));
@@ -1628,6 +1636,10 @@ public class SettingsActivity extends Activity {
     }
 
     private void ensureNotificationChannel() {
+        if(isRankedHubBuild()){
+            HubNotificationChannels.ensure(this);
+            return;
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
@@ -1645,6 +1657,12 @@ public class SettingsActivity extends Activity {
     }
 
     private void postTestNotification() {
+        if(isRankedHubBuild()){
+            HubNotificationChannels.notifyApp(this,"App test notification",
+                    "Ranked Hub notifications are working.","test:"+System.currentTimeMillis());
+            Toast.makeText(this,"Sent to Ranked Hub App channel.",Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -1697,6 +1715,12 @@ public class SettingsActivity extends Activity {
 
     private void openNotificationSettings() {
         try {
+            if(isRankedHubBuild()){
+                HubNotificationChannels.ensure(this);
+                startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName()));
+                return;
+            }
             Intent intent;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)

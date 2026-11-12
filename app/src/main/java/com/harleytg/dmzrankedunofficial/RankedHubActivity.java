@@ -41,6 +41,7 @@ public final class RankedHubActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        HubNotificationChannels.ensure(this);
         final int background = Color.rgb(6, 16, 25);
         getWindow().setStatusBarColor(background);
         getWindow().setNavigationBarColor(background);
