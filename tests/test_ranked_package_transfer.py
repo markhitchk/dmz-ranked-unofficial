@@ -43,7 +43,7 @@ class PackageTransferTests(unittest.TestCase):
 
     def test_migration_does_not_transfer_auth_data(self):
         s=(JAVA/"RankedHubDataTransfer.java").read_text()
-        for token in ("access_token","password","refresh_token","session","token","blockedKey","blockedValue"):
+        for token in ("access_?token","password","refresh_?token","session","token","blockedKey","blockedValue"):
             self.assertIn(token,s)
         self.assertIn("MAX_OPERATOR_VALUE_CHARS",s)
         self.assertIn("website_operator_verified",s)
