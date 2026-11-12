@@ -240,3 +240,28 @@ The original plan was **not** carried out in v1.0.69. The next Beta candidate is
 - [ ] Publish final fully validated all-site Beta release.
 
 **Scope qualification:** The Hub/community backup capability is a staged subset of the original 'all sites' goal. MW4 and ARC backup UI must be explicitly labeled **Website backup requires site support** until contracts exist. The new Android package is **not** an update-in-place to the previous Beta; the old installation must be retained for manual transfer.
+
+---
+
+## Implementation result — Ranked Hub Beta v1.0.71 (build 175)
+
+**Code branches and releases:** Android `feature/ranked-hub-multigame` / PR #26; MW4 local-only backup contract merged via `markhitchk/htg-dmz-ranked#38`; ARC preferences contract merged via `markhitchk/arc-raiders-ranked#7`. Both first-party Vercel production deployments reached READY.
+
+### Implemented
+
+- Dedicated package `com.harleytg.rankedhub.beta`, with manual signed legacy app data transfer.
+- Ranked Hub transparent puppy crest, Beta launcher/splash resources, native radar/crest intro and reduced-motion option.
+- Actual WebView event-based MW4/ARC verbose loading, failure diagnostics, and Retry / Open Hub / Open Browser actions.
+- Themed Settings navigation for Ranked Hub, MW4, ARC, and DMZRanked.com, with legacy operator settings scoped to the community client.
+- Versioned `window.RankedHubBackupV1` safe site data contract on both first-party sites; never includes auth credentials or server ranks.
+- Explicit site-header **Capture safe site preferences** / **Restore saved site preferences** actions for MW4 and ARC (exact HTTPS host only).
+- Passphrase-encrypted `.rankedhubbackup` file format v2 with integrity checks, optional site snapshots, strict schema validation, and explicit per-destination export/restore selection. Existing v1 Hub/community archives remain readable.
+- DMZ launcher action label **OPEN MW4 DMZ**.
+
+### Exclusions and validation boundaries
+
+- MW4 backup includes only safe locally managed callsign, personal orders, sector, squad/loadout notes, and motion preference. Existing reports and cloud account/rank records are not imported.
+- ARC backup includes only locally saved graphics mode; account, PIN, identity and standings remain server-owned.
+- Third-party DMZRanked.com keeps the original app-managed sanitized two-operator snapshots; no third-party site code was changed.
+- The Android APK requires green build/signing verification and device UI testing. Samsung One UI may still apply an adaptive icon mask or background even when the underlying artwork has alpha. Do not claim device visual confirmation without device testing.
+- ARC site's broader pre-existing regression suite has unrelated failures; focused safe-backup checks passed.
