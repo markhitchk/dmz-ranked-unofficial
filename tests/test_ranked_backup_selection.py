@@ -10,6 +10,7 @@ class BackupSelectionTests(unittest.TestCase):
   self.assertIn("formatVersion",s)
   self.assertIn("ZipInputStream",s)
   self.assertIn("RankedSiteSafeBackupStore.validate",s)
+  self.assertIn("revert.putStringSet",s) # failed import rollback preserves string-set preferences
  def test_restore_preview_requires_explicit_choice(self):
   s=(root/"SettingsActivity.java").read_text()
   self.assertIn("setMultiChoiceItems",s)
