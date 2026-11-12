@@ -204,6 +204,23 @@ public class SettingsActivity extends Activity {
         if (aboutTitle != null) {
             aboutTitle.setText(RankedSettingsStyler.pageTitleFor(launcherTheme));
         }
+        TextView creditsSummary=findViewById(R.id.creditsSummaryText);
+        if(creditsSummary!=null && isRankedHubBuild()){
+            if(launcherTheme==RankedHeaderView.THEME_HUB){
+                creditsSummary.setText("Ranked Hub Android app by Harley's Studios. "
+                        +"MW4 and ARC Raiders are independent Harley's Studios ranked projects. "
+                        +"Original DMZRanked.com was created by YoLando & dCHINZ.");
+            }else if(launcherTheme==RankedHeaderView.THEME_DMZ_V1){
+                creditsSummary.setText("MW4 DMZ Ranked V1 by Harley's Studios. "
+                        +"Original DMZRanked.com by YoLando & dCHINZ is a separate community project.");
+            }else if(launcherTheme==RankedHeaderView.THEME_ARC){
+                creditsSummary.setText("ARC Raiders Ranked by Harley's Studios. "
+                        +"Original DMZRanked.com by YoLando & dCHINZ is a separate community project.");
+            }else{
+                creditsSummary.setText("Original DMZRanked.com website by YoLando & dCHINZ. "
+                        +"Android integration by Harley's Studios.");
+            }
+        }
         if (aboutBetaBadge != null) {
             aboutBetaBadge.setVisibility(betaBuild ? View.VISIBLE : View.GONE);
         }
