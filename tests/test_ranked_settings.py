@@ -42,6 +42,15 @@ class RankedSettingsTests(unittest.TestCase):
                      "getResourceEntryName", "dangerZoneSection"):
             self.assertIn(term,styler)
 
+    def test_site_webviews_respect_supported_preferences(self):
+        site=(SRC/"RankedSiteActivity.java").read_text()
+        for token in ("desktop_site", "keep_awake", "remember_last_page",
+                      "content_size", "ranked_last_page_", "isApprovedSite"):
+            self.assertIn(token,site)
+        settings=(SRC/"SettingsActivity.java").read_text()
+        self.assertIn("isCommunityContext",settings)
+        self.assertIn("widgetSection",settings)
+
     def test_settings_actions_and_support_remain_present(self):
         activity=(SRC/"SettingsActivity.java").read_text()
         xml=LAYOUT.read_text()
