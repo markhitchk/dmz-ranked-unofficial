@@ -353,7 +353,8 @@ android {
             applicationIdSuffix '.beta'
             versionNameSuffix '-beta'
             signingConfig signingConfigs.release
-            debuggable true
+            // Signed public Beta; avoid shipping a debuggable credential-bearing WebView.
+            debuggable false
             matchingFallbacks = ['debug']
             resValue 'string', 'app_name', 'Ranked Hub [Beta]'
         }
