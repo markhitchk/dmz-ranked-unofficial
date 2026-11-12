@@ -20,6 +20,17 @@ class RankedHeaderTests(unittest.TestCase):
                       "endsWith(\".beta\")", "BETA", "Version ", "Build "):
             self.assertIn(token,src)
 
+    def test_shared_header_matches_original_74dp_dmz_ranked_native_bar(self):
+        src=(JAVA/"RankedHeaderView.java").read_text()
+        original=(ROOT/"app/src/main/res/layout/activity_main.xml").read_text()
+        settings=(ROOT/"app/src/main/res/layout/activity_settings.xml").read_text()
+        self.assertIn("HEIGHT_DP = 74;",src)
+        self.assertIn("height:74px;border-bottom:2px",src)
+        self.assertIn("width:46px;height:46px",src)
+        self.assertIn("font-size:21px",src)
+        self.assertIn('android:layout_height="74dp"', original)
+        self.assertIn('android:layout_height="74dp"', settings)
+
     def test_hub_uses_header_and_grid_is_not_duplicated(self):
         hub=(JAVA/"RankedHubActivity.java").read_text()
         html=(ROOT/"app/src/main/assets/ranked-hub/index.html").read_text()

@@ -25,7 +25,7 @@ final class RankedHeaderView {
     static final int THEME_ARC = 2;
     static final int THEME_COMMUNITY = 3;
     static final int THEME_PUPPY = 4;
-    static final int HEIGHT_DP = 78;
+    static final int HEIGHT_DP = 74;
 
     private RankedHeaderView() {}
 
@@ -148,18 +148,18 @@ final class RankedHeaderView {
                 + "<style>"
                 + "*{box-sizing:border-box}html,body{margin:0;min-height:0;height:100%;overflow:hidden;}"
                 + "body{font-family:Arial,Roboto,sans-serif;background:" + background + ";color:#f5f7f8}"
-                + ".bar{height:78px;border-bottom:3px solid " + accent + ";padding:7px 10px;"
+                + ".bar{height:74px;border-bottom:2px solid " + accent + ";padding:7px 10px;"
                 + "display:flex;align-items:center;gap:10px;overflow:hidden}"
-                + ".logo{width:53px;height:53px;flex:0 0 53px;object-fit:contain}"
+                + ".logo{width:46px;height:46px;flex:0 0 46px;object-fit:contain}"
                 + ".copy{flex:1;min-width:0;overflow:hidden}"
                 + ".name-row{display:flex;gap:7px;align-items:center;min-width:0}"
-                + ".name{font-size:20px;font-weight:850;letter-spacing:.01em;white-space:nowrap;"
+                + ".name{font-size:21px;font-weight:850;letter-spacing:.02em;white-space:nowrap;"
                 + "overflow:hidden;text-overflow:ellipsis;min-width:0}"
                 + ".badge{flex:0 0 auto;display:inline-block;background:" + accent + ";color:#091119;"
-                + "font-size:10px;letter-spacing:.09em;font-weight:900;border-radius:6px;padding:5px 7px}"
-                + ".meta{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                + "color:#a7b5be;margin-top:6px;letter-spacing:.025em}"
-                + ".settings{flex:0 0 44px;height:48px;display:flex;align-items:center;justify-content:center;"
+                + "font-size:10px;letter-spacing:.08em;font-weight:900;border-radius:5px;padding:2px 7px}"
+                + ".meta{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                + "color:#a7b5be;margin-top:2px;letter-spacing:.01em}"
+                + ".settings{flex:0 0 44px;height:44px;display:flex;align-items:center;justify-content:center;"
                 + "font-size:30px;line-height:1;color:" + accent + ";text-decoration:none}"
                 + ".settings:focus-visible{outline:2px solid white;border-radius:7px}"
                 + ".settings svg{width:28px;height:28px;display:block;transition:transform 180ms ease}"
