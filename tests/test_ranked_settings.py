@@ -34,6 +34,8 @@ class RankedSettingsTests(unittest.TestCase):
         self.assertIn('@+id/settingsHeaderSlot',xml)
         self.assertIn('RankedHeaderView.createSettings(',activity)
         self.assertIn('RankedSettingsStyler.apply(',activity)
+        self.assertIn('creditsSummaryText',activity)
+        self.assertIn('Original DMZRanked.com',activity)
         self.assertIn('settingsRoot',styler)
         self.assertIn('settingsSearch',styler)
         for term in ("setTrackTintList","setThumbTintList","GradientDrawable",
