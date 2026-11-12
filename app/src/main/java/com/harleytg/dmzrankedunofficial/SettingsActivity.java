@@ -827,9 +827,13 @@ public class SettingsActivity extends Activity {
                         "danger reset app settings defaults");
         findViewById(R.id.dangerZoneSection).setVisibility(dangerMatch ? View.VISIBLE : View.GONE);
 
+        // The all-game navigation and portable backup center belong to Hub Settings.
+        // MW4, ARC and the original community site retain their own scoped controls.
         boolean destinationsMatch = isRankedHubBuild()
+                && launcherTheme == RankedHeaderView.THEME_HUB
                 && (!searching || containsAny(q, "destination", "game", "ranked", "mw4", "arc", "dmz", "site"));
         boolean backupsMatch = isRankedHubBuild()
+                && launcherTheme == RankedHeaderView.THEME_HUB
                 && (!searching || containsAny(q, "backup", "restore", "export", "import", "encrypted", "portable"));
         findViewById(R.id.rankedDestinationsSection).setVisibility(
                 destinationsMatch ? View.VISIBLE : View.GONE);

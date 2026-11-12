@@ -155,128 +155,6 @@
 
             <!-- Hub-only registry: native destination IDs, not inferred login status. -->
             <LinearLayout
-                android:id="@+id/rankedDestinationsSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="10dp"
-                    android:text="RANKED DESTINATIONS"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/rankedDestinationSummary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="8dp"
-                    android:text="Website availability and account status are independent per game."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/rankedMw4SettingsCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/settings_card_background"
-                    android:padding="17dp"
-                    android:minHeight="58dp"
-                    android:gravity="center_vertical"
-                    android:text="MW4 DMZ RANKED V1   •   OPEN SITE SETTINGS ›"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/rankedArcSettingsCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/settings_card_background"
-                    android:padding="17dp"
-                    android:minHeight="58dp"
-                    android:gravity="center_vertical"
-                    android:text="ARC RAIDERS RANKED   •   OPEN SITE SETTINGS ›"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/rankedCommunitySettingsCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/settings_card_background"
-                    android:padding="17dp"
-                    android:minHeight="58dp"
-                    android:gravity="center_vertical"
-                    android:text="DMZRANKED.COM   •   OPEN COMMUNITY APP ›"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/rankedRemoteBackupNote"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="8dp"
-                    android:text="Website backup requires site support. MW4 and ARC account records are kept by their websites."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/rankedBackupSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:orientation="vertical"
-                android:visibility="gone">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="8dp"
-                    android:text="BACKUP CENTER"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="12dp"
-                    android:text="Encrypted portable backup: Ranked Hub app settings + safe DMZRanked.com operator snapshots. Website backup requires site support for MW4 and ARC. No passwords, PINs, sessions or server ranks."
-                    android:textColor="@color/dmz_muted"
-                    android:textSize="12sp" />
-                <TextView
-                    android:id="@+id/rankedBackupExportCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/settings_card_background"
-                    android:gravity="center_vertical"
-                    android:minHeight="56dp"
-                    android:padding="17dp"
-                    android:text="EXPORT ENCRYPTED BACKUP ›"
-                    android:textColor="@color/dmz_white"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/rankedBackupImportCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/settings_card_background"
-                    android:gravity="center_vertical"
-                    android:minHeight="56dp"
-                    android:padding="17dp"
-                    android:text="RESTORE ENCRYPTED BACKUP ›"
-                    android:textColor="@color/dmz_white"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/aboutCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -733,6 +611,81 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/rankedDestinationsSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="10dp"
+                    android:text="RANKED DESTINATIONS"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/rankedDestinationSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="Website availability and account status are independent per game."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/rankedMw4SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:padding="17dp"
+                    android:minHeight="58dp"
+                    android:gravity="center_vertical"
+                    android:text="MW4 DMZ RANKED V1   •   OPEN SITE SETTINGS ›"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/rankedArcSettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:padding="17dp"
+                    android:minHeight="58dp"
+                    android:gravity="center_vertical"
+                    android:text="ARC RAIDERS RANKED   •   OPEN SITE SETTINGS ›"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/rankedCommunitySettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:padding="17dp"
+                    android:minHeight="58dp"
+                    android:gravity="center_vertical"
+                    android:text="DMZRANKED.COM   •   OPEN COMMUNITY APP ›"
+                    android:textColor="@color/dmz_white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/rankedRemoteBackupNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="Website backup requires site support. MW4 and ARC account records are kept by their websites."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/appearanceSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -887,177 +840,28 @@
                         android:thumbTint="@color/dmz_switch_thumb"
                         android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
-            </LinearLayout>
-
-
-            <LinearLayout
-                android:id="@+id/reducedMotionCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/settings_card_background"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
-                android:padding="14dp"
-                android:orientation="horizontal">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Reduced motion\nSkip intro animations and animated loading transitions"
-                    android:textColor="@color/dmz_white"
-                    android:textSize="14sp" />
-                <Switch
-                    android:id="@+id/reducedMotionSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="Reduced motion" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/widgetSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
 
                 <LinearLayout
+                    android:id="@+id/reducedMotionCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/settings_card_background"
+                    android:layout_marginTop="8dp"
                     android:gravity="center_vertical"
+                    android:padding="14dp"
                     android:orientation="horizontal">
-
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:fontFamily="sans-serif-condensed"
-                        android:letterSpacing="0.14"
-                        android:text="BETA WIDGETS"
-                        android:textColor="@color/dmz_gold"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:background="@drawable/toolbar_beta_badge"
-                        android:fontFamily="sans-serif-condensed"
-                        android:gravity="center"
-                        android:letterSpacing="0.08"
-                        android:paddingStart="7dp"
-                        android:paddingTop="2dp"
-                        android:paddingEnd="7dp"
-                        android:paddingBottom="2dp"
-                        android:text="BETA ONLY"
-                        android:textColor="@color/dmz_black"
-                        android:textSize="9sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/addHomeWidgetCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/settings_action_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-
-                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-condensed"
-                            android:text="Add DMZ Ranked home widget"
-                            android:textColor="@color/dmz_white"
-                            android:textSize="17sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Pin your selected operator’s rank, SR, standing, last-raid change, season, and live status to the Android home screen."
-                            android:textColor="@color/dmz_muted"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <TextView
+                        android:text="Reduced motion\nSkip intro animations and animated loading transitions"
+                        android:textColor="@color/dmz_white"
+                        android:textSize="14sp" />
+                    <Switch
+                        android:id="@+id/reducedMotionSwitch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:background="@drawable/settings_support_background"
-                        android:paddingStart="12dp"
-                        android:paddingTop="7dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="7dp"
-                        android:text="ADD +"
-                        android:textColor="@color/dmz_black"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/refreshWidgetsCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/settings_action_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-condensed"
-                            android:text="Refresh widgets now"
-                            android:textColor="@color/dmz_white"
-                            android:textSize="17sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Force all pinned DMZ Ranked widgets to pull the latest public leaderboard state now."
-                            android:textColor="@color/dmz_muted"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:background="@drawable/settings_support_background"
-                        android:paddingStart="12dp"
-                        android:paddingTop="7dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="7dp"
-                        android:text="REFRESH"
-                        android:textColor="@color/dmz_black"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
+                        android:contentDescription="Reduced motion" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -1173,6 +977,53 @@
                     </LinearLayout>
                     <Switch android:id="@+id/verboseLoadingSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:showText="false" android:thumbTint="@color/dmz_switch_thumb" android:trackTint="@color/dmz_switch_track" />
                 </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rankedBackupSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="BACKUP CENTER"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="12dp"
+                    android:text="Encrypted portable backup: Ranked Hub app settings + safe DMZRanked.com operator snapshots. Website backup requires site support for MW4 and ARC. No passwords, PINs, sessions or server ranks."
+                    android:textColor="@color/dmz_muted"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/rankedBackupExportCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/settings_card_background"
+                    android:gravity="center_vertical"
+                    android:minHeight="56dp"
+                    android:padding="17dp"
+                    android:text="EXPORT ENCRYPTED BACKUP ›"
+                    android:textColor="@color/dmz_white"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/rankedBackupImportCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/settings_card_background"
+                    android:gravity="center_vertical"
+                    android:minHeight="56dp"
+                    android:padding="17dp"
+                    android:text="RESTORE ENCRYPTED BACKUP ›"
+                    android:textColor="@color/dmz_white"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
@@ -1629,6 +1480,154 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/widgetSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-condensed"
+                        android:letterSpacing="0.14"
+                        android:text="BETA WIDGETS"
+                        android:textColor="@color/dmz_gold"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/toolbar_beta_badge"
+                        android:fontFamily="sans-serif-condensed"
+                        android:gravity="center"
+                        android:letterSpacing="0.08"
+                        android:paddingStart="7dp"
+                        android:paddingTop="2dp"
+                        android:paddingEnd="7dp"
+                        android:paddingBottom="2dp"
+                        android:text="BETA ONLY"
+                        android:textColor="@color/dmz_black"
+                        android:textSize="9sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/addHomeWidgetCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Add DMZ Ranked home widget"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Pin your selected operator’s rank, SR, standing, last-raid change, season, and live status to the Android home screen."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/settings_support_background"
+                        android:paddingStart="12dp"
+                        android:paddingTop="7dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="7dp"
+                        android:text="ADD +"
+                        android:textColor="@color/dmz_black"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/refreshWidgetsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-condensed"
+                            android:text="Refresh widgets now"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Force all pinned DMZ Ranked widgets to pull the latest public leaderboard state now."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/settings_support_background"
+                        android:paddingStart="12dp"
+                        android:paddingTop="7dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="7dp"
+                        android:text="REFRESH"
+                        android:textColor="@color/dmz_black"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/updatesSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -1717,6 +1716,86 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_support_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="CLEAR" android:textColor="@color/dmz_black" android:textSize="11sp" android:textStyle="bold" />
                 </LinearLayout>
 
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dataTransferSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="10dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.14"
+                    android:text="APP DATA TRANSFER"
+                    android:textColor="@color/dmz_gold"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/peerImportCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:contentDescription="Import app data"
+                        android:src="@drawable/ic_sync" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/peerImportTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Import from other app"
+                            android:textColor="@color/dmz_white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/peerImportSummary"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Copy supported settings and operator backups between stable and beta."
+                            android:textColor="@color/dmz_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/peerImportAction"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/settings_support_background"
+                        android:paddingStart="12dp"
+                        android:paddingTop="7dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="7dp"
+                        android:text="IMPORT"
+                        android:textColor="@color/dmz_black"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -1969,145 +2048,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/dataTransferSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="10dp"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.14"
-                    android:text="APP DATA TRANSFER"
-                    android:textColor="@color/dmz_gold"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:id="@+id/peerImportCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/settings_action_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-
-                    <ImageView
-                        android:layout_width="34dp"
-                        android:layout_height="34dp"
-                        android:contentDescription="Import app data"
-                        android:src="@drawable/ic_sync" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/peerImportTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Import from other app"
-                            android:textColor="@color/dmz_white"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/peerImportSummary"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="Copy supported settings and operator backups between stable and beta."
-                            android:textColor="@color/dmz_muted"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/peerImportAction"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:background="@drawable/settings_support_background"
-                        android:paddingStart="12dp"
-                        android:paddingTop="7dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="7dp"
-                        android:text="IMPORT"
-                        android:textColor="@color/dmz_black"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/dangerZoneSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="10dp"
-                    android:fontFamily="sans-serif-condensed"
-                    android:letterSpacing="0.14"
-                    android:text="DANGER ZONE"
-                    android:textColor="@color/dmz_red"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:id="@+id/clearDataCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/settings_action_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/clear_web_data" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Clear cache, cookies, and website storage. This can sign you out." android:textColor="@color/dmz_muted" android:textSize="13sp" />
-                    </LinearLayout>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_danger_button_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="CLEAR DATA" android:textColor="@color/dmz_white" android:textSize="11sp" android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/resetSettingsCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/settings_action_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/reset_app_settings" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
-                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/reset_app_settings_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
-                    </LinearLayout>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_danger_button_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="RESET" android:textColor="@color/dmz_white" android:textSize="11sp" android:textStyle="bold" />
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <LinearLayout
                 android:id="@+id/developerSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -2210,6 +2150,65 @@
                         android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dangerZoneSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="10dp"
+                    android:fontFamily="sans-serif-condensed"
+                    android:letterSpacing="0.14"
+                    android:text="DANGER ZONE"
+                    android:textColor="@color/dmz_red"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/clearDataCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/clear_web_data" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Clear cache, cookies, and website storage. This can sign you out." android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_danger_button_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="CLEAR DATA" android:textColor="@color/dmz_white" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/resetSettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/settings_action_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/reset_app_settings" android:textColor="@color/dmz_white" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="@string/reset_app_settings_summary" android:textColor="@color/dmz_muted" android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:background="@drawable/settings_danger_button_background" android:paddingStart="12dp" android:paddingTop="7dp" android:paddingEnd="12dp" android:paddingBottom="7dp" android:text="RESET" android:textColor="@color/dmz_white" android:textSize="11sp" android:textStyle="bold" />
+                </LinearLayout>
+
             </LinearLayout>
 
             <TextView
