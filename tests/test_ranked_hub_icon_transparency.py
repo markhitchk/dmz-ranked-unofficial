@@ -24,7 +24,8 @@ class RankedHubIconAlphaTests(unittest.TestCase):
             BETA/"drawable-nodpi/ranked_hq_logo.webp",
             BETA/"mipmap-nodpi/ic_launcher.webp",
             BETA/"mipmap-nodpi/ic_launcher_round.webp",
-            ROOT/"app/src/main/assets/ranked-hub/ranked-hq-selected.webp"
+            ROOT/"app/src/main/assets/ranked-hub/ranked-hq-selected.webp",
+            ROOT/"app/src/main/res/drawable-nodpi/ranked_hq_logo.webp"
         ]:
             data = path.read_bytes()
             self.assertGreater(len(data), 50000, str(path))

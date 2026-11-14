@@ -24,6 +24,7 @@ class RankedHQIconSurfaceTests(unittest.TestCase):
     def test_beta_drawable_not_replaced_in_production(self):
         beta = ROOT / "app/src/beta/res"
         self.assertTrue((beta / "drawable-nodpi/ranked_hq_logo.webp").is_file())
+        self.assertTrue((ROOT / "app/src/main/res/drawable-nodpi/ranked_hq_logo.webp").is_file())
         self.assertEqual(
             (ROOT / "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml").read_text().count(
                 "@drawable/dmz_launcher_foreground"), 1)
