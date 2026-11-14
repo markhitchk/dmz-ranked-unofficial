@@ -187,6 +187,10 @@ final class NotificationSync {
                 (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
 
+        if(HubNotificationChannels.isHub(app)){
+            HubNotificationChannels.notifyCommunity(app,title,body,eventKey);
+            return;
+        }
         ensureChannel(manager);
 
         Intent launch = new Intent(app, MainActivity.class)

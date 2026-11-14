@@ -2960,3 +2960,30 @@ nav.tabs.hs-site-tabs button.hs-unofficial-tab.active .hs-unofficial-tab-logo{
     transition:none;
   }
 }
+
+/* The new Ranked Hub badge is scoped to the Android wrapper, not the website
+   or the separate original DMZRanked.com application. */
+html[data-hs-ranked-hub="true"] #dmz-harleys-studios-app-message {
+  border-color:rgba(51,212,231,.40)!important;
+  border-left-color:#33d4e7!important;
+  background:linear-gradient(135deg,rgba(10,52,70,.3),rgba(10,15,22,.94))!important;
+}
+html[data-hs-ranked-hub="true"] #dmz-harleys-studios-app-message .dmz-hs-name {
+  color:#6ee4f2!important;
+}
+html[data-hs-ranked-hub="true"] #dmz-harleys-studios-app-message .dmz-hs-app-logo {
+  width:34px;height:34px;flex:0 0 34px;object-fit:contain;
+}
+html[data-hs-ranked-hub="true"] #dmz-harleys-studios-app-message .dmz-hs-app-beta,
+html[data-hs-ranked-hub="true"] .hs-unofficial-tab-channel,
+html[data-hs-ranked-hub="true"] .hs-app-channel-badge {
+  border-color:#33d4e7!important;background:#33d4e7!important;color:#071923!important;
+}
+html[data-hs-ranked-hub="true"] .hs-unofficial-tab {
+  border-color:rgba(51,212,231,.42)!important;
+}
+@media(max-width:520px){
+  html[data-hs-ranked-hub="true"] #dmz-harleys-studios-app-message .dmz-hs-app-logo {
+    width:30px;height:30px;flex-basis:30px;
+  }
+}

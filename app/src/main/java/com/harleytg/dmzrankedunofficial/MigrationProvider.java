@@ -43,9 +43,32 @@ public final class MigrationProvider extends ContentProvider {
         return true;
     }
 
+
+    private boolean callerIsTrusted() {
+        if (getContext() == null) return false;
+        int callerUid = android.os.Binder.getCallingUid();
+        if (callerUid == android.os.Process.myUid()) return true;
+        String[] callerPackages = getContext().getPackageManager().getPackagesForUid(callerUid);
+        if (callerPackages == null) return false;
+        for (String caller : callerPackages) {
+            if (!("com.harleytg.dmzranked".equals(caller)
+                    || "com.harleytg.dmzranked.beta".equals(caller)
+                    || "com.harleytg.rankedhub.beta".equals(caller))) continue;
+            if (getContext().getPackageManager().checkSignatures(
+                    getContext().getPackageName(), caller)
+                    == android.content.pm.PackageManager.SIGNATURE_MATCH) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public Cursor query(Uri uri, String[] projection, String selection,
                         String[] selectionArgs, String sortOrder) {
+        if (!callerIsTrusted()) {
+            throw new SecurityException("App migration may only be queried by trusted signed packages");
+        }
         MatrixCursor cursor = new MatrixCursor(new String[]{"payload"});
         if (getContext() == null || uri == null
                 || uri.getPath() == null

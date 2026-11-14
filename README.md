@@ -1,44 +1,29 @@
-# DMZ Ranked Unofficial
+# Ranked Hub — DMZ Ranked Unofficial Android Client
 
-Unofficial Android wrapper for **https://dmzranked.com/**.
+A native Android game-selection hub maintained by **Harley's Studios**, combining Harley's ranked projects and the original **DMZRanked.com** community client in one Android app.
 
-## Credits
+## Ranked destinations
 
-- **Built by Harley's Studios**
-- **Made by YoLando & dCHINZ**
-- YoLando: YouTube **@itsyolando** and Twitch creator
+- **DMZ Ranked — MW4 V1:** https://dmz-ranked.vercel.app/#v1 (Harley's Studios)
+- **ARC Raiders Ranked:** https://arc-raiders-ranked.vercel.app/ (Harley's Studios)
+- **DMZRanked.com:** https://dmzranked.com/ (original third-party community experience by YoLando and dCHINZ)
 
-## App features
+The Android launcher opens a native **Ranked Hub** screen. Choosing the original community site enters the existing `MainActivity`, preserving its current app integration, operator flows, notifications, and settings. Choosing one of Harley's sites opens `RankedSiteActivity` with its own origin-scoped browser data and file picker support. The hub does not merge usernames, PINs, profiles, or ranking databases.
 
-- Native **DMZ Ranked** title bar with the supplied DMZ Ranked logo.
-- Native loading screen shown while the DMZ Ranked website loads in the background.
-- Loading progress bar with optional **verbose loading details**.
-- Settings for desktop mode, keeping the screen awake, and verbose loading.
-- Reload and clear web cache/cookies controls.
-- Creator credits with YoLando and dCHINZ profile images.
-- JavaScript, DOM storage, cookies, file uploads, and DMZ Ranked section back-navigation support.
-- External navigation is blocked except for the approved PayPal support link.
-- Offline/error page when the website cannot load.
+## Android package and development
 
-## Android configuration
-
-- Package: `com.harleytg.dmzrankedunofficial`
-- Minimum Android: API 26
-- Target/compile SDK: API 36
-- Current source version: `1.0.10` (`110`)
-
-## Build
-
-The repository includes a GitHub Actions build workflow. You can also build locally with JDK 17, Android SDK 36, and Gradle 8.11.1:
+The existing package ID `com.harleytg.dmzranked` and build variants are retained so upgrades do not require installing a separate application. Minimum SDK: API 26. Compile/target SDK: API 36. Build with the repository's Gradle configuration and JDK 17.
 
 ```bash
 gradle assembleDebug
 ```
 
-The output APK is created at:
+Output: `app/build/outputs/apk/debug/app-debug.apk`
 
-`app/build/outputs/apk/debug/app-debug.apk`
+## Security and attribution
 
-## Notice
+The new game browser loads only the explicitly allowlisted HTTPS first-party hosts. Other HTTP(S) destinations open externally rather than inheriting the embedded site's origin. User credentials and auth sessions remain managed by each website. DMZRanked.com is an independent third-party project; this app is unofficial and is not endorsed by its owners.
 
-This is an unofficial client. DMZ Ranked website content and third-party trademarks belong to their respective owners.
+## Implementation status
+
+The game-selection hub and site browser have been added on the `feature/ranked-hub-multigame` branch. Android installation, session persistence, website OAuth flows, and account features require validation in a real APK before release.

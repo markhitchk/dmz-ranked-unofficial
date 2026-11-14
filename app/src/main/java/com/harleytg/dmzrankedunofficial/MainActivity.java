@@ -369,6 +369,7 @@ public class MainActivity extends Activity {
             updateLoadingIdentity();
 
             updateTitleBarIdentity();
+            applyBetaCompactTitleBar();
 
             findViewById(R.id.settingsButton).setOnClickListener(v -> showSettings());
 
@@ -585,7 +586,7 @@ public class MainActivity extends Activity {
                     applyDesktopViewportIfNeeded(view);
                     view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                     view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
-                    view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
+                    view.evaluateJavascript(brandedMessageScript(), null);
                     final int uiToken = appUiPageToken;
                     updateLoadingVerbose("Applying DMZ Ranked app interface…");
                     installRemoteAppUi(view, uiToken, false, () -> {
@@ -607,7 +608,7 @@ public class MainActivity extends Activity {
                         applyDesktopViewportIfNeeded(view);
                         view.evaluateJavascript(INSTALL_SECTION_NAV_SCRIPT, null);
                         view.evaluateJavascript(INSTALL_SITE_EVENT_BRIDGE_SCRIPT, null);
-                        view.evaluateJavascript(INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT, null);
+                        view.evaluateJavascript(brandedMessageScript(), null);
                         final int uiToken = appUiPageToken;
                         updateLoadingVerbose("Finalizing DMZ Ranked app interface…");
                         finalizeAppUiAfterPageFinished(view, uiToken, 0);
@@ -1240,6 +1241,10 @@ public class MainActivity extends Activity {
     }
 
     private void ensureSiteNotificationChannel() {
+        if(HubNotificationChannels.isHub(this)){
+            HubNotificationChannels.ensure(this);
+            return;
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null || manager.getNotificationChannel(SITE_NOTIFICATION_CHANNEL) != null) return;
@@ -1525,6 +1530,11 @@ public class MainActivity extends Activity {
             body = body.substring(9).trim();
         }
         if (body.length() > 320) body = body.substring(0, 319) + "…";
+        if(HubNotificationChannels.isHub(this)){
+            NotificationSync.recordForegroundNotification(this,"DMZ Ranked",body);
+            HubNotificationChannels.notifyCommunity(this,alertLine,body,"live:"+message);
+            return;
+        }
         String preview = body.isEmpty() ? alertLine : alertLine + " • " + body;
         String expanded = body.isEmpty() ? alertLine : alertLine + "\n" + body;
 
@@ -1779,6 +1789,14 @@ public class MainActivity extends Activity {
         if (appName != null) {
             appName.setText("DMZ Ranked");
         }
+        // The Ranked HQ beta's community client shares this Activity.
+        // Keep the splash branded but hide version/build and extra labels.
+        if ("com.harleytg.rankedhub.beta".equals(getPackageName())
+                && (preferences == null || !preferences.getBoolean(PREF_VERBOSE_LOADING, true))) {
+            if (versionText != null) versionText.setVisibility(View.GONE);
+            if (loadingBetaBadge != null) loadingBetaBadge.setVisibility(View.GONE);
+            return;
+        }
         if (loadingBetaBadge != null) {
             loadingBetaBadge.setVisibility(beta ? View.VISIBLE : View.GONE);
         }
@@ -1827,6 +1845,31 @@ public class MainActivity extends Activity {
         updateLoadingVerbose(status);
     }
 
+    // The third-party community client keeps its original 74dp header outside
+    // Ranked HQ Beta. Only the beta's embedded community launcher is compact.
+    private void applyBetaCompactTitleBar() {
+        if (!"com.harleytg.rankedhub.beta".equals(getPackageName())) return;
+        View bar = findViewById(R.id.titleBar);
+        if (bar == null) return;
+        int height = RankedHeaderView.heightDp(this);
+        android.view.ViewGroup.LayoutParams barParams = bar.getLayoutParams();
+        barParams.height = Math.round(height * getResources().getDisplayMetrics().density);
+        bar.setLayoutParams(barParams);
+        if (titleLogoView != null) {
+            int logo = Math.round((height <= 65 ? 39 : 46)
+                    * getResources().getDisplayMetrics().density);
+            android.view.ViewGroup.LayoutParams logoParams = titleLogoView.getLayoutParams();
+            logoParams.width = logo;
+            logoParams.height = logo;
+            titleLogoView.setLayoutParams(logoParams);
+        }
+        if (titleTextView != null) {
+            // SP already incorporates Android's fontScale; do not apply it twice.
+            titleTextView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
+                    height <= 65 ? 18f : 21f);
+        }
+    }
+
     private void applyAppearancePreferences() {
         if (webView == null) return;
         String size = preferences == null
@@ -1856,7 +1899,8 @@ public class MainActivity extends Activity {
         }
 
         if (loadingVerboseText == null || preferences == null) return;
-        boolean verbose = preferences.getBoolean(PREF_VERBOSE_LOADING, false);
+        boolean verbose = preferences.getBoolean(PREF_VERBOSE_LOADING,
+                "com.harleytg.rankedhub.beta".equals(getPackageName()));
         loadingVerboseText.setText(safeStatus);
         loadingVerboseText.setVisibility(verbose ? View.VISIBLE : View.GONE);
     }
@@ -2016,6 +2060,69 @@ public class MainActivity extends Activity {
             showLoadingScreen("Applying desktop website mode…", 0);
             webView.reload();
         }
+    }
+
+
+    // Dynamic remote overrides still come from the legacy main branch.
+    // Add a package-scoped identity layer even when that upstream CSS is old.
+    private static final String RANKED_HUB_BRAND_CSS =
+            "html[data-hs-ranked-hub='true'] #dmz-harleys-studios-app-message{"
+            + "border-color:rgba(51,212,231,.4)!important;border-left-color:#33d4e7!important;"
+            + "background:linear-gradient(135deg,rgba(10,52,70,.3),rgba(10,15,22,.94))!important}"
+            + "html[data-hs-ranked-hub='true'] #dmz-harleys-studios-app-message .dmz-hs-name{color:#6ee4f2!important}"
+            + "html[data-hs-ranked-hub='true'] #dmz-harleys-studios-app-message .dmz-hs-app-logo{"
+            + "width:34px!important;height:34px!important;flex-basis:34px!important;object-fit:contain!important}"
+            + "html[data-hs-ranked-hub='true'] #dmz-harleys-studios-app-message .dmz-hs-app-beta,"
+            + "html[data-hs-ranked-hub='true'] .hs-unofficial-tab-channel,"
+            + "html[data-hs-ranked-hub='true'] .hs-app-channel-badge{"
+            + "border-color:#33d4e7!important;background:#33d4e7!important;color:#071923!important}"
+            + "@media(max-width:520px){html[data-hs-ranked-hub='true'] "
+            + "#dmz-harleys-studios-app-message .dmz-hs-app-logo{"
+            + "width:30px!important;height:30px!important;flex-basis:30px!important}}";
+
+    private String rankedHubLogoDataUri() {
+        try (InputStream input = getAssets().open("ranked-hub/ranked-hq-selected.webp");
+             ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[4096];
+            int count;
+            while ((count = input.read(buf)) != -1) {
+                if (bytes.size() + count > 120000) break;
+                bytes.write(buf, 0, count);
+            }
+            if (bytes.size() > 0) {
+                return "data:image/webp;base64," + android.util.Base64.encodeToString(
+                        bytes.toByteArray(), android.util.Base64.NO_WRAP);
+            }
+        } catch (Exception ignored) {
+            // Keep the installed drawable as the offline fallback.
+        }
+        return "file:///android_res/drawable/ranked_hq_logo.webp";
+    }
+
+    private boolean isRankedHubBeta() {
+        return "com.harleytg.rankedhub.beta".equals(getPackageName());
+    }
+
+    /** Repair the top message before remote JS has finished loading. */
+    private String brandedMessageScript() {
+        if (!isRankedHubBeta()) return INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT;
+        return INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT
+                .replace("DMZ Ranked Unofficial App", "Ranked HQ")
+                .replace("DMZ Ranked app logo", "Ranked HQ app logo")
+                .replace("logo.src='file:///android_res/drawable/dmz_ranked_logo.png';",
+                        "logo.src='" + rankedHubLogoDataUri() + "';")
+                .replace("if(ch==='BETA'){", "if(true){");
+    }
+
+    /** Keep the existing remotely updatable UI, but rewrite its app-only
+     * brand literals for Ranked HQ Beta; never alter DMZ website content. */
+    private String brandedAppUiJavascript(String javascript) {
+        if (!isRankedHubBeta()) return javascript;
+        return javascript.replace("DMZ Ranked Unofficial App", "Ranked HQ")
+                .replace("DMZ Ranked App [Unofficial]", "Ranked HQ")
+                .replace("DMZ Ranked App <span>[Unofficial]</span>", "Ranked HQ")
+                .replace("DMZ Ranked app logo", "Ranked HQ app logo")
+                .replace("DMZ Ranked Android app", "Ranked HQ Android app");
     }
 
     private boolean isBetaPackage() {
@@ -2189,8 +2296,8 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            final String finalCss = css;
-            final String finalJavascript = javascript;
+            final String finalCss = isRankedHubBeta() ? css + RANKED_HUB_BRAND_CSS : css;
+            final String finalJavascript = brandedAppUiJavascript(javascript);
             final boolean saveCss = freshCss;
             final boolean saveJs = freshJs;
 
@@ -2213,12 +2320,18 @@ public class MainActivity extends Activity {
                     info.put("versionName", remoteAppVersionName());
                     long versionCode = remoteAppVersionCode();
                     info.put("versionCode", versionCode >= 0 ? String.valueOf(versionCode) : "");
-                    info.put("logoUrl", "file:///android_res/drawable/dmz_ranked_logo.png");
+                    info.put("logoUrl", isRankedHubBeta()
+                            ? rankedHubLogoDataUri()
+                            : "file:///android_res/drawable/dmz_ranked_logo.png");
+                    info.put("appName", isRankedHubBeta()
+                            ? "Ranked HQ" : "DMZ Ranked Unofficial App");
                     info.put("notificationIcon", "ic_notification_dmz");
                     info.put("source", "github-main");
 
                     String script = "(function(){try{"
                             + "window.__DMZ_APP_INFO=" + info.toString() + ";"
+                            + "document.documentElement.setAttribute('data-hs-ranked-hub',"
+                            + (isRankedHubBeta() ? "'true'" : "'false'") + ");"
                             + "var sid='hs-remote-app-ui-style';"
                             + "var st=document.getElementById(sid);"
                             + "if(!st){st=document.createElement('style');st.id=sid;(document.head||document.documentElement).appendChild(st);}"
@@ -2602,6 +2715,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        applyBetaCompactTitleBar();
         NotificationSync.setAppForeground(this, true);
         NotificationSync.configure(this);
         NotificationSync.primeBaseline(this);

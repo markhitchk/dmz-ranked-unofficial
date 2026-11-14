@@ -17,8 +17,8 @@
     <string name="pull_to_refresh_summary">Swipe down from the top of the page to reload DMZ Ranked.</string>
     <string name="remember_last_page">Remember last page</string>
     <string name="remember_last_page_summary">Reopen the last DMZ Ranked page you were viewing.</string>
-    <string name="verbose_loading">Detailed loading status</string>
-    <string name="verbose_loading_summary">Show live loading status and percentage underneath the loading bar.</string>
+    <string name="verbose_loading">Verbose startup &amp; loading</string>
+    <string name="verbose_loading_summary">Show startup initialization and website loading stages. Turn off for minimal branded loading screens. No private account data is displayed.</string>
 
     <string name="site_notifications">Website notifications</string>
     <string name="site_notifications_summary">Real-time DMZ Ranked report/review alerts use an ongoing Android foreground service and check the live board every few seconds. Turn this off to stop live monitoring.</string>

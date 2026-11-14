@@ -3,6 +3,45 @@ plugins {
 }
 
 def generatedLogoResDir = file("$buildDir/generated/dmzLogoRes")
+def generatedStudioLogoResDir = file("$buildDir/generated/studioBrandRes")
+def generatedHubAssetsDir = file("$buildDir/generated/rankedHubAssets")
+def studioLogoUrl = "https://raw.githubusercontent.com/markhitchk/Puppy-Clicker/main/assets/logos/harleys_studios.png"
+def canonicalStudioLogoGitSha = "411164454ee72e94869cc7b0141644478a0b77d4"
+
+tasks.register("bundleOfficialStudioLogo") {
+    outputs.dir(generatedStudioLogoResDir)
+
+    doLast {
+        def outputDir = new File(generatedStudioLogoResDir, "drawable-nodpi")
+        def outputFile = new File(outputDir, "harleys_studios_official.png")
+        if (!outputFile.exists() || outputFile.length() == 0) {
+            def connection = new URL(studioLogoUrl).openConnection()
+            connection.setConnectTimeout(15000)
+            connection.setReadTimeout(20000)
+            def bytes = connection.getInputStream().withCloseable { input -> input.bytes }
+            outputDir.mkdirs()
+            outputFile.bytes = bytes
+        }
+
+        // Exact source artwork from Puppy Clicker, not an AI-generated stand-in.
+        def bytes = outputFile.bytes
+        if (bytes.length != 1556980 || bytes.length < 8 ||
+                bytes[0] != (byte)0x89 || bytes[1] != (byte)0x50 ||
+                bytes[2] != (byte)0x4E || bytes[3] != (byte)0x47) {
+            throw new GradleException("Harley's Studios source is missing or not the verified PNG")
+        }
+        def md = java.security.MessageDigest.getInstance("SHA-1")
+        md.update(("blob " + bytes.length).getBytes("UTF-8"))
+        md.update((byte) 0)
+        md.update(bytes)
+        def actualSha = md.digest().collect { String.format("%02x", it & 0xFF) }.join("")
+        if (actualSha != canonicalStudioLogoGitSha) {
+            throw new GradleException("Harley's Studios logo checksum differs from canonical Puppy Clicker asset")
+        }
+        println("Bundled official Harley's Studios logo from Puppy Clicker: " + actualSha)
+    }
+}
+
 def sourceLogoFile = file("src/main/logo/png/dmz_ranked_logo.png")
 def generatedAppUiAssetsDir = file("$buildDir/generated/dmzAppUiAssets")
 def sourceRemoteAppUiDir = file("../remote/app-ui")
@@ -204,6 +243,96 @@ tasks.register("generateDmzLogo") {
     }
 }
 
+tasks.register("prepareRankedHubAssets") {
+    dependsOn("bundleOfficialStudioLogo")
+    inputs.file(sourceLogoFile)
+    outputs.dir(generatedHubAssetsDir)
+    doLast {
+        def target = new File(generatedHubAssetsDir, "ranked-hub")
+        target.mkdirs()
+        def officialLogo = new File(generatedStudioLogoResDir, "drawable-nodpi/harleys_studios_official.png")
+        if (!officialLogo.exists() || officialLogo.length() != 1556980) {
+            throw new GradleException("Missing verified official Harley's Studios artwork")
+        }
+        copy {
+            from officialLogo
+            into target
+            rename { "official_studio.png" }
+        }
+        copy {
+            from sourceLogoFile
+            into target
+            rename { "dmz_community.png" }
+        }
+        // Bundle Puppy Clicker's exact official website logo for the Projects launcher.
+        def puppyLogoUrl = "https://raw.githubusercontent.com/markhitchk/Puppy-Clicker/main/assets/logos/puppy_clicker.png"
+        def puppyLogoSha = "120206a7057633b3da2c49ba70c001926c19860c"
+        def puppyLogoFile = new File(target, "puppy_clicker.png")
+        if (!puppyLogoFile.exists() || puppyLogoFile.length() != 920318) {
+            def connection = new URL(puppyLogoUrl).openConnection()
+            connection.setConnectTimeout(20000)
+            connection.setReadTimeout(30000)
+            puppyLogoFile.bytes = connection.getInputStream().withCloseable { it.bytes }
+        }
+        def puppyBytes = puppyLogoFile.bytes
+        if (puppyBytes.length != 920318
+                || puppyBytes[0] != (byte)0x89 || puppyBytes[1] != (byte)0x50) {
+            throw new GradleException("Missing official Puppy Clicker PNG artwork")
+        }
+        def puppyDigest = java.security.MessageDigest.getInstance("SHA-1")
+        puppyDigest.update(("blob " + puppyBytes.length).getBytes("UTF-8"))
+        puppyDigest.update((byte)0)
+        puppyDigest.update(puppyBytes)
+        def puppyActualSha = puppyDigest.digest()
+                .collect { String.format("%02x", it & 0xFF) }.join("")
+        if (puppyActualSha != puppyLogoSha) {
+            throw new GradleException("Puppy Clicker artwork does not match canonical repo asset")
+        }
+
+        // Bundle the owner-selected MW4 Discord server icon for offline UI.
+        def discordLogoUrl = "https://cdn.discordapp.com/icons/1560773091674685563/add804ea564a54751612a45d8a5aeb1c.webp?size=512"
+        def discordLogoFile = new File(target, "dmz-v1-discord.webp")
+        if (!discordLogoFile.exists() || discordLogoFile.length() < 1024) {
+            def response = null
+            def lastError = null
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    def connection = (java.net.HttpURLConnection) new URL(discordLogoUrl).openConnection()
+                    connection.setConnectTimeout(20000)
+                    connection.setReadTimeout(25000)
+                    connection.setInstanceFollowRedirects(true)
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (RankedHub-Android/1.0; IconFetch)")
+                    connection.setRequestProperty("Accept", "image/webp,image/*;q=0.9,*/*;q=0.1")
+                    if (connection.responseCode != 200) {
+                        throw new GradleException("Discord image returned HTTP " + connection.responseCode)
+                    }
+                    response = connection.inputStream.withCloseable { it.bytes }
+                    connection.disconnect()
+                    break
+                } catch (Exception error) {
+                    lastError = error
+                    if (attempt < 3) Thread.sleep(700L * attempt)
+                }
+            }
+            if (response == null) {
+                throw new GradleException("Cannot bundle selected MW4 Discord icon", lastError)
+            }
+            discordLogoFile.bytes = response
+        }
+        def iconBytes = discordLogoFile.bytes
+        def riff = new String(iconBytes, 0, Math.min(iconBytes.length, 4), "US-ASCII")
+        def webp = iconBytes.length >= 12 ? new String(iconBytes, 8, 4, "US-ASCII") : ""
+        if (iconBytes.length < 1024 || riff != "RIFF" || webp != "WEBP") {
+            throw new GradleException("Selected MW4 logo is not valid WEBP")
+        }
+        println("Bundled DMZ MW4 Discord icon (" + iconBytes.length + " bytes)")
+
+        if (!new File(target, "dmz_community.png").exists()) {
+            throw new GradleException("Missing legacy DMZ Ranked artwork")
+        }
+    }
+}
+
 android {
     namespace 'com.harleytg.dmzranked'
     compileSdk 36
@@ -212,14 +341,16 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 165
-        versionName '1.0.61'
+        versionCode 192
+        versionName '1.0.88'
     }
 
     sourceSets {
         main {
             res.srcDir generatedLogoResDir
+            res.srcDir generatedStudioLogoResDir
             assets.srcDir generatedAppUiAssetsDir
+            assets.srcDir generatedHubAssetsDir
         }
     }
 
@@ -247,20 +378,32 @@ android {
             applicationIdSuffix '.beta'
             versionNameSuffix '-beta'
             signingConfig signingConfigs.release
-            debuggable true
+            // Signed public Beta; avoid shipping a debuggable credential-bearing WebView.
+            debuggable false
             matchingFallbacks = ['debug']
-            resValue 'string', 'app_name', 'DMZ Ranked [Beta]'
+            resValue 'string', 'app_name', 'Ranked HQ [Beta]'
         }
     }
 }
 
 tasks.named("preBuild").configure {
     dependsOn("generateDmzLogo")
+    dependsOn("bundleOfficialStudioLogo")
     dependsOn("generateDmzRemoteUiFallback")
+    dependsOn("prepareRankedHubAssets")
 }
 
 
 dependencies {
     implementation 'com.google.android.play:app-update:2.1.0'
     implementation 'androidx.work:work-runtime:2.10.1'
+}
+
+ 
+// Keep the existing production/debug DMZRanked app IDs unchanged.
+// Ranked HQ Beta is a separately installable app, not an update-in-place.
+androidComponents {
+    onVariants(selector().withBuildType('beta')) { variant ->
+        variant.applicationId.set('com.harleytg.rankedhub.beta')
+    }
 }
