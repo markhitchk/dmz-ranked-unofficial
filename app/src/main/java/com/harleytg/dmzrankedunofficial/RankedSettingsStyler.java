@@ -70,7 +70,7 @@ final class RankedSettingsStyler {
                     .open("ranked-hub/ranked-hq-selected.webp")) {
                 about.setImageBitmap(BitmapFactory.decodeStream(stream));
             } catch (Exception ignored) {
-                about.setImageResource(R.drawable.harleys_studios_official);
+                about.setImageResource(R.drawable.ranked_hq_logo);
             }
         } else if (theme == RankedHeaderView.THEME_DMZ_V1) {
             try (InputStream stream = activity.getAssets()

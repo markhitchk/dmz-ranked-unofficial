@@ -1694,7 +1694,9 @@ public class SettingsActivity extends Activity {
                 .setDefaults(Notification.DEFAULT_ALL);
 
         try {
-            Bitmap logo = BitmapFactory.decodeResource(getResources(), R.drawable.dmz_ranked_logo);
+            Bitmap logo = BitmapFactory.decodeResource(getResources(),
+                    isRankedHubBuild() ? R.drawable.ranked_hq_logo
+                            : R.drawable.dmz_ranked_logo);
             if (logo != null) builder.setLargeIcon(logo);
         } catch (Throwable ignored) {
         }
@@ -2251,7 +2253,9 @@ public class SettingsActivity extends Activity {
         if (imageView == null) return;
         imageView.setBackgroundColor(Color.TRANSPARENT);
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        imageView.setImageResource(R.drawable.dmz_ranked_logo);
+        imageView.setImageResource(isRankedHubBuild()
+                && launcherTheme == RankedHeaderView.THEME_HUB
+                ? R.drawable.ranked_hq_logo : R.drawable.dmz_ranked_logo);
     }
 
     private void loadRemoteAvatar(String url, ImageView target) {

@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ASSETS=ROOT/"app/src/main/assets/ranked-hub"
 JAVA=ROOT/"app/src/main/java/com/harleytg/dmzrankedunofficial"
 DISCORD_URL="https://cdn.discordapp.com/icons/1560773091674685563/add804ea564a54751612a45d8a5aeb1c.webp?size=512"
-HUB_SHA="9892c22613b845d469ce97147c9c2fe823cba318"
+HUB_SHA="4ef2ea7cc932ab309b15604b5275af2616116e38"
 
 def git_blob_sha(data):
     return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Beta-specific splash: retain a dark SCREEN background but not a square
-         behind the transparent selected Ranked Hub artwork. -->
+         behind the transparent selected Ranked HQ artwork. -->
     <style name="Theme.DMZRanked" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>

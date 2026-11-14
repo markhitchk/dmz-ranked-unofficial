@@ -32,7 +32,7 @@ class TransparentBetaBrandingTests(unittest.TestCase):
 
     def test_beta_legacy_icons_use_alpha_artwork(self):
         selected=(BETA/"drawable-nodpi/ranked_hq_logo.webp").read_bytes()
-        self.assertEqual(sha_git(selected),"9892c22613b845d469ce97147c9c2fe823cba318")
+        self.assertEqual(sha_git(selected),"4ef2ea7cc932ab309b15604b5275af2616116e38")
         for name in ("ic_launcher.webp","ic_launcher_round.webp"):
             self.assertEqual(sha_git((BETA/"mipmap-nodpi"/name).read_bytes()),
                              sha_git(selected))

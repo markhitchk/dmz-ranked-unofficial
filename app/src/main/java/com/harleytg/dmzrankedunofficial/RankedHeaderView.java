@@ -134,7 +134,9 @@ final class RankedHeaderView {
         try (InputStream stream = activity.getAssets().open("ranked-hub/" + logo)) {
             image.setImageBitmap(BitmapFactory.decodeStream(stream));
         } catch (Exception ignored) {
-            image.setImageResource(R.drawable.dmz_ranked_logo);
+            // Never show legacy DMZ artwork in the Ranked HQ launcher.
+            image.setImageResource(theme == THEME_HUB
+                    ? R.drawable.ranked_hq_logo : R.drawable.dmz_ranked_logo);
         }
         int logoSize = dp(activity, compact ? 39 : 46);
         bar.addView(image, new LinearLayout.LayoutParams(logoSize, logoSize));

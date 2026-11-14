@@ -58,7 +58,7 @@ final class RankedIntroView extends FrameLayout {
         logo.setContentDescription("Ranked HQ official puppy-shield crest");
         try(InputStream stream=activity.getAssets().open("ranked-hub/ranked-hq-selected.webp")){
             logo.setImageBitmap(BitmapFactory.decodeStream(stream));
-        }catch(Exception ignored){}
+        }catch(Exception ignored){logo.setImageResource(R.drawable.ranked_hq_logo);}
         FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(dp(192),dp(192),Gravity.CENTER);
         crestArea.addView(logo,lp);
         TextView heading=new TextView(activity);
