@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Ranked Hub</string>
+    <string name="app_name">Ranked HQ</string>
     <string name="settings">Settings</string>
     <string name="web_settings">App settings</string>
     <string name="settings_search_hint">Search app settings…</string>

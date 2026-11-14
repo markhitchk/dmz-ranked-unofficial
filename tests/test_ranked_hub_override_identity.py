@@ -1,4 +1,4 @@
-"""Ranked Hub beta must not show original DMZRanked.com app branding."""
+"""Ranked HQ beta must not show original DMZRanked.com app branding."""
 from pathlib import Path
 import unittest
 
@@ -11,16 +11,16 @@ ASSETS=ROOT/"app/src/main/assets/ranked-hub"
 class HubOverrideIdentityTests(unittest.TestCase):
     def test_hub_is_package_scoped_and_uses_real_offline_logo(self):
         self.assertIn('com.harleytg.rankedhub.beta',JS)
-        self.assertIn('APP_DISPLAY_NAME = IS_RANKED_HUB ? "Ranked Hub"',JS)
+        self.assertIn('APP_DISPLAY_NAME = IS_RANKED_HUB ? "Ranked HQ"',JS)
         self.assertIn('title.textContent = APP_DISPLAY_NAME;',JS)
         self.assertIn('logo.alt = IS_RANKED_HUB ?',JS)
-        self.assertIn('ranked-hub-selected.webp',NATIVE)
+        self.assertIn('ranked-hq-selected.webp',NATIVE)
         self.assertIn('data:image/webp;base64,',NATIVE)
-        self.assertTrue((ASSETS/"ranked-hub-selected.webp").is_file())
+        self.assertTrue((ASSETS/"ranked-hq-selected.webp").is_file())
         self.assertIn('info.put("logoUrl", isRankedHubBeta()',NATIVE)
 
     def test_legacy_dmz_app_branding_is_not_replaced_for_other_packages(self):
-        self.assertIn('IS_RANKED_HUB ? "Ranked Hub" : "DMZ Ranked Unofficial App"',JS)
+        self.assertIn('IS_RANKED_HUB ? "Ranked HQ" : "DMZ Ranked Unofficial App"',JS)
         self.assertIn('if (!isRankedHubBeta()) return javascript;',NATIVE)
         self.assertIn('if (!isRankedHubBeta()) return INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT;',NATIVE)
         self.assertIn('DMZ Ranked Unofficial App',NATIVE)
@@ -36,7 +36,7 @@ class HubOverrideIdentityTests(unittest.TestCase):
         self.assertIn('html[data-hs-ranked-hub="true"]',CSS)
         self.assertIn('logo.src=',NATIVE)
         self.assertIn('appBuildLabel()',JS)
-        self.assertIn('Ranked Hub Beta connects',JS)
+        self.assertIn('Ranked HQ Beta connects',JS)
         self.assertIn('Harley',JS)
 
 if __name__=="__main__":unittest.main()

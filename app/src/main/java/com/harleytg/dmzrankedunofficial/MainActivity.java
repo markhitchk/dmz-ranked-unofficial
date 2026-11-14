@@ -1789,7 +1789,7 @@ public class MainActivity extends Activity {
         if (appName != null) {
             appName.setText("DMZ Ranked");
         }
-        // The Ranked Hub beta's community client shares this Activity.
+        // The Ranked HQ beta's community client shares this Activity.
         // Keep the splash branded but hide version/build and extra labels.
         if ("com.harleytg.rankedhub.beta".equals(getPackageName())
                 && (preferences == null || !preferences.getBoolean(PREF_VERBOSE_LOADING, true))) {
@@ -1846,7 +1846,7 @@ public class MainActivity extends Activity {
     }
 
     // The third-party community client keeps its original 74dp header outside
-    // Ranked Hub Beta. Only the beta's embedded community launcher is compact.
+    // Ranked HQ Beta. Only the beta's embedded community launcher is compact.
     private void applyBetaCompactTitleBar() {
         if (!"com.harleytg.rankedhub.beta".equals(getPackageName())) return;
         View bar = findViewById(R.id.titleBar);
@@ -2081,7 +2081,7 @@ public class MainActivity extends Activity {
             + "width:30px!important;height:30px!important;flex-basis:30px!important}}";
 
     private String rankedHubLogoDataUri() {
-        try (InputStream input = getAssets().open("ranked-hub/ranked-hub-selected.webp");
+        try (InputStream input = getAssets().open("ranked-hub/ranked-hq-selected.webp");
              ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
             byte[] buf = new byte[4096];
             int count;
@@ -2096,7 +2096,7 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {
             // Keep the installed drawable as the offline fallback.
         }
-        return "file:///android_res/drawable/ranked_hub_logo.webp";
+        return "file:///android_res/drawable/ranked_hq_logo.webp";
     }
 
     private boolean isRankedHubBeta() {
@@ -2107,22 +2107,22 @@ public class MainActivity extends Activity {
     private String brandedMessageScript() {
         if (!isRankedHubBeta()) return INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT;
         return INSTALL_HARLEYS_STUDIOS_MESSAGE_SCRIPT
-                .replace("DMZ Ranked Unofficial App", "Ranked Hub")
-                .replace("DMZ Ranked app logo", "Ranked Hub app logo")
+                .replace("DMZ Ranked Unofficial App", "Ranked HQ")
+                .replace("DMZ Ranked app logo", "Ranked HQ app logo")
                 .replace("logo.src='file:///android_res/drawable/dmz_ranked_logo.png';",
                         "logo.src='" + rankedHubLogoDataUri() + "';")
                 .replace("if(ch==='BETA'){", "if(true){");
     }
 
     /** Keep the existing remotely updatable UI, but rewrite its app-only
-     * brand literals for Ranked Hub Beta; never alter DMZ website content. */
+     * brand literals for Ranked HQ Beta; never alter DMZ website content. */
     private String brandedAppUiJavascript(String javascript) {
         if (!isRankedHubBeta()) return javascript;
-        return javascript.replace("DMZ Ranked Unofficial App", "Ranked Hub")
-                .replace("DMZ Ranked App [Unofficial]", "Ranked Hub")
-                .replace("DMZ Ranked App <span>[Unofficial]</span>", "Ranked Hub")
-                .replace("DMZ Ranked app logo", "Ranked Hub app logo")
-                .replace("DMZ Ranked Android app", "Ranked Hub Android app");
+        return javascript.replace("DMZ Ranked Unofficial App", "Ranked HQ")
+                .replace("DMZ Ranked App [Unofficial]", "Ranked HQ")
+                .replace("DMZ Ranked App <span>[Unofficial]</span>", "Ranked HQ")
+                .replace("DMZ Ranked app logo", "Ranked HQ app logo")
+                .replace("DMZ Ranked Android app", "Ranked HQ Android app");
     }
 
     private boolean isBetaPackage() {
@@ -2324,7 +2324,7 @@ public class MainActivity extends Activity {
                             ? rankedHubLogoDataUri()
                             : "file:///android_res/drawable/dmz_ranked_logo.png");
                     info.put("appName", isRankedHubBeta()
-                            ? "Ranked Hub" : "DMZ Ranked Unofficial App");
+                            ? "Ranked HQ" : "DMZ Ranked Unofficial App");
                     info.put("notificationIcon", "ic_notification_dmz");
                     info.put("source", "github-main");
 

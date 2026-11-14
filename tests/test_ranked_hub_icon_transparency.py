@@ -5,13 +5,13 @@ import unittest
 import hashlib
 ROOT=Path(__file__).resolve().parents[1]
 BETA=ROOT/"app/src/beta/res"
-SHA="b27a070a9dc11817cfb1ebe01f0704cefbbf4261"
+SHA="9892c22613b845d469ce97147c9c2fe823cba318"
 ANDROID="{http://schemas.android.com/apk/res/android}"
 
 class RankedHubIconAlphaTests(unittest.TestCase):
     def test_launcher_assets_are_original_transparent_logo(self):
         for path in [
-            BETA/"drawable-nodpi/ranked_hub_logo.webp",
+            BETA/"drawable-nodpi/ranked_hq_logo.webp",
             BETA/"mipmap-nodpi/ic_launcher.webp",
             BETA/"mipmap-nodpi/ic_launcher_round.webp"
         ]:

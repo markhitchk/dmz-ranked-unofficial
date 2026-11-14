@@ -46,15 +46,15 @@
   const PUBLIC_STATE_URL = "https://dmzranked.com/api/v1/data/public-state";
   const SNAPSHOT_URL = "https://dmzranked.com/leaderboard.json";
   const APP_INFO = (window.__DMZ_APP_INFO && typeof window.__DMZ_APP_INFO === "object") ? window.__DMZ_APP_INFO : {};
-  // Only the independent Ranked Hub beta gets the new identity. Original
+  // Only the independent Ranked HQ beta gets the new identity. Original
   // DMZRanked.com app installations retain their own logo, name and channel.
   const IS_RANKED_HUB = clean(APP_INFO.packageName) === "com.harleytg.rankedhub.beta";
-  const APP_DISPLAY_NAME = IS_RANKED_HUB ? "Ranked Hub" : "DMZ Ranked Unofficial App";
+  const APP_DISPLAY_NAME = IS_RANKED_HUB ? "Ranked HQ" : "DMZ Ranked Unofficial App";
   const APP_LOGO_URL = clean(APP_INFO.logoUrl) ||
-    (IS_RANKED_HUB ? "file:///android_res/drawable/ranked_hub_logo.webp" :
+    (IS_RANKED_HUB ? "file:///android_res/drawable/ranked_hq_logo.webp" :
       "file:///android_res/drawable/dmz_ranked_logo.png");
   const APP_LOGO_FALLBACK_URL = IS_RANKED_HUB
-    ? "file:///android_res/drawable/ranked_hub_logo.webp"
+    ? "file:///android_res/drawable/ranked_hq_logo.webp"
     : "https://raw.githubusercontent.com/markhitchk/dmz-ranked-unofficial/main/app/src/main/logo/png/dmz_ranked_logo.png";
 
   // Exact rank emblems used by dmzranked.com's leaderboard/profile UI.
@@ -619,7 +619,7 @@
 
     const logo = document.createElement("img");
     logo.className = "dmz-hs-app-logo";
-    logo.alt = IS_RANKED_HUB ? "Ranked Hub app logo" : "DMZ Ranked app logo";
+    logo.alt = IS_RANKED_HUB ? "Ranked HQ app logo" : "DMZ Ranked app logo";
     logo.src = APP_LOGO_URL;
     logo.onerror = function () {
       if (this.src !== APP_LOGO_FALLBACK_URL) this.src = APP_LOGO_FALLBACK_URL;
@@ -911,12 +911,12 @@
     if (!button) return;
     const channel = appChannelLabel();
     button.classList.add("hs-unofficial-tab");
-    button.setAttribute("aria-label", IS_RANKED_HUB ? "Ranked Hub" : "DMZ Ranked App [Unofficial]");
+    button.setAttribute("aria-label", IS_RANKED_HUB ? "Ranked HQ" : "DMZ Ranked App [Unofficial]");
     while (button.firstChild) button.removeChild(button.firstChild);
 
     const logo = document.createElement("img");
     logo.className = "hs-unofficial-tab-logo";
-    logo.alt = IS_RANKED_HUB ? "Ranked Hub" : "DMZ Ranked";
+    logo.alt = IS_RANKED_HUB ? "Ranked HQ" : "DMZ Ranked";
     logo.src = APP_LOGO_URL;
     logo.addEventListener("error", () => {
       if (logo.src !== APP_LOGO_FALLBACK_URL) {
@@ -928,7 +928,7 @@
 
     const label = document.createElement("span");
     label.className = "hs-unofficial-tab-label";
-    label.textContent = IS_RANKED_HUB ? "Ranked Hub" : "DMZ Ranked App [Unofficial]";
+    label.textContent = IS_RANKED_HUB ? "Ranked HQ" : "DMZ Ranked App [Unofficial]";
 
     button.appendChild(logo);
     button.appendChild(label);
@@ -1021,7 +1021,7 @@
 
     section = document.createElement("section");
     section.id = TAB;
-    section.setAttribute("aria-label", IS_RANKED_HUB ? "Ranked Hub" : "DMZ Ranked App [Unofficial]");
+    section.setAttribute("aria-label", IS_RANKED_HUB ? "Ranked HQ" : "DMZ Ranked App [Unofficial]");
     section.setAttribute("data-hs-app-section", "true");
     section.innerHTML =
       '<div class="hs-app-page-hero">' +
@@ -1029,7 +1029,7 @@
           '<div class="hs-app-page-title-wrap">' +
             '<div class="hs-app-eyebrow">Harley\'s Studios Android</div>' +
             '<h2 class="hs-app-page-title">' +
-              (IS_RANKED_HUB ? 'Ranked Hub' : 'DMZ Ranked App <span>[Unofficial]</span>') +
+              (IS_RANKED_HUB ? 'Ranked HQ' : 'DMZ Ranked App <span>[Unofficial]</span>') +
             '</h2>' +
           '</div>' +
           '<span class="hs-app-channel-badge" data-hs-channel-badge>' + appChannelLabel() + '</span>' +
@@ -1040,7 +1040,7 @@
         '<div class="hs-app-page-welcome" id="hs-unofficial-welcome">Welcome, Guest.</div>' +
         '<p class="hs-app-page-summary">' +
           (IS_RANKED_HUB
-            ? 'Ranked Hub Beta connects Harley\'s Studios projects. DMZRanked.com remains an independent community website.'
+            ? 'Ranked HQ Beta connects Harley\'s Studios projects. DMZRanked.com remains an independent community website.'
             : 'App-only status, tools and mobile quality-of-life features for dmzranked.com.') +
         '</p>' +
         '<div class="hs-app-meta hs-app-page-meta">' +
@@ -1059,7 +1059,7 @@
             '<div class="hs-app-status-tile"><span class="hs-app-label">Channel</span><strong>' + appChannelCopy() + '</strong><small>' + appChannelLabel() + '</small></div>' +
             '<div class="hs-app-status-tile"><span class="hs-app-label">Build</span><strong>' + appBuildLabel() + '</strong><small>Current install</small></div>' +
             '<div class="hs-app-status-tile"><span class="hs-app-label">Developer</span><strong>Harley\'s Studios</strong><small>' +
-              (IS_RANKED_HUB ? 'Ranked Hub Beta' : 'Unofficial Android app') +
+              (IS_RANKED_HUB ? 'Ranked HQ Beta' : 'Unofficial Android app') +
             '</small></div>' +
           '</div>' +
         '</div>' +
@@ -1103,7 +1103,7 @@
       '<details class="card hs-app-about">' +
         '<summary>About this app page</summary>' +
         '<p>' + (IS_RANKED_HUB
-          ? 'This Ranked Hub Beta page is part of Harley\'s Studios Android launcher. It does not edit or modify DMZRanked.com.'
+          ? 'This Ranked HQ Beta page is part of Harley\'s Studios Android launcher. It does not edit or modify DMZRanked.com.'
           : 'This tab exists only inside Harley\'s Studios DMZ Ranked Android app. It adds app-only information and tools without editing or modifying the dmzranked.com website.') +
         '</p>' +
       '</details>';

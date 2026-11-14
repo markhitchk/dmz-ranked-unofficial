@@ -83,7 +83,7 @@ final class RankedHeaderView {
         if (theme == THEME_ARC) return "ARC Raiders Ranked";
         if (theme == THEME_COMMUNITY) return "DMZ Ranked";
         if (theme == THEME_PUPPY) return "Puppy Clicker";
-        return "Ranked Hub";
+        return "Ranked HQ";
     }
 
     private static String logoFor(int theme) {
@@ -92,7 +92,7 @@ final class RankedHeaderView {
         else if (theme == THEME_ARC) logo = "arc-ranked.webp";
         else if (theme == THEME_COMMUNITY) logo = "dmz_community.png";
         else if (theme == THEME_PUPPY) logo = "puppy_clicker.png";
-        else logo = "ranked-hub-selected.webp";
+        else logo = "ranked-hq-selected.webp";
         return logo;
     }
 

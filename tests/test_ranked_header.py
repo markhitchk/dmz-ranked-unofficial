@@ -1,4 +1,4 @@
-"""All Ranked Hub pages use the original DMZRanked.com native title bar."""
+"""All Ranked HQ pages use the original DMZRanked.com native title bar."""
 from pathlib import Path
 import unittest
 ROOT=Path(__file__).resolve().parents[1]
@@ -7,7 +7,7 @@ JAVA=ROOT/"app/src/main/java/com/harleytg/dmzrankedunofficial"
 class RankedHeaderTests(unittest.TestCase):
     def test_shared_header_uses_verified_branding(self):
         source=(JAVA/"RankedHeaderView.java").read_text()
-        for name in ("ranked-hub-selected.webp","dmz-v1-discord.webp","arc-ranked.webp",
+        for name in ("ranked-hq-selected.webp","dmz-v1-discord.webp","arc-ranked.webp",
                      "dmz_community.png","puppy_clicker.png"):
             self.assertIn(name,source)
         for color in ("#33D4E7","#F4C15F","#62D8E5"):
@@ -43,7 +43,7 @@ class RankedHeaderTests(unittest.TestCase):
     def test_site_actions_unchanged(self):
         source=(JAVA/"RankedSiteActivity.java").read_text()
         for token in ("RankedHeaderView.THEME_DMZ_V1","RankedHeaderView.THEME_ARC",
-                      "Return to Ranked Hub","Reload this website",
+                      "Return to Ranked HQ","Reload this website",
                       "Open in browser","SettingsActivity.class","RankedSafeArea.apply(root)"):
             self.assertIn(token,source)
     def test_original_header_still_present(self):

@@ -55,14 +55,14 @@ final class RankedIntroView extends FrameLayout {
         crestArea.addView(radar,new FrameLayout.LayoutParams(-1,-1));
         ImageView logo=new ImageView(activity);
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        logo.setContentDescription("Ranked Hub official puppy-shield crest");
-        try(InputStream stream=activity.getAssets().open("ranked-hub/ranked-hub-selected.webp")){
+        logo.setContentDescription("Ranked HQ official puppy-shield crest");
+        try(InputStream stream=activity.getAssets().open("ranked-hub/ranked-hq-selected.webp")){
             logo.setImageBitmap(BitmapFactory.decodeStream(stream));
         }catch(Exception ignored){}
         FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(dp(192),dp(192),Gravity.CENTER);
         crestArea.addView(logo,lp);
         TextView heading=new TextView(activity);
-        heading.setText("RANKED HUB");
+        heading.setText("RANKED HQ");
         heading.setTextColor(Color.WHITE);
         heading.setTextSize(25);
         heading.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);

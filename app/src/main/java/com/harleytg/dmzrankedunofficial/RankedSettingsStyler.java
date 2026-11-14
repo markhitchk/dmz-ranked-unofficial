@@ -39,7 +39,7 @@ final class RankedSettingsStyler {
         if (theme == RankedHeaderView.THEME_ARC) return "ARC RAIDERS RANKED";
         if (theme == RankedHeaderView.THEME_COMMUNITY) return "DMZRANKED.COM";
         if (theme == RankedHeaderView.THEME_PUPPY) return "PUPPY CLICKER";
-        return "RANKED HUB";
+        return "RANKED HQ";
     }
 
     static void apply(Activity activity, int theme) {
@@ -67,7 +67,7 @@ final class RankedSettingsStyler {
         if (about == null) return;
         if (theme == RankedHeaderView.THEME_HUB) {
             try (InputStream stream = activity.getAssets()
-                    .open("ranked-hub/ranked-hub-selected.webp")) {
+                    .open("ranked-hub/ranked-hq-selected.webp")) {
                 about.setImageBitmap(BitmapFactory.decodeStream(stream));
             } catch (Exception ignored) {
                 about.setImageResource(R.drawable.harleys_studios_official);

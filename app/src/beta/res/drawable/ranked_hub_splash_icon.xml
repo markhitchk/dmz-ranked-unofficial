@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 12+ splash art, with a transparent drawable canvas around the crest. -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ranked_hub_logo"
+    android:drawable="@drawable/ranked_hq_logo"
     android:insetLeft="28dp"
     android:insetTop="28dp"
     android:insetRight="28dp"

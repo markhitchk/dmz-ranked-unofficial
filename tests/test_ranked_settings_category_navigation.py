@@ -1,4 +1,4 @@
-"""Ranked Hub's Settings screenshot-style category navigation contract."""
+"""Ranked HQ's Settings screenshot-style category navigation contract."""
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import unittest

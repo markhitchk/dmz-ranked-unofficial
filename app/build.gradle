@@ -341,8 +341,8 @@ android {
         applicationId 'com.harleytg.dmzranked'
         minSdk 26
         targetSdk 36
-        versionCode 190
-        versionName '1.0.86'
+        versionCode 191
+        versionName '1.0.87'
     }
 
     sourceSets {
@@ -381,7 +381,7 @@ android {
             // Signed public Beta; avoid shipping a debuggable credential-bearing WebView.
             debuggable false
             matchingFallbacks = ['debug']
-            resValue 'string', 'app_name', 'Ranked Hub [Beta]'
+            resValue 'string', 'app_name', 'Ranked HQ [Beta]'
         }
     }
 }
@@ -401,7 +401,7 @@ dependencies {
 
  
 // Keep the existing production/debug DMZRanked app IDs unchanged.
-// Ranked Hub Beta is a separately installable app, not an update-in-place.
+// Ranked HQ Beta is a separately installable app, not an update-in-place.
 androidComponents {
     onVariants(selector().withBuildType('beta')) { variant ->
         variant.applicationId.set('com.harleytg.rankedhub.beta')

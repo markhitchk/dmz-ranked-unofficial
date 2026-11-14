@@ -92,7 +92,7 @@
             android:id="@+id/settingsScopeText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="RANKED HUB / SYSTEM CONFIGURATION"
+            android:text="RANKED HQ / SYSTEM CONFIGURATION"
             android:textColor="@color/dmz_gold"
             android:textStyle="bold"
             android:letterSpacing="0.09"
@@ -1008,7 +1008,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingBottom="12dp"
-                    android:text="Encrypted portable backup: Ranked Hub app settings + safe DMZRanked.com operator snapshots. Website backup requires site support for MW4 and ARC. No passwords, PINs, sessions or server ranks."
+                    android:text="Encrypted portable backup: Ranked HQ app settings + safe DMZRanked.com operator snapshots. Website backup requires site support for MW4 and ARC. No passwords, PINs, sessions or server ranks."
                     android:textColor="@color/dmz_muted"
                     android:textSize="12sp" />
                 <TextView

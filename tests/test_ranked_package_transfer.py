@@ -1,4 +1,4 @@
-"""Ranked Hub package identity and explicit legacy app transfer regressions."""
+"""Ranked HQ package identity and explicit legacy app transfer regressions."""
 from pathlib import Path
 import unittest
 

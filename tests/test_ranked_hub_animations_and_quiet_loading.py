@@ -1,4 +1,4 @@
-"""Ranked Hub Beta visual polish and quiet loading regression checks."""
+"""Ranked HQ Beta visual polish and quiet loading regression checks."""
 from pathlib import Path
 import unittest
 

@@ -345,7 +345,7 @@ final class RankedBackupManager {
         ByteBuffer input=ByteBuffer.wrap(encrypted);
         byte[] magic=new byte[4],salt=new byte[16],nonce=new byte[12];
         input.get(magic);
-        if(!Arrays.equals(magic,MAGIC))throw new IllegalArgumentException("Unrecognized Ranked Hub backup");
+        if(!Arrays.equals(magic,MAGIC))throw new IllegalArgumentException("Unrecognized Ranked HQ backup");
         input.get(salt);input.get(nonce);
         byte[] header=Arrays.copyOf(encrypted,32);
         byte[] payload=new byte[encrypted.length-32];

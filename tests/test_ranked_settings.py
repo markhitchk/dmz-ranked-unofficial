@@ -1,4 +1,4 @@
-"""Ranked Hub settings visual-parity and behavior preservation checks."""
+"""Ranked HQ settings visual-parity and behavior preservation checks."""
 from pathlib import Path
 import unittest
 
@@ -13,7 +13,7 @@ class RankedSettingsTests(unittest.TestCase):
         self.assertIn("createSettings(",header)
         self.assertIn('settingsMode ? "Back to launcher" : "Open app settings"',header)
         self.assertIn("dmz_community.png",header)
-        self.assertIn("ranked-hub-selected.webp",header)
+        self.assertIn("ranked-hq-selected.webp",header)
         self.assertIn("dmz-v1-discord.webp",header)
         self.assertIn("arc-ranked.webp",header)
 

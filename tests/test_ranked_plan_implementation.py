@@ -9,7 +9,7 @@ class RankedPlanImplementation(unittest.TestCase):
     def test_real_native_intro_with_reduced_motion(self):
         intro=source("RankedIntroView.java")
         hub=source("RankedHubActivity.java")
-        self.assertIn("ranked-hub/ranked-hub-selected.webp",intro)
+        self.assertIn("ranked-hub/ranked-hq-selected.webp",intro)
         self.assertIn("ObjectAnimator",intro)
         self.assertIn("reduced_motion",hub)
         self.assertIn("onPageFinished",hub)

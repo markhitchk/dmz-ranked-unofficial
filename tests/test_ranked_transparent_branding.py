@@ -28,11 +28,11 @@ class TransparentBetaBrandingTests(unittest.TestCase):
         self.assertIn('@android:color/transparent',xml)
         self.assertNotIn('@drawable/dmz_splash_icon',xml)
         splash=(BETA/"drawable/ranked_hub_splash_icon.xml").read_text()
-        self.assertIn('@drawable/ranked_hub_logo',splash)
+        self.assertIn('@drawable/ranked_hq_logo',splash)
 
     def test_beta_legacy_icons_use_alpha_artwork(self):
-        selected=(BETA/"drawable-nodpi/ranked_hub_logo.webp").read_bytes()
-        self.assertEqual(sha_git(selected),"b27a070a9dc11817cfb1ebe01f0704cefbbf4261")
+        selected=(BETA/"drawable-nodpi/ranked_hq_logo.webp").read_bytes()
+        self.assertEqual(sha_git(selected),"9892c22613b845d469ce97147c9c2fe823cba318")
         for name in ("ic_launcher.webp","ic_launcher_round.webp"):
             self.assertEqual(sha_git((BETA/"mipmap-nodpi"/name).read_bytes()),
                              sha_git(selected))
@@ -43,7 +43,7 @@ class TransparentBetaBrandingTests(unittest.TestCase):
         about=xml[from_pos:xml.index("/>",from_pos)]
         self.assertIn('android:background="@android:color/transparent"',about)
         header=(ROOT/"app/src/main/java/com/harleytg/dmzrankedunofficial/RankedHeaderView.java").read_text()
-        self.assertIn("ranked-hub-selected.webp",header)
+        self.assertIn("ranked-hq-selected.webp",header)
         self.assertIn("ImageView.ScaleType.CENTER_INSIDE",header)
 
 if __name__=="__main__":

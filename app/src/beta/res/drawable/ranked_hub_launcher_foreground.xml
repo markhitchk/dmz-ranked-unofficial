@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Android adaptive icons have 108dp layers but only a centered 66dp
-  guaranteed safe zone. Keep the complete original Ranked Hub shield and
+  guaranteed safe zone. Keep the complete original Ranked HQ shield and
   lettering in that zone (108 - 2 * 21 = 66). The previous 10dp inset
   enlarged the artwork to 88dp, allowing Samsung launcher masks/installer
   previews to clip it. This foreground is distinct from the splash icon.
 -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ranked_hub_logo"
+    android:drawable="@drawable/ranked_hq_logo"
     android:insetLeft="21dp" android:insetTop="21dp"
     android:insetRight="21dp" android:insetBottom="21dp" />

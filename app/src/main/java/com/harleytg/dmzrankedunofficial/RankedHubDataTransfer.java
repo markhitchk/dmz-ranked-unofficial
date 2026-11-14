@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 /**
  * Explicit, signed-source transfer from the previous DMZ Ranked Android apps
- * to the new Ranked Hub Beta package. No WebView storage or auth is transferred.
+ * to the new Ranked HQ Beta package. No WebView storage or auth is transferred.
  */
 final class RankedHubDataTransfer {
     static final String OLD_BETA = "com.harleytg.dmzranked.beta";

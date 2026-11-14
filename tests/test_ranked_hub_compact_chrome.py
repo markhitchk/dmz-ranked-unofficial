@@ -1,4 +1,4 @@
-"""Compact app chrome must honor Android and Ranked Hub sizing preferences."""
+"""Compact app chrome must honor Android and Ranked HQ sizing preferences."""
 from pathlib import Path
 import unittest
 ROOT=Path(__file__).resolve().parents[1]

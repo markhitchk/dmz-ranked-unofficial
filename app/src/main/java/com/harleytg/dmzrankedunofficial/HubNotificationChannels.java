@@ -29,7 +29,7 @@ final class HubNotificationChannels {
         create(m,ARC,"ARC Raiders Ranked","ARC first-party website alerts.");
         create(m,COMMUNITY,"DMZRanked.com Community",
                 "Independent community website alerts and supported background checks.");
-        create(m,APP,"Ranked Hub App","App notices and tests.");
+        create(m,APP,"Ranked HQ App","App notices and tests.");
     }
     private static void create(NotificationManager m,String id,String title,String text) {
         if(m.getNotificationChannel(id)!=null)return;
@@ -70,7 +70,7 @@ final class HubNotificationChannels {
                 PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         String name=MW4.equals(channel)?"MW4 DMZ Ranked":
                 ARC.equals(channel)?"ARC Raiders Ranked":
-                COMMUNITY.equals(channel)?"DMZRanked.com Community":"Ranked Hub App";
+                COMMUNITY.equals(channel)?"DMZRanked.com Community":"Ranked HQ App";
         String headline=title==null?name:title;
         String msg=body==null?"":body;
         if(msg.length()>300)msg=msg.substring(0,300);

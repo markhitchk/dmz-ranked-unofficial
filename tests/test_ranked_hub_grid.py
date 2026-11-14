@@ -1,4 +1,4 @@
-"""Offline Ranked Hub grid and original website branding regression tests."""
+"""Offline Ranked HQ grid and original website branding regression tests."""
 import hashlib
 from pathlib import Path
 import unittest
@@ -35,7 +35,7 @@ class RankedHubGridTests(unittest.TestCase):
         # Studio logo is now in the shared native header rather than duplicated
         # inside the scrolling grid.
         header = (ROOT / "app/src/main/java/com/harleytg/dmzrankedunofficial/RankedHeaderView.java").read_text()
-        self.assertIn("ranked-hub-selected.webp", header)
+        self.assertIn("ranked-hq-selected.webp", header)
 
     def test_android_stages_original_studio_and_legacy_artwork(self):
         gradle = (ROOT / "app/build.gradle").read_text()

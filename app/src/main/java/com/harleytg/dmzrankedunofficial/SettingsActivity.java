@@ -208,7 +208,7 @@ public class SettingsActivity extends Activity {
         TextView creditsSummary=findViewById(R.id.creditsSummaryText);
         if(creditsSummary!=null && isRankedHubBuild()){
             if(launcherTheme==RankedHeaderView.THEME_HUB){
-                creditsSummary.setText("Ranked Hub Android app by Harley's Studios. "
+                creditsSummary.setText("Ranked HQ Android app by Harley's Studios. "
                         +"MW4 and ARC Raiders are independent Harley's Studios ranked projects. "
                         +"Original DMZRanked.com was created by YoLando & dCHINZ.");
             }else if(launcherTheme==RankedHeaderView.THEME_DMZ_V1){
@@ -355,7 +355,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.peerImportCard).setOnClickListener(v -> confirmPeerImport());
         installRankedDestinationSettings();
         // Keep the original DMZRanked.com stable Settings unchanged.
-        // Ranked Hub Beta uses a category overview with scoped detail screens.
+        // Ranked HQ Beta uses a category overview with scoped detail screens.
         if (isRankedHubBuild()) {
             settingsNavigator = new RankedSettingsNavigator(this, launcherTheme, () ->
                     applySearch(((EditText) findViewById(R.id.settingsSearch))
@@ -1015,7 +1015,7 @@ public class SettingsActivity extends Activity {
         boolean hasMw4=RankedSiteSafeBackupStore.read(this,"dmz-v1")!=null;
         boolean hasArc=RankedSiteSafeBackupStore.read(this,"arc-raiders")!=null;
         String[] labels={
-            "Ranked Hub app settings",
+            "Ranked HQ app settings",
             "DMZRanked.com operator snapshots",
             hasMw4?"MW4 DMZ local preferences":"MW4 DMZ — capture inside site first",
             hasArc?"ARC Raiders graphics preference":"ARC Raiders — capture inside site first"
@@ -1051,7 +1051,7 @@ public class SettingsActivity extends Activity {
         new AlertDialog.Builder(this)
                 .setTitle(export?"ENCRYPT BACKUP":"UNLOCK BACKUP")
                 .setMessage(export
-                        ?"Create a passphrase to encrypt Ranked Hub preferences, sanitized "+
+                        ?"Create a passphrase to encrypt Ranked HQ preferences, sanitized "+
                         "DMZRanked.com operator backups and any saved MW4 / ARC local "+
                         "preference snapshots. First capture site preferences inside "+
                         "each ranked site. Lost passphrases cannot be recovered."
@@ -1123,7 +1123,7 @@ public class SettingsActivity extends Activity {
         if(isFinishing())return;
         String[] ids={"hub","community","dmz-v1","arc-raiders"};
         String[] labels={
-            "Ranked Hub: "+preview.settingCount()+" settings",
+            "Ranked HQ: "+preview.settingCount()+" settings",
             "DMZRanked.com: "+preview.operatorCount()+" operators",
             "MW4 V1: local preferences",
             "ARC Raiders: graphics preference"
@@ -1143,7 +1143,7 @@ public class SettingsActivity extends Activity {
         new AlertDialog.Builder(this)
                 .setTitle("CHOOSE WHAT TO RESTORE")
                 .setMessage("Only checked data will be replaced. Local MW4/ARC settings "
-                        +"are staged in Ranked Hub; explicitly apply them inside "
+                        +"are staged in Ranked HQ; explicitly apply them inside "
                         +"the corresponding website after restore. Passwords, "
                         +"sessions and server rankings are excluded.")
                 .setMultiChoiceItems(labels,checked,(dialog,which,isChecked)->
@@ -1278,7 +1278,7 @@ public class SettingsActivity extends Activity {
         DmzDialog.confirm(this,
                 "TRANSFER FROM " + label.toUpperCase(Locale.US) + "?",
                 "Copy compatible Android preferences and up to 2 app-managed DMZRanked.com operator "
-                        + "backups into Ranked Hub Beta. Existing data with the same name may be replaced. "
+                        + "backups into Ranked HQ Beta. Existing data with the same name may be replaced. "
                         + "The previous app stays installed. Cookies, sessions, PINs, passwords, "
                         + "authentication tokens, and server account data will not transfer.",
                 "TRANSFER", "CANCEL", false,
@@ -1299,7 +1299,7 @@ public class SettingsActivity extends Activity {
         } catch (SecurityException denied) {
             Log.w(TAG, "Data transfer refused: source identity or signature failed", denied);
             Toast.makeText(this, "Data transfer blocked: the previous app's signature "
-                    + "does not match this Ranked Hub build.", Toast.LENGTH_LONG).show();
+                    + "does not match this Ranked HQ build.", Toast.LENGTH_LONG).show();
         } catch (Throwable error) {
             Log.w(TAG, "Could not import previous app data", error);
             Toast.makeText(this, "Transfer unavailable. Keep the original app installed, "
@@ -1589,7 +1589,7 @@ public class SettingsActivity extends Activity {
 
         if(isRankedHubBuild() && enabled && permissionGranted){
             HubNotificationChannels.ensure(this);
-            status.setText("Channels: MW4 DMZ, ARC Raiders, DMZRanked.com, Ranked Hub App."
+            status.setText("Channels: MW4 DMZ, ARC Raiders, DMZRanked.com, Ranked HQ App."
                     +"\nCommunity background checks are supported. First-party website alerts"
                     +" require a supported site event while the site is open.");
             status.setTextColor(getColor(R.color.dmz_green));
@@ -1649,8 +1649,8 @@ public class SettingsActivity extends Activity {
     private void postTestNotification() {
         if(isRankedHubBuild()){
             HubNotificationChannels.notifyApp(this,"App test notification",
-                    "Ranked Hub notifications are working.","test:"+System.currentTimeMillis());
-            Toast.makeText(this,"Sent to Ranked Hub App channel.",Toast.LENGTH_SHORT).show();
+                    "Ranked HQ notifications are working.","test:"+System.currentTimeMillis());
+            Toast.makeText(this,"Sent to Ranked HQ App channel.",Toast.LENGTH_SHORT).show();
             return;
         }
         if (Build.VERSION.SDK_INT >= 33

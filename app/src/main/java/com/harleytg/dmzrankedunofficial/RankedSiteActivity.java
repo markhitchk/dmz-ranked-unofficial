@@ -403,7 +403,7 @@ public final class RankedSiteActivity extends Activity {
                 ? new String[]{"Reload this website", "Open in browser",
                         "Return to Projects", "App settings"}
                 : new String[]{"Reload this website", "Open in browser",
-                        "Return to Ranked Hub", "App settings",
+                        "Return to Ranked HQ", "App settings",
                         "Capture safe site preferences", "Restore saved site preferences"};
         new AlertDialog.Builder(this)
                 .setTitle(siteTitle)
